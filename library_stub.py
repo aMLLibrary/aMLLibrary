@@ -33,6 +33,13 @@ class RepeatPoint(DesignSpace):
         for i in range(0, repetion):
             point_to_be_repeated.explore()
 
+class KFoldValidation(DesignSpace):
+    point_to_be_exlored:
+    def explore(self):
+        for in in range(0, kfolds):
+            point_to_be_explored.explore()
+
+
 ###
 # Design space exploration
 #
