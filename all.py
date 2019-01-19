@@ -15,8 +15,8 @@ from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 
 
 # variables:
-input_path = 'P8_kmeans.csv'
-#input_path = 'dumydata.csv'
+#input_path = 'P8_kmeans.csv'
+input_path = 'dumydata2.csv'
 #input_path = 'yourfile.csv'
 
 
@@ -33,9 +33,9 @@ max_features = -1
 is_floating = False
 fold_num = 5
 FSfold_num = 2
-LOOCV = True
+LOOCV = False
 regressor_name = "lr"
-degree = 3
+degree = 2
 
 ridge_params = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 lasso = '[0.1,0.5]'
@@ -63,8 +63,6 @@ test_without_apriori = False
 
 inversing = True
 inverseColNameList = ['nContainers']
-input_normalization = True
-output_normalization = False
 extension = True
 
 
@@ -208,8 +206,8 @@ features_names = list(df.columns.values)
 output_df = df['applicationCompletionTime']
 
 # removes the columns of run and application completion time
-cols = ["applicationCompletionTime"]
-df = df.drop(cols, axis=1)
+#cols = ["applicationCompletionTime"]
+#df = df.drop(cols, axis=1)
 
 
 
@@ -282,29 +280,25 @@ data_conf["core_nums_test_data"] = core_nums_test_data
 train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
 test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
 
+############################################################### Normalization #######################################
 
-#train_df = df.ix[train_indices]
-#test_df = df.ix[test_indices]
-#train_labels = train_df.iloc[:, 0]
-#train_features = train_df.iloc[:, 1:]
-#test_labels = test_df.iloc[:, 0]
-#test_features = test_df.iloc[:, 1:]
+# FIXME: Standard scaling : Done
+######## scale the data
+df, scaler = scale_data(df)
 
-train_df = df.ix[train_indices]
-test_df = df.ix[test_indices]
-train_labels = output_df.ix[train_indices]
-train_features = train_df
-test_labels = output_df.ix[test_indices]
-test_features = test_df
+###### My normalization:
+#if input_normalization == True:
+#    df, scaling_factor = myNorm(df, list(df.columns.values))
 
+### scaling the output:
+#if output_normalization == True:
 
-
-data_conf["reduced_features_names"] = list(train_df.columns.values)[1:]
-data_conf["train_features_org"] = train_features.as_matrix()
-data_conf["test_features_org"] = test_features.as_matrix()
-
-
-
+#    data_matrix_out = pd.DataFrame.as_matrix(output_df)
+#    dfmin_out = data_matrix_out.min()
+#    dfmax_out = data_matrix_out.max()
+#    scale_factor_out = dfmax_out - dfmin_out
+#    output_df = np.array(output_df - dfmin_out)
+#    output_df = pd.DataFrame(output_df/scale_factor_out)
 
 
 ############################################################### Inversing #######################################
@@ -315,39 +309,48 @@ data_conf["test_features_org"] = test_features.as_matrix()
 if inversing == True:
     df = add_inverse_features(df, inverseColNameList)
 
-#FIXME: remove the dropping
-# if we wanna remove the features that we got inverse from, just drop them:
+#FIXME: remove the dropping: Done
+    #df = df.drop(inverseColNameList, axis=1)
 
-    df = df.drop(inverseColNameList, axis=1)
+inv_feature_names = df.columns.values
 
-############################################################### Normalization #######################################
 
-# FIXME: Standard scaling
-######## scale the data
-# df, scaler = scale_data(df)
+############################################################### Splitting #######################################
 
-###### My normalization:
-if input_normalization == True:
-    df, scaling_factor = myNorm(df, list(df.columns.values))
 
-### scaling the output:
-if output_normalization == True:
 
-    data_matrix_out = pd.DataFrame.as_matrix(output_df)
-    dfmin_out = data_matrix_out.min()
-    dfmax_out = data_matrix_out.max()
-    scale_factor_out = dfmax_out - dfmin_out
-    output_df = np.array(output_df - dfmin_out)
-    output_df = pd.DataFrame(output_df/scale_factor_out)
+train_df = df.ix[train_indices]
+test_df = df.ix[test_indices]
+train_labels = train_df.iloc[:, 0]
+train_features = train_df.iloc[:, 1:]
+test_labels = test_df.iloc[:, 0]
+test_features = test_df.iloc[:, 1:]
 
+#train_df = df.ix[train_indices]
+#test_df = df.ix[test_indices]
+#train_labels = output_df.ix[train_indices]
+#train_features = train_df
+#test_labels = output_df.ix[test_indices]
+#test_features = test_df
+
+
+data_conf["reduced_features_names"] = list(train_df.columns.values)[1:]
+data_conf["train_features_org"] = train_features.as_matrix()
+data_conf["test_features_org"] = test_features.as_matrix()
 
 ############################################################### Extension #######################################
 
 if extension == True:
-    df = add_all_comb(df, degree)
+    ext_train_features_df = add_all_comb(train_features, degree)
+    ext_test_features_df = add_all_comb(test_features, degree)
 
 
-################################################################# SFS ############################################
+ext_feature_names = ext_train_features_df.columns.values
+
+
+
+
+###########################################  SFS and Hyper Params tunning #############################################
 
 if select_features_sfs == True:
 
@@ -355,111 +358,142 @@ if select_features_sfs == True:
     max_k_features = int(max_features)
     # Selecting from all features
     if max_k_features == -1:
-        k_features = (min_k_features, df.shape[1])
+        k_features = (min_k_features, ext_train_features_df.shape[1])
         # Selecting from the given range
     if max_k_features != -1:
         k_features = (min_k_features, max_k_features)
 
-
-X = pd.DataFrame.as_matrix(df.ix[train_indices])
-Y = pd.DataFrame.as_matrix(output_df[train_indices])
-
-model = LinearRegression()
-
-sfs = SFS(model,
-          k_features=k_features,
-          forward=True,
-          floating=False,
-          scoring='neg_mean_squared_error',
-          cv=FSfold_num,
-          n_jobs=-1)
-sfs = sfs.fit(X, Y)
 # scoring='accuracy'
-
-print('\nSequential Forward Selection (k=3):')
-print(sfs.k_feature_idx_)
-print('CV Score:')
-print(sfs.k_score_)
-
 
 
 # find the best model
 # k_fold cross validation: (using just the training set)
 fold_num = fold_num
-if LOOCV == True:
-    fold_num = train_features.shape[0]
 
-feature_num = train_features.shape[1]
-sample_num = train_features.shape[0]
+feature_num = ext_train_features_df.shape[1]
+sample_num = ext_train_features_df.shape[0]
 alpha_v = ridge_params
 
 
-k_fold= KFold(n_splits=fold_num, shuffle=False, random_state=None)
+k_fold = KFold(n_splits=fold_num, shuffle=False, random_state=None)
 
-X = pd.DataFrame.as_matrix(train_features)
+#train = [9,10 ,11, 12, 13, 14 ,15 ,16 ,17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 ,32 ,33 ,34, 35, 36, 37, 38 ,39, 40, 41 ,42 ,43 ,44]
+#test = [0, 1 ,2 ,3 ,4 ,5 ,6 ,7 ,8]
+
+
+X = pd.DataFrame.as_matrix(ext_train_features_df)
 Y = pd.DataFrame.as_matrix(train_labels)
+
 param_overal_scores = []
 param_overal_error = []
+sfs_overal_scores = []
+cv_info = {}
 for a in alpha_v:
+    print('alpha = ', a)
     score_list = []
     error_list = []
+    sfs_score_list = []
     ridge = Ridge(a)
+    model = Ridge(a)
+    this_a = 'alpha = '+str(a)
+    cv_info[this_a] = {}
+
     for k, (train, test) in enumerate(k_fold.split(X, Y)):
-        ridge.fit(X[train, :], Y[train])
-        score_list.append(ridge.score(X[test, :], Y[test]))
-        Y_hat = ridge.predict(X[test, :])
+        print('k = ', k)
+        print('......')
+        cv_info[this_a][str(k)] = {}
+        sfs = SFS(clone_estimator=True,
+                  estimator=model,
+                  k_features=k_features,
+                  forward=True,
+                  floating=False,
+                  scoring='neg_mean_squared_error',
+                  cv=0,
+                  n_jobs=-1)
+        sfs = sfs.fit(X[train, :], Y[train])
+        sel_F_idx = sfs.k_feature_idx_
+        sfs_score_list.append(sfs.k_score_)
+        cv_info[this_a][str(k)]['Selected_features_idx'] = sel_F_idx
+        cv_info[this_a][str(k)]['sfs_scores'] = sfs.k_score_
+
+        #print('\nSequential Forward Selection (k=3):')
+        #print(sfs.k_feature_idx_)
+        #print('CV Score:')
+        #print(sfs.k_score_)
+
+        # Rows and columns selection should be done in different steps:
+        xTRtemp = X[:, sfs.k_feature_idx_]
+        ridge.fit(xTRtemp[train, :], Y[train])
+
+        xTEtemp = X[:, sfs.k_feature_idx_]
+        ridge_score = ridge.score(xTEtemp[test, :], Y[test])
+
+
+        cv_info[this_a][str(k)]['ridge_score'] = ridge_score
+        score_list.append(ridge_score)
+
+
+        Y_hat = ridge.predict(xTEtemp[test, :])
         sserror = math.sqrt(sum((Y_hat-Y[test])**2))
+        cv_info[this_a][str(k)]['RSE'] = sserror
         error_list.append(sserror)
+
     param_overal_scores.append(sum(score_list)/len(score_list))
     param_overal_error.append(sum(error_list)/len(error_list))
-    min_index = param_overal_error.index(min(param_overal_error))
-    max_index = param_overal_scores.index(max(param_overal_scores))
+    sfs_overal_scores.append(sum(sfs_score_list)/len(sfs_score_list))
+    cv_info[this_a]['mean_model_score'] = sum(score_list)/len(score_list)
+    cv_info[this_a]['mean_sfs_score'] = sum(sfs_score_list)/len(sfs_score_list)
+    cv_info[this_a]['mean_error'] = sum(error_list)/len(error_list)
 
+
+min_index = param_overal_error.index(min(param_overal_error))
+max_index = param_overal_scores.index(max(param_overal_scores))
 print('min_index = ', min_index)
 print('max_index = ', max_index)
+
+
+my_best_alpha = 'alpha = '+str(alpha_v[min_index])
+my_best_sel = []
+for i in range (fold_num):
+    fold_sel = cv_info[my_best_alpha][str(i)]['Selected_features_idx']
+    my_best_sel = list(set.union(set(my_best_sel), set(fold_sel)))
+print('my_best_sel: ', my_best_sel)
+
+python_best_alpha = 'alpha = '+str(alpha_v[max_index])
+python_best_sel = []
+for i in range (fold_num):
+    fold_sel = cv_info[python_best_alpha][str(i)]['Selected_features_idx']
+    python_best_sel = list(set.union(set(python_best_sel), set(fold_sel)))
+print('python_best_sel: ', python_best_sel)
 
 best_model_myError = Ridge(alpha_v[min_index])
 best_model_pythonError = Ridge(alpha_v[max_index])
 
-
-X_test = pd.DataFrame.as_matrix(test_features)
+X_train = pd.DataFrame.as_matrix(ext_train_features_df)
+Y_train = pd.DataFrame.as_matrix(train_labels)
+X_test = pd.DataFrame.as_matrix(ext_test_features_df)
 Y_test = pd.DataFrame.as_matrix(test_labels)
 
 # Error in test data:
 # My model error
-best_model_myError.fit(X, Y)
-Y_hat_test = best_model_myError.predict(X_test)
-print('Y_hat_test = ')
-print(Y_hat_test)
-print('Y_hat_test = ')
-print(Y_hat_test.shape)
-print(Y_test)
-print('Y_test_size = ')
-print(Y_test.shape)
+
+best_model_myError.fit(X_train[:, my_best_sel], Y_train)
+
+Y_hat_test = best_model_myError.predict(X_test[:, my_best_sel])
 
 
 print('My alpha = ', alpha_v[min_index])
 Error = math.sqrt(sum((Y_hat_test-Y_test)**2))
-
-if output_normalization == True:
-    realError = Error*scale_factor_out
-else:
-    realError = Error
-
+realError = Error#*scale_factor_out
 print('My Error = ', realError)
 
 
 # Python model error
-best_model_pythonError.fit(X, Y)
-Y_hat_test = best_model_pythonError.predict(X_test)
+best_model_pythonError.fit(X_train[:, python_best_sel], Y_train)
+Y_hat_test = best_model_pythonError.predict(X_test[:, python_best_sel])
 print('Python alpha = ', alpha_v[max_index])
 Error = math.sqrt(sum((Y_hat_test-Y_test)**2))
-
-if output_normalization == True:
-    realError = Error*scale_factor_out
-else:
-    realError = Error
-
+realError = Error#*scale_factor_out
 print('Python Error = ', realError)
 
 
