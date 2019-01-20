@@ -15,8 +15,8 @@ from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 
 
 # variables:
-input_path = 'P8_kmeans.csv'
-#input_path = 'dumydata2.csv'
+#input_path = 'P8_kmeans.csv'
+input_path = 'dumydata2.csv'
 #input_path = 'yourfile.csv'
 
 
@@ -35,7 +35,7 @@ fold_num = 5
 FSfold_num = 2
 LOOCV = False
 regressor_name = "lr"
-degree = 1
+degree = 2
 
 ridge_params = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 lasso = '[0.1,0.5]'
@@ -102,7 +102,15 @@ def add_inverse_features(df, colNameList):
         df_dict[new_feature_name] = new_col
 
     inv_df = pd.DataFrame.from_dict(df_dict)
-    return inv_df
+
+    # returns the indices of the columns that should be inversed and their inversed in one tuple
+    inversing_cols = []
+    for c in colNameList:
+        cidx = inv_df.columns.get_loc(c)
+        cinvidx = inv_df.columns.get_loc('inverse_'+c)
+        inv_idxs = (cidx, cinvidx)
+        inversing_cols.append(inv_idxs)
+    return inv_df, inversing_cols
 
 def myNorm(df, col_name_list):
     df1 = df
@@ -289,7 +297,7 @@ test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
 
 # use the inverse of n_core instead of nContainers
 if inversing == True:
-    df = add_inverse_features(df, inverseColNameList)
+    df, inversed_cols = add_inverse_features(df, inverseColNameList)
 
 #FIXME: remove the dropping: Done
     #df = df.drop(inverseColNameList, axis=1)
