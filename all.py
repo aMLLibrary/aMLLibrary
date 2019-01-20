@@ -15,8 +15,8 @@ from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 
 
 # variables:
-#input_path = 'P8_kmeans.csv'
-input_path = 'dumydata2.csv'
+input_path = 'P8_kmeans.csv'
+#input_path = 'dumydata2.csv'
 #input_path = 'yourfile.csv'
 
 
@@ -35,7 +35,7 @@ fold_num = 5
 FSfold_num = 2
 LOOCV = False
 regressor_name = "lr"
-degree = 2
+degree = 1
 
 ridge_params = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 lasso = '[0.1,0.5]'
@@ -189,7 +189,9 @@ def scale_data(df):
     scaler = StandardScaler()
     scaled_array = scaler.fit_transform(df.values)
     scaled_df = pd.DataFrame(scaled_array, index = df.index, columns = df.columns)
-    return scaled_df, scaler
+    output_scaler_mean = scaler.mean_
+    output_scaler_std = (df.values[0][0] - output_scaler_mean[0])/ scaled_array[0][0]
+    return scaled_df, scaler, output_scaler_mean[0], output_scaler_std
 
 
 df = pd.read_csv(input_path)
@@ -280,11 +282,25 @@ data_conf["core_nums_test_data"] = core_nums_test_data
 train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
 test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
 
+
+############################################################### Inversing #######################################
+
+
+
+# use the inverse of n_core instead of nContainers
+if inversing == True:
+    df = add_inverse_features(df, inverseColNameList)
+
+#FIXME: remove the dropping: Done
+    #df = df.drop(inverseColNameList, axis=1)
+
+inv_feature_names = df.columns.values
+
 ############################################################### Normalization #######################################
 
 # FIXME: Standard scaling : Done
 ######## scale the data
-df, scaler = scale_data(df)
+scaled_df, scaler, output_scaler_mean, output_scaler_std = scale_data(df)
 
 ###### My normalization:
 #if input_normalization == True:
@@ -301,37 +317,18 @@ df, scaler = scale_data(df)
 #    output_df = pd.DataFrame(output_df/scale_factor_out)
 
 
-############################################################### Inversing #######################################
-
-
-
-# use the inverse of n_core instead of nContainers
-if inversing == True:
-    df = add_inverse_features(df, inverseColNameList)
-
-#FIXME: remove the dropping: Done
-    #df = df.drop(inverseColNameList, axis=1)
-
-inv_feature_names = df.columns.values
-
 
 ############################################################### Splitting #######################################
 
 
 
-train_df = df.ix[train_indices]
-test_df = df.ix[test_indices]
+train_df = scaled_df.ix[train_indices]
+test_df = scaled_df.ix[test_indices]
 train_labels = train_df.iloc[:, 0]
 train_features = train_df.iloc[:, 1:]
 test_labels = test_df.iloc[:, 0]
 test_features = test_df.iloc[:, 1:]
 
-#train_df = df.ix[train_indices]
-#test_df = df.ix[test_indices]
-#train_labels = output_df.ix[train_indices]
-#train_features = train_df
-#test_labels = output_df.ix[test_indices]
-#test_features = test_df
 
 
 data_conf["reduced_features_names"] = list(train_df.columns.values)[1:]
@@ -377,8 +374,7 @@ alpha_v = ridge_params
 
 k_fold = KFold(n_splits=fold_num, shuffle=False, random_state=None)
 
-#train = [9,10 ,11, 12, 13, 14 ,15 ,16 ,17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 ,32 ,33 ,34, 35, 36, 37, 38 ,39, 40, 41 ,42 ,43 ,44]
-#test = [0, 1 ,2 ,3 ,4 ,5 ,6 ,7 ,8]
+
 
 
 X = pd.DataFrame.as_matrix(ext_train_features_df)
@@ -389,6 +385,7 @@ param_overal_error = []
 sfs_overal_scores = []
 cv_info = {}
 for a in alpha_v:
+    print('......')
     print('alpha = ', a)
     score_list = []
     error_list = []
@@ -399,8 +396,6 @@ for a in alpha_v:
     cv_info[this_a] = {}
 
     for k, (train, test) in enumerate(k_fold.split(X, Y)):
-        print('k = ', k)
-        print('......')
         cv_info[this_a][str(k)] = {}
         sfs = SFS(clone_estimator=True,
                   estimator=model,
@@ -428,7 +423,6 @@ for a in alpha_v:
         xTEtemp = X[:, sfs.k_feature_idx_]
         ridge_score = ridge.score(xTEtemp[test, :], Y[test])
 
-
         cv_info[this_a][str(k)]['ridge_score'] = ridge_score
         score_list.append(ridge_score)
 
@@ -437,6 +431,7 @@ for a in alpha_v:
         sserror = math.sqrt(sum((Y_hat-Y[test])**2))
         cv_info[this_a][str(k)]['RSE'] = sserror
         error_list.append(sserror)
+        print('fold = ', k, '    sfs_scores = ', sfs.k_score_, '    ridge_score = ', ridge_score, '    RSE = ', sserror)
 
     param_overal_scores.append(sum(score_list)/len(score_list))
     param_overal_error.append(sum(error_list)/len(error_list))
@@ -484,7 +479,7 @@ Y_hat_test = best_model_myError.predict(X_test[:, my_best_sel])
 
 print('My alpha = ', alpha_v[min_index])
 Error = math.sqrt(sum((Y_hat_test-Y_test)**2))
-realError = Error#*scale_factor_out
+realError = Error*output_scaler_std
 print('My Error = ', realError)
 
 
@@ -493,8 +488,6 @@ best_model_pythonError.fit(X_train[:, python_best_sel], Y_train)
 Y_hat_test = best_model_pythonError.predict(X_test[:, python_best_sel])
 print('Python alpha = ', alpha_v[max_index])
 Error = math.sqrt(sum((Y_hat_test-Y_test)**2))
-realError = Error#*scale_factor_out
+realError = Error*output_scaler_std
 print('Python Error = ', realError)
-
-
 
