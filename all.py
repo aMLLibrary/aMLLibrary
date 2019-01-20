@@ -9,14 +9,12 @@ from sklearn.linear_model import LinearRegression, Lasso, Ridge, RidgeCV
 from sklearn.utils import shuffle
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold
-from sklearn import feature_selection as FS
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 
 
-
 # variables:
-#input_path = 'P8_kmeans.csv'
-input_path = 'dumydata2.csv'
+input_path = 'P8_kmeans.csv'
+#input_path = 'dumydata2.csv'
 #input_path = 'yourfile.csv'
 
 
@@ -29,7 +27,7 @@ core_nums_test_data = [8,12,16,20,24,28,32,36,40,44,48]
 select_features_vif = False
 select_features_sfs = True
 min_features = 1
-max_features = -1
+max_features = 10
 is_floating = False
 fold_num = 5
 FSfold_num = 2
@@ -198,6 +196,9 @@ def mean_absolute_percentage_error(y_pred_test, test_labels, y_pred_train, train
 
     return err_test, err_train
 
+def calcMAPE(Y_hat_test, Y_test):
+    Mapeerr = np.mean(np.abs((Y_test - Y_hat_test) / Y_test)) * 100
+    return Mapeerr
 
 def scale_data(df):
     scaler = StandardScaler()
@@ -397,13 +398,16 @@ Y = pd.DataFrame.as_matrix(train_labels)
 param_overal_scores = []
 param_overal_error = []
 sfs_overal_scores = []
+Mape_overal_error = []
 cv_info = {}
 for a in alpha_v:
     print('......')
     print('alpha = ', a)
     score_list = []
     error_list = []
+    Mape_error_list = []
     sfs_score_list = []
+
     ridge = Ridge(a)
     model = Ridge(a)
     this_a = 'alpha = '+str(a)
@@ -425,10 +429,6 @@ for a in alpha_v:
         cv_info[this_a][str(k)]['Selected_features_idx'] = sel_F_idx
         cv_info[this_a][str(k)]['sfs_scores'] = sfs.k_score_
 
-        #print('\nSequential Forward Selection (k=3):')
-        #print(sfs.k_feature_idx_)
-        #print('CV Score:')
-        #print(sfs.k_score_)
 
         # Rows and columns selection should be done in different steps:
         xTRtemp = X[:, sfs.k_feature_idx_]
@@ -445,63 +445,107 @@ for a in alpha_v:
         sserror = math.sqrt(sum((Y_hat-Y[test])**2))
         cv_info[this_a][str(k)]['RSE'] = sserror
         error_list.append(sserror)
-        print('fold = ', k, '    sfs_scores = ', sfs.k_score_, '    ridge_score = ', ridge_score, '    RSE = ', sserror)
+
+        Mape_error = calcMAPE(Y_hat, Y[test])
+        cv_info[this_a][str(k)]['MAPE'] = Mape_error
+        Mape_error_list.append(Mape_error)
+
+        print('fold = ', k, '    sfs_scores = ', sfs.k_score_, '    ridge_score = ', ridge_score, '    RSE = ', sserror,  '    MAPE = ', Mape_error)
 
     param_overal_scores.append(sum(score_list)/len(score_list))
     param_overal_error.append(sum(error_list)/len(error_list))
     sfs_overal_scores.append(sum(sfs_score_list)/len(sfs_score_list))
+    Mape_overal_error.append(sum(Mape_error_list)/len(Mape_error_list))
+
     cv_info[this_a]['mean_model_score'] = sum(score_list)/len(score_list)
     cv_info[this_a]['mean_sfs_score'] = sum(sfs_score_list)/len(sfs_score_list)
     cv_info[this_a]['mean_error'] = sum(error_list)/len(error_list)
+    cv_info[this_a]['mean_MAPE_error'] = sum(Mape_error_list)/len(Mape_error_list)
 
 
-min_index = param_overal_error.index(min(param_overal_error))
-max_index = param_overal_scores.index(max(param_overal_scores))
-print('min_index = ', min_index)
-print('max_index = ', max_index)
+# Results:
+
+RSE_index = param_overal_error.index(min(param_overal_error))
+alpha_score_index = param_overal_scores.index(max(param_overal_scores))
+MAPE_index = Mape_overal_error.index(min(Mape_overal_error))
 
 
-my_best_alpha = 'alpha = '+str(alpha_v[min_index])
-my_best_sel = []
-for i in range (fold_num):
-    fold_sel = cv_info[my_best_alpha][str(i)]['Selected_features_idx']
-    my_best_sel = list(set.union(set(my_best_sel), set(fold_sel)))
-print('my_best_sel: ', my_best_sel)
+print('RSE_index = ', RSE_index)
+print('Best_alpha_score_index = ', alpha_score_index)
+print('MAPE_index = ', MAPE_index)
 
-python_best_alpha = 'alpha = '+str(alpha_v[max_index])
-python_best_sel = []
-for i in range (fold_num):
-    fold_sel = cv_info[python_best_alpha][str(i)]['Selected_features_idx']
-    python_best_sel = list(set.union(set(python_best_sel), set(fold_sel)))
-print('python_best_sel: ', python_best_sel)
 
-best_model_myError = Ridge(alpha_v[min_index])
-best_model_pythonError = Ridge(alpha_v[max_index])
+
 
 X_train = pd.DataFrame.as_matrix(ext_train_features_df)
 Y_train = pd.DataFrame.as_matrix(train_labels)
 X_test = pd.DataFrame.as_matrix(ext_test_features_df)
 Y_test = pd.DataFrame.as_matrix(test_labels)
 
-# Error in test data:
-# My model error
+print('..........................')
+# RSE error computations:
+my_best_alpha = 'alpha = '+str(alpha_v[RSE_index])
+my_best_sel = []
+for i in range (fold_num):
+    fold_sel = cv_info[my_best_alpha][str(i)]['Selected_features_idx']
+    my_best_sel = list(set.union(set(my_best_sel), set(fold_sel)))
+print('Best sel based on minimum RSE error: ', my_best_sel)
 
+
+best_model_myError = Ridge(alpha_v[RSE_index])
 best_model_myError.fit(X_train[:, my_best_sel], Y_train)
-
 Y_hat_test = best_model_myError.predict(X_test[:, my_best_sel])
-
-
-print('My alpha = ', alpha_v[min_index])
+print('RSE best alpha = ', alpha_v[RSE_index])
 Error = math.sqrt(sum((Y_hat_test-Y_test)**2))
 realError = Error*output_scaler_std
-print('My Error = ', realError)
+print('RSE Error = ', realError)
+print('MAPE Error = ', calcMAPE(Y_hat_test, Y_test))
+print('..........................')
 
 
-# Python model error
+# alpha score computations:
+python_best_alpha = 'alpha = '+str(alpha_v[alpha_score_index])
+python_best_sel = []
+for i in range (fold_num):
+    fold_sel = cv_info[python_best_alpha][str(i)]['Selected_features_idx']
+    python_best_sel = list(set.union(set(python_best_sel), set(fold_sel)))
+print('Best sel based on classifier maximum score: ', python_best_sel)
+
+
+
+best_model_pythonError = Ridge(alpha_v[alpha_score_index])
 best_model_pythonError.fit(X_train[:, python_best_sel], Y_train)
 Y_hat_test = best_model_pythonError.predict(X_test[:, python_best_sel])
-print('Python alpha = ', alpha_v[max_index])
+print('Classifier maximum score alpha = ', alpha_v[alpha_score_index])
 Error = math.sqrt(sum((Y_hat_test-Y_test)**2))
 realError = Error*output_scaler_std
-print('Python Error = ', realError)
+print('RSE Error = ', realError)
+print('MAPE Error = ', calcMAPE(Y_hat_test, Y_test))
+print('..........................')
+
+# MAPE computations:
+mape_best_alpha = 'alpha = '+str(alpha_v[MAPE_index])
+mape_best_sel = []
+for i in range (fold_num):
+    fold_sel = cv_info[mape_best_alpha][str(i)]['Selected_features_idx']
+    mape_best_sel = list(set.union(set(mape_best_sel), set(fold_sel)))
+print('Best sel based on minimum MAPE error: ', mape_best_sel)
+
+
+best_model_MAPE = Ridge(alpha_v[MAPE_index])
+best_model_MAPE.fit(X_train[:, mape_best_sel], Y_train)
+Y_hat_test = best_model_MAPE.predict(X_test[:, mape_best_sel])
+print('MAPE best alpha = ', alpha_v[MAPE_index])
+Error = math.sqrt(sum((Y_hat_test-Y_test)**2))
+realError = Error*output_scaler_std
+print('RSE Error = ', realError)
+print('MAPE Error = ', calcMAPE(Y_hat_test, Y_test))
+print('..........................')
+
+
+
+
+
+print(cv_info)
+
 
