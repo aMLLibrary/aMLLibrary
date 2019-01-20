@@ -76,13 +76,19 @@ def calculate_new_col(X, indices):
     return new_col
 
 
-def add_all_comb(df, degree):
-
-    df_dict = dict(df)
-    data_matrix = pd.DataFrame.as_matrix(df)
+def add_all_comb(inv_train_df, inversed_cols_tr, degree):
+    features_names = inv_train_df.columns.values
+    df_dict = dict(inv_train_df)
+    data_matrix = pd.DataFrame.as_matrix(inv_train_df)
     indices = list(range(data_matrix.shape[1]))
     for j in range(2, degree + 1):
         combs = list(itertools.combinations_with_replacement(indices, j))
+        # removes the combinations containing features and inversed of them
+        for ii in combs:
+            for kk in inversed_cols_tr:
+                if len(list(set.intersection(set(ii), set(kk)))) >= 2:
+                    combs.remove(ii)
+
         for cc in combs:
             new_col = calculate_new_col(data_matrix, list(cc))
             new_feature_name = ''
@@ -291,19 +297,6 @@ train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
 test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
 
 
-############################################################### Inversing #######################################
-
-
-
-# use the inverse of n_core instead of nContainers
-if inversing == True:
-    df, inversed_cols = add_inverse_features(df, inverseColNameList)
-
-#FIXME: remove the dropping: Done
-    #df = df.drop(inverseColNameList, axis=1)
-
-inv_feature_names = df.columns.values
-
 ############################################################### Normalization #######################################
 
 # FIXME: Standard scaling : Done
@@ -329,7 +322,6 @@ scaled_df, scaler, output_scaler_mean, output_scaler_std = scale_data(df)
 ############################################################### Splitting #######################################
 
 
-
 train_df = scaled_df.ix[train_indices]
 test_df = scaled_df.ix[test_indices]
 train_labels = train_df.iloc[:, 0]
@@ -338,16 +330,30 @@ test_labels = test_df.iloc[:, 0]
 test_features = test_df.iloc[:, 1:]
 
 
-
 data_conf["reduced_features_names"] = list(train_df.columns.values)[1:]
 data_conf["train_features_org"] = train_features.as_matrix()
 data_conf["test_features_org"] = test_features.as_matrix()
 
+
+
+############################################################### Inversing #######################################
+
+# use the inverse of n_core instead of nContainers
+if inversing == True:
+    inv_train_df, inversed_cols_tr = add_inverse_features(train_features, inverseColNameList)
+    inv_test_df, inversed_cols_te = add_inverse_features(test_features, inverseColNameList)
+
+
+
+inv_feature_names = inv_train_df.columns.values
+
+
 ############################################################### Extension #######################################
 
 if extension == True:
-    ext_train_features_df = add_all_comb(train_features, degree)
-    ext_test_features_df = add_all_comb(test_features, degree)
+
+    ext_train_features_df = add_all_comb(inv_train_df, inversed_cols_tr, degree)
+    ext_test_features_df = add_all_comb(inv_test_df, inversed_cols_te, degree)
 
 
 ext_feature_names = ext_train_features_df.columns.values
