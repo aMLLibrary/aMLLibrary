@@ -12,12 +12,15 @@ from sklearn.model_selection import KFold
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 
 
-# variables:
-input_path = 'P8_kmeans.csv'
+# different input options:
+
+#input_path = 'P8_kmeans.csv'
 #input_path = 'dumydata2.csv'
 #input_path = 'yourfile.csv'
+input_path = 'dumydata.csv'
 
 
+# variables:
 image_nums_train_data = [5]
 image_nums_test_data = [5]
 core_nums_train_data = [6,10,14,18,22,26,30,34,38,42,46]
@@ -66,6 +69,7 @@ extension = True
 
 
 def calculate_new_col(X, indices):
+    """Given two indices and input matrix returns the multiplication of the columns corresponding columns"""
     index = 0
     new_col = X[:, indices[index]]
     for ii in list(range(1, len(indices))):
@@ -75,6 +79,9 @@ def calculate_new_col(X, indices):
 
 
 def add_all_comb(inv_train_df, inversed_cols_tr, degree):
+    """Given a dataframe, returns an extended df containing all combinations of columns except the ones that are
+    inversed"""
+
     features_names = inv_train_df.columns.values
     df_dict = dict(inv_train_df)
     data_matrix = pd.DataFrame.as_matrix(inv_train_df)
@@ -99,6 +106,9 @@ def add_all_comb(inv_train_df, inversed_cols_tr, degree):
 
 
 def add_inverse_features(df, colNameList):
+    """Given a dataframe and the name of columns that should be inversed, add the needed inversed columns and returns
+    the resulting df and the indices of two reciprocals separately"""
+
     df_dict = dict(df)
     for c in colNameList:
         new_col = 1/np.array(df[c])
@@ -117,6 +127,8 @@ def add_inverse_features(df, colNameList):
     return inv_df, inversing_cols
 
 def myNorm(df, col_name_list):
+    """Normalizes the df all columns values between 0 and 1"""
+
     df1 = df
     df_dict = dict(df1)
     feature_name = col_name_list
@@ -131,6 +143,7 @@ def myNorm(df, col_name_list):
 
 
 def mean_absolute_percentage_error(y_pred_test, test_labels, y_pred_train, train_labels):
+    """given true and predicted values returns MAPE error for training and test set"""
 
     if y_pred_test != []:
         # Test error
@@ -193,14 +206,17 @@ def mean_absolute_percentage_error(y_pred_test, test_labels, y_pred_train, train
     y_pred_train = train_data_with_pred.iloc[:, 0]
 
     err_train = np.mean(np.abs((y_true_train - y_pred_train) / y_true_train)) * 100
-
     return err_test, err_train
 
 def calcMAPE(Y_hat_test, Y_test):
+    """given true and predicted values returns MAPE error"""
     Mapeerr = np.mean(np.abs((Y_test - Y_hat_test) / Y_test)) * 100
     return Mapeerr
 
 def scale_data(df):
+    """scale and normalized the data using standard scaler and returns the scaled data, the scaler object, the mean
+    value and std of the output column for later use"""
+
     scaler = StandardScaler()
     scaled_array = scaler.fit_transform(df.values)
     scaled_df = pd.DataFrame(scaled_array, index = df.index, columns = df.columns)
@@ -209,34 +225,24 @@ def scale_data(df):
     return scaled_df, scaler, output_scaler_mean[0], output_scaler_std
 
 
+# read the data from .csv file:
 df = pd.read_csv(input_path)
+
+
 # drop run column
 tempcols = ["run"]
 df = df.drop(tempcols, axis=1)
-#if input_path != 'P8_kmeans.csv':
-#    df = df.drop("Unnamed: 6", axis=1)
 
+# compute the matrix and name of columns as features
 data_matrix = pd.DataFrame.as_matrix(df)
 features_names = list(df.columns.values)
 
-
+# save the output
 output_df = df['applicationCompletionTime']
 
-# removes the columns of run and application completion time
-#cols = ["applicationCompletionTime"]
-#df = df.drop(cols, axis=1)
 
-
-
-# Separate the training and test sets based on the datasize
-# case1:
-# ooni ke datasizashoon ye joore ro bayad negah dare va kollan baghiye sample ha ro forget kone:
-
-# remove zero valued columns
+# remove constant valued columns
 df = df.loc[:, (df != df.iloc[0]).any()]
-
-
-# TODO: remove const value
 
 
 # randomize the samples
@@ -244,14 +250,17 @@ seed = 1234
 df = shuffle(df, random_state = seed)
 
 
+# Dictionary keeping the information about the input and training and test samples
 data_conf = {}
 data_conf["case"] = "same datasize in TR and TE_even cores in TR, odds in TE"
 data_conf["input_name"] = "K_means"
 
+# Separate the training and test sets based on the datasize
+# case1:
+# Training and test samples have the same datasizes:
 
-
-
-################ Datasize indices:
+# locating the indices of traing and test samples based on datasize and core numbers:
+"""################################################ Datasize indices #######################################"""
 if "dataSize" in df.columns:
     data_size_indices = pd.DataFrame([[k, v.values] for k, v in df.groupby('dataSize').groups.items()],
                                           columns=['col', 'indices'])
@@ -272,7 +281,7 @@ else:
 data_conf["image_nums_train_data"] = image_nums_train_data
 data_conf["image_nums_test_data"] = image_nums_test_data
 
-############################################################### split the data #######################################
+"""################################################ Core number indices #######################################"""
 
 core_num_indices = pd.DataFrame([[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
                                      columns=['col', 'indices'])
@@ -298,29 +307,12 @@ train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
 test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
 
 
-############################################################### Normalization #######################################
-
-# FIXME: Standard scaling : Done
+"""############################################## Normalization ###############################################"""
 ######## scale the data
 scaled_df, scaler, output_scaler_mean, output_scaler_std = scale_data(df)
 
-###### My normalization:
-#if input_normalization == True:
-#    df, scaling_factor = myNorm(df, list(df.columns.values))
 
-### scaling the output:
-#if output_normalization == True:
-
-#    data_matrix_out = pd.DataFrame.as_matrix(output_df)
-#    dfmin_out = data_matrix_out.min()
-#    dfmax_out = data_matrix_out.max()
-#    scale_factor_out = dfmax_out - dfmin_out
-#    output_df = np.array(output_df - dfmin_out)
-#    output_df = pd.DataFrame(output_df/scale_factor_out)
-
-
-
-############################################################### Splitting #######################################
+"""################################################ Splitting #################################################"""
 
 
 train_df = scaled_df.ix[train_indices]
@@ -337,33 +329,35 @@ data_conf["test_features_org"] = test_features.as_matrix()
 
 
 
-############################################################### Inversing #######################################
+"""################################################ Inversing #################################################"""
 
-# use the inverse of n_core instead of nContainers
+# adding the inverse of nContainers columns to the data
 if inversing == True:
     inv_train_df, inversed_cols_tr = add_inverse_features(train_features, inverseColNameList)
     inv_test_df, inversed_cols_te = add_inverse_features(test_features, inverseColNameList)
 
 
-
+# check the feature names after inversing
 inv_feature_names = inv_train_df.columns.values
 
 
-############################################################### Extension #######################################
+"""################################################ Extension #################################################"""
 
+# Extend the df by adding combinations of features as new features to the df
 if extension == True:
 
     ext_train_features_df = add_all_comb(inv_train_df, inversed_cols_tr, degree)
     ext_test_features_df = add_all_comb(inv_test_df, inversed_cols_te, degree)
 
 
+# check the feature names after extension
 ext_feature_names = ext_train_features_df.columns.values
 
 
 
+"""##########################  SFS and Hyper Params tunning using grid search and CV ##########################"""
 
-###########################################  SFS and Hyper Params tunning #############################################
-
+# computing the range of accepted number of features: (k_features)
 if select_features_sfs == True:
 
     min_k_features = int(min_features)
@@ -375,39 +369,58 @@ if select_features_sfs == True:
     if max_k_features != -1:
         k_features = (min_k_features, max_k_features)
 
-# scoring='accuracy'
 
 
-# find the best model
-# k_fold cross validation: (using just the training set)
+# finding the best model using Kfold-CV and just the traing set
+
 fold_num = fold_num
 
+# determining the size of data
 feature_num = ext_train_features_df.shape[1]
 sample_num = ext_train_features_df.shape[0]
+
+# vector of parameters to be search through
 alpha_v = ridge_params
 
 
 k_fold = KFold(n_splits=fold_num, shuffle=False, random_state=None)
 
-
-
-
+# input and output preparation to use in CV iterations
 X = pd.DataFrame.as_matrix(ext_train_features_df)
 Y = pd.DataFrame.as_matrix(train_labels)
 
+
+# list of mean value obtained scores of the selected parameter (alpha) :
 param_overal_scores = []
+
+# list of mean value RSE error for different alpha values:
 param_overal_error = []
+
+# list of mean value of obtained SFS scores of different alpha values:
 sfs_overal_scores = []
+
+# list of mean value of MAPE in different alpha values:
 Mape_overal_error = []
+
+# Dictionary keeping information about all scores and values and selected features in all iterations for all params
 cv_info = {}
+
 for a in alpha_v:
     print('......')
     print('alpha = ', a)
+    # list of ridge score of CV test data for different folds in current alpha
     score_list = []
+
+    # list of RSE error of CV test data for different folds in current alpha
     error_list = []
+
+    # list of MAPE error of CV test data for different folds in current alpha
     Mape_error_list = []
+
+    # list of SFS error of CV test data for different folds in current alpha
     sfs_score_list = []
 
+    # building the models
     ridge = Ridge(a)
     model = Ridge(a)
     this_a = 'alpha = '+str(a)
@@ -415,6 +428,7 @@ for a in alpha_v:
 
     for k, (train, test) in enumerate(k_fold.split(X, Y)):
         cv_info[this_a][str(k)] = {}
+        # building the sfs
         sfs = SFS(clone_estimator=True,
                   estimator=model,
                   k_features=k_features,
@@ -423,6 +437,8 @@ for a in alpha_v:
                   scoring='neg_mean_squared_error',
                   cv=0,
                   n_jobs=-1)
+
+        # fit the sfs on training part and evaluate the score on test part of this fold
         sfs = sfs.fit(X[train, :], Y[train])
         sel_F_idx = sfs.k_feature_idx_
         sfs_score_list.append(sfs.k_score_)
@@ -430,6 +446,7 @@ for a in alpha_v:
         cv_info[this_a][str(k)]['sfs_scores'] = sfs.k_score_
 
 
+        # fit the ridge model on training part and evaluate the ridge score on test part of this fold
         # Rows and columns selection should be done in different steps:
         xTRtemp = X[:, sfs.k_feature_idx_]
         ridge.fit(xTRtemp[train, :], Y[train])
@@ -440,18 +457,21 @@ for a in alpha_v:
         cv_info[this_a][str(k)]['ridge_score'] = ridge_score
         score_list.append(ridge_score)
 
-
+        # evaluate the RSE error on test part of this fold
         Y_hat = ridge.predict(xTEtemp[test, :])
         sserror = math.sqrt(sum((Y_hat-Y[test])**2))
         cv_info[this_a][str(k)]['RSE'] = sserror
         error_list.append(sserror)
 
+        # evaluate the MAPE error on test part of this fold
         Mape_error = calcMAPE(Y_hat, Y[test])
         cv_info[this_a][str(k)]['MAPE'] = Mape_error
         Mape_error_list.append(Mape_error)
 
+        # report the progress in console
         print('fold = ', k, '    sfs_scores = ', sfs.k_score_, '    ridge_score = ', ridge_score, '    RSE = ', sserror,  '    MAPE = ', Mape_error)
 
+    # computes the mean values of this alpha and save them in the dictionary
     param_overal_scores.append(sum(score_list)/len(score_list))
     param_overal_error.append(sum(error_list)/len(error_list))
     sfs_overal_scores.append(sum(sfs_score_list)/len(sfs_score_list))
@@ -463,27 +483,27 @@ for a in alpha_v:
     cv_info[this_a]['mean_MAPE_error'] = sum(Mape_error_list)/len(Mape_error_list)
 
 
-# Results:
+"""################################################## Results #####################################################"""
 
+# select the best alpha based on obtained values
 RSE_index = param_overal_error.index(min(param_overal_error))
 alpha_score_index = param_overal_scores.index(max(param_overal_scores))
 MAPE_index = Mape_overal_error.index(min(Mape_overal_error))
 
-
+# report the best alpha based on obtained values
 print('RSE_index = ', RSE_index)
 print('Best_alpha_score_index = ', alpha_score_index)
 print('MAPE_index = ', MAPE_index)
 
 
-
-
+# prepare the data for final error on test dataset
 X_train = pd.DataFrame.as_matrix(ext_train_features_df)
 Y_train = pd.DataFrame.as_matrix(train_labels)
 X_test = pd.DataFrame.as_matrix(ext_test_features_df)
 Y_test = pd.DataFrame.as_matrix(test_labels)
 
 print('..........................')
-# RSE error computations:
+# RSE error computations for the model consisting of the selected features:
 my_best_alpha = 'alpha = '+str(alpha_v[RSE_index])
 my_best_sel = []
 for i in range (fold_num):
@@ -503,7 +523,7 @@ print('MAPE Error = ', calcMAPE(Y_hat_test, Y_test))
 print('..........................')
 
 
-# alpha score computations:
+# alpha score computations for the model consisting of the selected features:
 python_best_alpha = 'alpha = '+str(alpha_v[alpha_score_index])
 python_best_sel = []
 for i in range (fold_num):
@@ -543,9 +563,7 @@ print('MAPE Error = ', calcMAPE(Y_hat_test, Y_test))
 print('..........................')
 
 
-
-
-
+# report the grid search information
 print(cv_info)
 
 
