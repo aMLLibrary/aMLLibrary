@@ -15,9 +15,9 @@ from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 # different input options:
 
 #input_path = 'P8_kmeans.csv'
-#input_path = 'dumydata2.csv'
+input_path = 'dumydata2.csv'
 #input_path = 'yourfile.csv'
-input_path = 'dumydata.csv'
+#input_path = 'dumydata.csv'
 
 
 # variables:
@@ -383,7 +383,7 @@ sample_num = ext_train_features_df.shape[0]
 alpha_v = ridge_params
 
 
-k_fold = KFold(n_splits=fold_num, shuffle=False, random_state=None)
+k_fold = KFold(n_splits=fold_num, shuffle=True, random_state=None)
 
 # input and output preparation to use in CV iterations
 X = pd.DataFrame.as_matrix(ext_train_features_df)
@@ -502,65 +502,88 @@ Y_train = pd.DataFrame.as_matrix(train_labels)
 X_test = pd.DataFrame.as_matrix(ext_test_features_df)
 Y_test = pd.DataFrame.as_matrix(test_labels)
 
-print('..........................')
+print('.........................................................................................')
 # RSE error computations for the model consisting of the selected features:
+print('Best alpha by selecting model having minimum RSE error in grid search = ', alpha_v[RSE_index])
 my_best_alpha = 'alpha = '+str(alpha_v[RSE_index])
 my_best_sel = []
 for i in range (fold_num):
     fold_sel = cv_info[my_best_alpha][str(i)]['Selected_features_idx']
     my_best_sel = list(set.union(set(my_best_sel), set(fold_sel)))
-print('Best sel based on minimum RSE error: ', my_best_sel)
-
+print('Selected features based on minimum RSE error: ', my_best_sel)
+print('Model size based on minimum RSE error: ', len(my_best_sel))
 
 best_model_myError = Ridge(alpha_v[RSE_index])
 best_model_myError.fit(X_train[:, my_best_sel], Y_train)
+Y_hat_training = best_model_myError.predict(X_train[:, my_best_sel])
 Y_hat_test = best_model_myError.predict(X_test[:, my_best_sel])
-print('RSE best alpha = ', alpha_v[RSE_index])
-Error = math.sqrt(sum((Y_hat_test-Y_test)**2))
-realError = Error*output_scaler_std
-print('RSE Error = ', realError)
-print('MAPE Error = ', calcMAPE(Y_hat_test, Y_test))
-print('..........................')
+
+Errortraining = math.sqrt(sum((Y_hat_training-Y_train)**2))
+realErrortraining = Errortraining*output_scaler_std
+
+Errortest = math.sqrt(sum((Y_hat_test-Y_test)**2))
+realErrortest = Errortest*output_scaler_std
+
+print('RSE Error (Training)= ', realErrortraining)
+print('RSE Error (Test) = ', realErrortest)
+print('MAPE Error (Training) = ', calcMAPE(Y_hat_training, Y_train))
+print('MAPE Error (Test) = ', calcMAPE(Y_hat_test, Y_test))
+print('.........................................................................................')
 
 
 # alpha score computations for the model consisting of the selected features:
+print('Best alpha by selecting model having highest average of ridge score in grid search = ', alpha_v[alpha_score_index])
 python_best_alpha = 'alpha = '+str(alpha_v[alpha_score_index])
 python_best_sel = []
 for i in range (fold_num):
     fold_sel = cv_info[python_best_alpha][str(i)]['Selected_features_idx']
     python_best_sel = list(set.union(set(python_best_sel), set(fold_sel)))
-print('Best sel based on classifier maximum score: ', python_best_sel)
-
-
+print('Selected features based on classifier maximum score: ', python_best_sel)
+print('Model size on classifier maximum score: ', len(python_best_sel))
 
 best_model_pythonError = Ridge(alpha_v[alpha_score_index])
 best_model_pythonError.fit(X_train[:, python_best_sel], Y_train)
+Y_hat_training = best_model_pythonError.predict(X_train[:, python_best_sel])
 Y_hat_test = best_model_pythonError.predict(X_test[:, python_best_sel])
-print('Classifier maximum score alpha = ', alpha_v[alpha_score_index])
-Error = math.sqrt(sum((Y_hat_test-Y_test)**2))
-realError = Error*output_scaler_std
-print('RSE Error = ', realError)
-print('MAPE Error = ', calcMAPE(Y_hat_test, Y_test))
-print('..........................')
+
+Errortraining = math.sqrt(sum((Y_hat_training-Y_train)**2))
+realErrortraining = Errortraining*output_scaler_std
+
+Errortest = math.sqrt(sum((Y_hat_test-Y_test)**2))
+realErrortest = Errortest*output_scaler_std
+
+print('RSE Error (Training) = ', realErrortraining)
+print('RSE Error (Test) = ', realErrortest)
+
+print('MAPE Error (Training) = ', calcMAPE(Y_hat_training, Y_train))
+print('MAPE Error (Test) = ', calcMAPE(Y_hat_test, Y_test))
+print('.........................................................................................')
+
 
 # MAPE computations:
+print('Best alpha by selecting model having lowest average of MAPE error in grid search = ', alpha_v[MAPE_index])
 mape_best_alpha = 'alpha = '+str(alpha_v[MAPE_index])
 mape_best_sel = []
 for i in range (fold_num):
     fold_sel = cv_info[mape_best_alpha][str(i)]['Selected_features_idx']
     mape_best_sel = list(set.union(set(mape_best_sel), set(fold_sel)))
-print('Best sel based on minimum MAPE error: ', mape_best_sel)
+print('Selected features based on minimum MAPE error: ', mape_best_sel)
+print('Model size based on minimum MAPE error: ', len(mape_best_sel))
 
 
 best_model_MAPE = Ridge(alpha_v[MAPE_index])
 best_model_MAPE.fit(X_train[:, mape_best_sel], Y_train)
+Y_hat_training = best_model_MAPE.predict(X_train[:, mape_best_sel])
 Y_hat_test = best_model_MAPE.predict(X_test[:, mape_best_sel])
-print('MAPE best alpha = ', alpha_v[MAPE_index])
-Error = math.sqrt(sum((Y_hat_test-Y_test)**2))
-realError = Error*output_scaler_std
-print('RSE Error = ', realError)
-print('MAPE Error = ', calcMAPE(Y_hat_test, Y_test))
-print('..........................')
+Errortraining = math.sqrt(sum((Y_hat_training-Y_train)**2))
+realErrortraining = Errortraining*output_scaler_std
+Errortest = math.sqrt(sum((Y_hat_test-Y_test)**2))
+realErrortest = Errortest*output_scaler_std
+print('RSE Error (Training) = ', realErrortraining)
+print('RSE Error (Test) = ', realErrortest)
+print('MAPE Error (Training) = ', calcMAPE(Y_hat_training, Y_train))
+print('MAPE Error (Test) = ', calcMAPE(Y_hat_test, Y_test))
+print('.........................................................................................')
 
 
 # report the grid search information
