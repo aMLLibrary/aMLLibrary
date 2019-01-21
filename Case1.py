@@ -21,26 +21,26 @@ input_path = 'dumydata2.csv'
 
 
 # variables:
+# TR and TE variables based on which the samples should be splitted
 image_nums_train_data = [5]
 image_nums_test_data = [10,15]
 core_nums_train_data = [6,10,14,18,22,26,30,34,38,42,46]
 core_nums_test_data = [8,12,16,20,24,28,32,36,40,44,48]
 
-
+# Feature selection related variables
 select_features_vif = False
 select_features_sfs = True
 min_features = 1
 max_features = 10
 is_floating = False
 fold_num = 5
-FSfold_num = 2
-LOOCV = False
 regressor_name = "lr"
-degree = 2
 
+# Classifier related variables (Ridge)
 ridge_params = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 lasso = '[0.1,0.5]'
 
+# Classifier related variables (DT)
 max_features_dt = '[sqrt]'
 max_depth_dt = '[7]'
 min_samples_leaf_dt = '[4]'
@@ -62,9 +62,11 @@ n_neighbors = '[5,10]'
 
 test_without_apriori = False
 
+# preprocessing related variables (DT)
 inversing = True
 inverseColNameList = ['nContainers']
 extension = True
+degree = 2
 
 
 
@@ -86,6 +88,8 @@ def add_all_comb(inv_train_df, inversed_cols_tr, degree):
     df_dict = dict(inv_train_df)
     data_matrix = pd.DataFrame.as_matrix(inv_train_df)
     indices = list(range(data_matrix.shape[1]))
+
+    # compute all possible combinations with replacement
     for j in range(2, degree + 1):
         combs = list(itertools.combinations_with_replacement(indices, j))
         # removes the combinations containing features and inversed of them
@@ -94,6 +98,7 @@ def add_all_comb(inv_train_df, inversed_cols_tr, degree):
                 if len(list(set.intersection(set(ii), set(kk)))) >= 2:
                     combs.remove(ii)
 
+        # compute resulting column of the remaining combinations and add to the df
         for cc in combs:
             new_col = calculate_new_col(data_matrix, list(cc))
             new_feature_name = ''
@@ -133,9 +138,13 @@ def myNorm(df, col_name_list):
     df_dict = dict(df1)
     feature_name = col_name_list
     data_matrix = pd.DataFrame.as_matrix(df1)
+
+    # find the min and max of the whole matrix
     dfmin = data_matrix.min()
     dfmax = data_matrix.max()
     scale_factor = dfmax - dfmin
+
+    # scale all columns based on the obtained scale_factor
     for f in feature_name:
         df1[f] = np.array(df1[f]) - dfmin
         df1[f] = df1[f] / scale_factor
@@ -220,8 +229,13 @@ def scale_data(df):
     scaler = StandardScaler()
     scaled_array = scaler.fit_transform(df.values)
     scaled_df = pd.DataFrame(scaled_array, index = df.index, columns = df.columns)
+
+    # obtain the mean and std of the standard scaler using the formula z = (x-u)/s
+    # if u is the mean and s is the std, z is the scaled version of the x
     output_scaler_mean = scaler.mean_
     output_scaler_std = (df.values[0][0] - output_scaler_mean[0])/ scaled_array[0][0]
+
+    # return the mean and std for later use
     return scaled_df, scaler, output_scaler_mean[0], output_scaler_std
 
 
@@ -278,6 +292,7 @@ else:
     data_size_train_indices = range(0, df.shape[0])
     data_size_test_indices = range(0, df.shape[0])
 
+# save the info about training and test datasize in the data dictionary
 data_conf["image_nums_train_data"] = image_nums_train_data
 data_conf["image_nums_test_data"] = image_nums_test_data
 
@@ -299,6 +314,7 @@ core_num_test_indices = \
 core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
 core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
 
+# save the info about training and test core numbers in the data dictionary
 data_conf["core_nums_train_data"] = core_nums_train_data
 data_conf["core_nums_test_data"] = core_nums_test_data
 
@@ -315,6 +331,7 @@ scaled_df, scaler, output_scaler_mean, output_scaler_std = scale_data(df)
 """################################################ Splitting #################################################"""
 
 
+# splitting the data
 train_df = scaled_df.ix[train_indices]
 test_df = scaled_df.ix[test_indices]
 train_labels = train_df.iloc[:, 0]
