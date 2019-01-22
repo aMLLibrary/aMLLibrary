@@ -82,23 +82,29 @@ def calculate_new_col(X, indices):
     return new_col
 
 
-def add_all_comb(inv_train_df, inversed_cols_tr, degree):
+def add_all_comb(inv_df, inversed_cols_tr, output_column_idx, degree):
     """Given a dataframe, returns an extended df containing all combinations of columns except the ones that are
     inversed"""
 
-    features_names = inv_train_df.columns.values
-    df_dict = dict(inv_train_df)
-    data_matrix = pd.DataFrame.as_matrix(inv_train_df)
+    features_names = inv_df.columns.values
+    df_dict = dict(inv_df)
+    data_matrix = pd.DataFrame.as_matrix(inv_df)
     indices = list(range(data_matrix.shape[1]))
 
     # compute all possible combinations with replacement
     for j in range(2, degree + 1):
         combs = list(itertools.combinations_with_replacement(indices, j))
         # removes the combinations containing features and inversed of them
+        remove_list_idx = []
         for ii in combs:
             for kk in inversed_cols_tr:
                 if len(list(set.intersection(set(ii), set(kk)))) >= 2:
-                    combs.remove(ii)
+                    remove_list_idx.append(ii)
+            if output_column_idx in ii:
+                remove_list_idx.append(ii)
+        for r in range(0,len(remove_list_idx)):
+            combs.remove(remove_list_idx[r])
+
 
         # compute resulting column of the remaining combinations and add to the df
         for cc in combs:
@@ -257,8 +263,7 @@ df = df.drop(tempcols, axis=1)
 # compute the matrix and name of columns as features
 data_matrix = pd.DataFrame.as_matrix(df)
 
-# save the output
-output_df = df['applicationCompletionTime']
+
 
 
 # remove constant valued columns
@@ -341,28 +346,33 @@ if inversing == True:
     inv_df, inversed_cols_tr = add_inverse_features(scaled_df, inverseColNameList)
 
 
+
 # check the feature names after inversing
 inv_feature_names = inv_df.columns.values
 
 
+
+
 """################################################ Extension #################################################"""
+
+
+# save the output
+#output_df = inv_df['applicationCompletionTime']
+#inv_df = inv_df.drop(['applicationCompletionTime'], axis=1)
+
+
 
 # Extend the df by adding combinations of features as new features to the df
 if extension == True:
 
-    ext_train_features_df = add_all_comb(inv_train_df, inversed_cols_tr, degree)
-    ext_test_features_df = add_all_comb(inv_test_df, inversed_cols_te, degree)
+    ext_df = add_all_comb(inv_df, inversed_cols_tr, 0, degree)
+    ext_feature_names = ext_df.columns.values
+
 
 
 # check the feature names after extension
-ext_feature_names = ext_train_features_df.columns.values
 
 data_conf["ext_feature_names"] = ext_feature_names.tolist()
-
-
-
-
-
 
 
 
@@ -370,8 +380,8 @@ data_conf["ext_feature_names"] = ext_feature_names.tolist()
 
 
 # splitting the data
-train_df = scaled_df.ix[train_indices]
-test_df = scaled_df.ix[test_indices]
+train_df = ext_df.ix[train_indices]
+test_df = ext_df.ix[test_indices]
 train_labels = train_df.iloc[:, 0]
 train_features = train_df.iloc[:, 1:]
 test_labels = test_df.iloc[:, 0]
