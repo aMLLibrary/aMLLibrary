@@ -15,23 +15,25 @@ import json
 # different input options:
 
 #input_path = 'P8_kmeans.csv'
-input_path = 'dumydata2.csv'
+#input_path = 'dumydata2.csv'
 #input_path = 'yourfile.csv'
 #input_path = 'dumydata.csv'
+#input_path = "newdummy.csv"
+input_path = "newd.csv"
 
 
 # variables:
 # TR and TE variables based on which the samples should be splitted
 image_nums_train_data = [5]
-image_nums_test_data = [10,15]
+image_nums_test_data = [5]
 core_nums_train_data = [6,10,14,18,22,26,30,34,38,42,46]
 core_nums_test_data = [8,12,16,20,24,28,32,36,40,44,48]
 
 # Feature selection related variables
 select_features_vif = False
 select_features_sfs = True
-min_features = 1
-max_features = 10
+min_features = 2
+max_features = 2
 is_floating = False
 fold_num = 5
 regressor_name = "lr"
@@ -232,24 +234,28 @@ def scale_data(df):
 
     # obtain the mean and std of the standard scaler using the formula z = (x-u)/s
     # if u is the mean and s is the std, z is the scaled version of the x
+
+
     output_scaler_mean = scaler.mean_
     output_scaler_std = (df.values[0][0] - output_scaler_mean[0])/ scaled_array[0][0]
 
     # return the mean and std for later use
-    return scaled_df, scaler, output_scaler_mean[0], output_scaler_std
+    # return scaled_df, scaler, output_scaler_mean[0], output_scaler_std
+    return scaled_df, scaler, df.mean(), df.std()
+
 
 
 # read the data from .csv file:
 df = pd.read_csv(input_path)
 
 
+
 # drop run column
-tempcols = ["run"]
+tempcols = ["run","gg"]
 df = df.drop(tempcols, axis=1)
 
 # compute the matrix and name of columns as features
 data_matrix = pd.DataFrame.as_matrix(df)
-features_names = list(df.columns.values)
 
 # save the output
 output_df = df['applicationCompletionTime']
@@ -261,7 +267,7 @@ df = df.loc[:, (df != df.iloc[0]).any()]
 
 # randomize the samples
 seed = 1234
-df = shuffle(df, random_state = seed)
+#df = shuffle(df, random_state = seed)
 
 
 # Dictionary keeping the information about the input and training and test samples
@@ -325,32 +331,18 @@ test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
 
 """############################################## Normalization ###############################################"""
 ######## scale the data
-scaled_df, scaler, output_scaler_mean, output_scaler_std = scale_data(df)
-
-
-"""################################################ Splitting #################################################"""
-
-
-# splitting the data
-train_df = scaled_df.ix[train_indices]
-test_df = scaled_df.ix[test_indices]
-train_labels = train_df.iloc[:, 0]
-train_features = train_df.iloc[:, 1:]
-test_labels = test_df.iloc[:, 0]
-test_features = test_df.iloc[:, 1:]
-
+scaled_df, scaler, scaler_mean_df, scaler_std_df = scale_data(df)
 
 
 """################################################ Inversing #################################################"""
 
 # adding the inverse of nContainers columns to the data
 if inversing == True:
-    inv_train_df, inversed_cols_tr = add_inverse_features(train_features, inverseColNameList)
-    inv_test_df, inversed_cols_te = add_inverse_features(test_features, inverseColNameList)
+    inv_df, inversed_cols_tr = add_inverse_features(scaled_df, inverseColNameList)
 
 
 # check the feature names after inversing
-inv_feature_names = inv_train_df.columns.values
+inv_feature_names = inv_df.columns.values
 
 
 """################################################ Extension #################################################"""
@@ -366,6 +358,27 @@ if extension == True:
 ext_feature_names = ext_train_features_df.columns.values
 
 data_conf["ext_feature_names"] = ext_feature_names.tolist()
+
+
+
+
+
+
+
+
+"""################################################ Splitting #################################################"""
+
+
+# splitting the data
+train_df = scaled_df.ix[train_indices]
+test_df = scaled_df.ix[test_indices]
+train_labels = train_df.iloc[:, 0]
+train_features = train_df.iloc[:, 1:]
+test_labels = test_df.iloc[:, 0]
+test_features = test_df.iloc[:, 1:]
+
+
+
 
 
 
@@ -499,7 +512,7 @@ X_test = pd.DataFrame.as_matrix(ext_test_features_df)
 Y_test = pd.DataFrame.as_matrix(test_labels)
 
 
-print('.........................................................................................')
+print('......................................Results based on Ridge score index...............................')
 '''############################################ Ridge score index ####################################################'''
 
 # alpha score computations for the model consisting of the selected features:
@@ -541,7 +554,7 @@ data_conf['Ridge_Score']['MAPE_Error_Training'] = calcMAPE(Y_hat_training, Y_tra
 data_conf['Ridge_Score']['MAPE_Error_Test'] = calcMAPE(Y_hat_test, Y_test)
 
 
-print('.........................................................................................')
+print('.......................................Results based on SFS score index.................................')
 '''############################################ SFS score index ####################################################'''
 
 # alpha score computations for the model consisting of the selected features:
@@ -585,7 +598,7 @@ data_conf['SFS_Score']['MAPE_Error_Test'] = calcMAPE(Y_hat_test, Y_test)
 
 
 '''############################################ RSE ####################################################'''
-print('.........................................................................................')
+print('.......................................Results based on RSE.............................................')
 # RSE error computations for the model consisting of the selected features:
 print('Best alpha by selecting model having minimum RSE error in the grid search = ', alpha_v[RSE_index])
 print('Selected features based on minimum RSE error: ', sel_F[RSE_index])
@@ -626,11 +639,10 @@ data_conf['Min_RSE']['RSE_Error_TR'] = realErrortraining
 data_conf['Min_RSE']['RSE_Error_TE'] = realErrortest
 data_conf['Min_RSE']['MAPE_Error_Training'] = calcMAPE(Y_hat_training, Y_train)
 data_conf['Min_RSE']['MAPE_Error_Test'] = calcMAPE(Y_hat_test, Y_test)
-print('.........................................................................................')
 
 
 '''############################################ MAPE ####################################################'''
-print('.........................................................................................')
+print('....................................Results based on MAPE............................................')
 # RSE error computations for the model consisting of the selected features:
 print('Best alpha by selecting model having minimum MAPE error in the grid search = ', alpha_v[MAPE_index])
 print('Selected features based on minimum MAPE error: ', sel_F[MAPE_index])
