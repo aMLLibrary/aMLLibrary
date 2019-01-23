@@ -11,6 +11,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 import json
+import matplotlib as plt
 
 # different input options:
 
@@ -19,21 +20,21 @@ import json
 #input_path = 'yourfile.csv'
 #input_path = 'dumydata.csv'
 #input_path = "newdummy.csv"
-input_path = "newd.csv"
-
+#input_path = "newd.csv"
+input_path = "testcase1.csv"
 
 # variables:
 # TR and TE variables based on which the samples should be splitted
 image_nums_train_data = [5]
 image_nums_test_data = [5]
-core_nums_train_data = [6,10,14,18,22,26,30,34,38,42,46]
-core_nums_test_data = [8,12,16,20,24,28,32,36,40,44,48]
+core_nums_train_data = [6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46]
+core_nums_test_data = [8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]
 
 # Feature selection related variables
 select_features_vif = False
 select_features_sfs = True
-min_features = 2
-max_features = 2
+min_features = 1
+max_features = -1
 is_floating = False
 fold_num = 5
 regressor_name = "lr"
@@ -241,12 +242,13 @@ def scale_data(df):
     # obtain the mean and std of the standard scaler using the formula z = (x-u)/s
     # if u is the mean and s is the std, z is the scaled version of the x
 
-    output_scaler_mean = scaler.mean_
-    output_scaler_std = (df.values[0][0] - output_scaler_mean[0])/ scaled_array[0][0]
+    #output_scaler_mean = scaler.mean_
+    #output_scaler_std = (df.values[0][0] - output_scaler_mean[0])/ scaled_array[0][0]
 
     # return the mean and std for later use
     # return scaled_df, scaler, output_scaler_mean[0], output_scaler_std
-    return scaled_df, scaler, df.mean(), df.std()
+    # return scaled_df, scaler, df.mean(), df.std()
+    return scaled_df, scaler
 
 def denormalizeCol(test_labels, y_mean , y_std ):
     denorm_test_labels = (test_labels*y_std)+y_mean
@@ -259,6 +261,7 @@ def calcMSE(Y_hat, Y):
 
 # read the data from .csv file:
 df = pd.read_csv(input_path)
+sample_num = df.shape[0]
 
 
 
@@ -380,18 +383,17 @@ data_conf["ext_feature_names"] = ext_feature_names.tolist()
 
 
 
-"""############################################## Normalization ###############################################"""
-######## scale the data
-scaled_df, scaler, scaler_mean_df, scaler_std_df = scale_data(ext_df)
+"""################################################ Splitting  ##############################################"""
 
 
+# splitting the data (normalized data):
+# input_df_org = pd.DataFrame(ext_df.iloc[:, 1:])
+# output_df_org = pd.DataFrame(ext_df.iloc[:, 0])
 
-"""################################################ Splitting #################################################"""
 
+train_df = ext_df.ix[train_indices]
+test_df = ext_df.ix[test_indices]
 
-# splitting the data (normalized data)
-train_df = scaled_df.ix[train_indices]
-test_df = scaled_df.ix[test_indices]
 train_labels = train_df.iloc[:, 0]
 train_features = train_df.iloc[:, 1:]
 test_labels = test_df.iloc[:, 0]
@@ -399,13 +401,15 @@ test_features = test_df.iloc[:, 1:]
 
 
 
-# splitting the data (original data)
-train_df_denorm = ext_df.ix[train_indices]
-test_df_denorm = ext_df.ix[test_indices]
-train_labels_denorm = train_df_denorm.iloc[:, 0]
-train_features_denorm = train_df_denorm.iloc[:, 1:]
-test_labels_denorm = test_df_denorm.iloc[:, 0]
-test_features_denorm = test_df_denorm.iloc[:, 1:]
+
+"""############################################## Normalization ###############################################"""
+
+# scale the data
+scaled_train_labels, train_labels_scaler = scale_data(pd.DataFrame(train_labels))
+scaled_train_features, train_features_scaler = scale_data(train_features)
+scaled_test_labels, test_labels_scaler = scale_data(pd.DataFrame(test_labels))
+scaled_test_features, test_features_scaler = scale_data(test_features)
+
 
 
 
@@ -431,27 +435,21 @@ fold_num = fold_num
 
 # determining the size of data
 feature_num = train_features.shape[1]
-sample_num = train_features.shape[0]
 
 # vector of parameters to be search through
 alpha_v = ridge_params
 
 
 # input and output preparation to use in CV iterations
-X = pd.DataFrame.as_matrix(train_features)
-Y = pd.DataFrame.as_matrix(train_labels)
+X = pd.DataFrame.as_matrix(scaled_train_features)
+Y = pd.DataFrame.as_matrix(scaled_train_labels)
 
 
-# list of mean value obtained scores of the selected parameter (alpha) :
-param_overal_scores = []
 
 # list of MSE error for different alpha values:
 param_overal_MSE = []
 
-# list of mean value of obtained SFS scores of different alpha values:
-sfs_overal_scores = []
-
-# list of mean value of MAPE in different alpha values:
+# list of MAPE error for different alpha values:
 Mape_overal_error = []
 
 # Dictionary keeping information about all scores and values and selected features in all iterations for all params
@@ -482,7 +480,7 @@ for a in alpha_v:
               cv = fold_num,
               n_jobs = -1)
 
-    # fit the sfs on training part and evaluate the score on test part of this fold
+    # fit the sfs on training part (scaled) and evaluate the score on test part of this fold
     sfs = sfs.fit(X, Y)
     sel_F_idx = sfs.k_feature_idx_
     sel_F.append(sel_F_idx)
@@ -491,65 +489,47 @@ for a in alpha_v:
     sel_F_names.append(ext_feature_names[list(sel_F_idx)].tolist())
     cv_info[this_a]['Selected_Features_Names'] = ext_feature_names[list(sel_F_idx)].tolist()
 
-    # keep the sfs score for this alpha
-    sfs_overal_scores.append(sfs.k_score_)
-    cv_info[this_a]['sfs_score'] = sfs.k_score_
 
-    # fit the ridge model with the selected features and evaluate the ridge score
-    # This score is one the whole training data only
+    # fit the ridge model with the scaled version of the selected features
     ridge.fit(X[:, sfs.k_feature_idx_], Y)
-    ridge_score = ridge.score(X[:, sfs.k_feature_idx_], Y)
-    param_overal_scores.append(ridge_score)
-    cv_info[this_a]['ridge_score'] = ridge_score
 
-
-    # evaluate the MSE error on the whole training data only using the selected features
+    # evaluate the MSE error on the whole (scaled) training data only using the selected features
     Y_hat = ridge.predict(X[:, sfs.k_feature_idx_])
-    y_mean = scaler_mean_df[0]
-    y_std = scaler_std_df[0]
-    Y_hat_real = denormalizeCol(Y_hat, y_mean, y_std)
-    Y_real = denormalizeCol(Y, y_mean, y_std)
-    MSE = calcMSE(Y_hat_real, Y_real)
+    MSE = calcMSE(Y_hat, Y)
     param_overal_MSE.append(MSE)
     cv_info[this_a]['MSE_error'] = MSE
 
 
-
     # evaluate the MAPE error on the whole training data only using the selected features
-    Mape_error = calcMAPE(Y_hat_real, Y_real)
+    Mape_error = calcMAPE(Y_hat, Y)
     Mape_overal_error.append(Mape_error)
     cv_info[this_a]['MAPE_error'] = Mape_error
-    print('alpha = ', a, '    sfs_scores = ', sfs.k_score_, '    ridge_score = ', ridge_score, '    MSE Error= ', MSE,
-          '    MAPE Error = ', Mape_error)
+    print('alpha = ', a,    '      MSE Error= ', MSE,     '     MAPE Error = ', Mape_error, '      Ridge Coefs= ', ridge.coef_)
 
 
 """################################################## Results #####################################################"""
 
 # select the best alpha based on obtained values
-SFS_index = sfs_overal_scores.index(max(sfs_overal_scores))
-alpha_score_index = param_overal_scores.index(max(param_overal_scores))
 MSE_index = param_overal_MSE.index(min(param_overal_MSE))
 MAPE_index = Mape_overal_error.index(min(Mape_overal_error))
 
 
 # report the best alpha based on obtained values
-print('Best_sfs_score_index = ', SFS_index, ' => Best_sfs_score_alpha = ', alpha_v[SFS_index])
-print('Best_ridge_score_index = ', alpha_score_index, ' => Best_ridge_score_alpha = ', alpha_v[alpha_score_index])
 print('Least_MSE_Error_index = ', MSE_index, ' => Least_RSE_Error_alpha = ', alpha_v[MSE_index])
 print('Least_MAPE_Error_index = ', MAPE_index, ' => Least_MAPE_Error_alpha = ', alpha_v[MAPE_index])
 
 
-# prepare the data for final error on test dataset based on different
-X_train = pd.DataFrame.as_matrix(train_features)
-Y_train = pd.DataFrame.as_matrix(train_labels)
-X_test = pd.DataFrame.as_matrix(test_features)
-Y_test = pd.DataFrame.as_matrix(test_labels)
+# prepare the data for final error on test dataset based on different (scaled version)
+X_train = pd.DataFrame.as_matrix(scaled_train_features)
+Y_train = pd.DataFrame.as_matrix(scaled_train_labels)
+X_test = pd.DataFrame.as_matrix(scaled_test_features)
+Y_test = pd.DataFrame.as_matrix(scaled_test_labels)
 
 
 
 
 '''############################################ MSE ####################################################'''
-print('.......................................Results based on MSE.............................................')
+print('.................................... Results based on MSE ...........................................')
 # RSE error computations for the model consisting of the selected features:
 print('Best alpha by selecting model having minimum MSE error in the grid search = ', alpha_v[MSE_index])
 print('Selected features based on minimum MSE error: ', sel_F[MSE_index])
@@ -558,102 +538,50 @@ print('Model size based on minimum MSE error: ', len(sel_F[MSE_index]))
 
 
 # predict training and test data using the model suggested by least RSE error
-least_RSE_model = Ridge(alpha_v[MSE_index])
-least_RSE_model.fit(X_train[:, sel_F[MSE_index]], Y_train)
-
-Y_hat_training = least_RSE_model.predict(X_train[:, sel_F[MSE_index]])
-Y_hat_test = least_RSE_model.predict(X_test[:, sel_F[MSE_index]])
-
-Y_hat_training_real = denormalizeCol(Y_hat_training,y_mean,y_std)
-Y_training_real = denormalizeCol(Y_train,y_mean,y_std)
-Y_hat_test_real = denormalizeCol(Y_hat_test,y_mean,y_std)
-Y_test_real = denormalizeCol(Y_test,y_mean,y_std)
+least_MSE_model = Ridge(alpha_v[MSE_index])
+least_MSE_model.fit(X_train[:, sel_F[MSE_index]], Y_train)
 
 
-
+Y_hat_training_scaled = least_MSE_model.predict(X_train[:, sel_F[MSE_index]])
+Y_hat_training_real = train_labels_scaler.inverse_transform(Y_hat_training_scaled)
+Y_training_real = train_labels_scaler.inverse_transform(scaled_train_labels)
 MSE_training_real = calcMSE(Y_hat_training_real, Y_training_real)
-MSE_test_real = calcMSE(Y_hat_test_real, Y_test_real)
-
-
 MAPE_training_real = calcMAPE(Y_hat_training_real, Y_training_real)
-MAPE_test_real = calcMAPE(Y_hat_test_real, Y_test_real)
-
-
-
-
-# report the MSE and MAPE error
 print('MSE Error (Training)= ', MSE_training_real)
-print('MSE Error (Test) = ', MSE_test_real)
 print('MAPE Error (Training) = ', MAPE_training_real)
+
+
+
+Y_hat_test_scaled = least_MSE_model.predict(X_test[:, sel_F[MSE_index]])
+Y_hat_test_real = test_labels_scaler.inverse_transform(Y_hat_test_scaled)
+Y_test_real = test_labels_scaler.inverse_transform(scaled_test_labels)
+MSE_test_real = calcMSE(Y_hat_test_real, Y_test_real)
+MAPE_test_real = calcMAPE(Y_hat_test_real, Y_test_real)
+print('MSE Error (Test) = ', MSE_test_real)
 print('MAPE Error (Test) = ', MAPE_test_real)
 
 
 # save info about model in the data variable
-data_conf['Min_MSE'] = {}
-data_conf['Min_MSE']['alpha'] = alpha_v[MSE_index]
-data_conf['Min_MSE']['Sel_features'] = list(sel_F[MSE_index])
-data_conf['Min_MSE']['Sel_features_name'] = sel_F_names[MSE_index]
-data_conf['Min_MSE']['Model_size'] = len(sel_F[MSE_index])
-data_conf['Min_MSE']['MSE_Error_TR'] = MSE_training_real
-data_conf['Min_MSE']['MSE_Error_TE'] = MSE_test_real
-data_conf['Min_MSE']['MAPE_Error_Training'] =  MAPE_training_real
-data_conf['Min_MSE']['MAPE_Error_Test'] = MAPE_test_real
+
+data_conf['Results'] = {}
+data_conf['Results']['alpha'] = alpha_v[MSE_index]
+data_conf['Results']['Sel_features'] = list(sel_F[MSE_index])
+data_conf['Results']['Sel_features_name'] = sel_F_names[MSE_index]
+data_conf['Results']['Model_size'] = len(sel_F[MSE_index])
+data_conf['Results']['MSE_Error_TR'] = MSE_training_real
+data_conf['Results']['MSE_Error_TE'] = MSE_test_real
+data_conf['Results']['MAPE_Error_Training'] =  MAPE_training_real
+data_conf['Results']['MAPE_Error_Test'] = MAPE_test_real
 
 
-'''############################################ MAPE ####################################################'''
-print('....................................Results based on MAPE............................................')
-# RSE error computations for the model consisting of the selected features:
-print('Best alpha by selecting model having minimum MAPE error in the grid search = ', alpha_v[MAPE_index])
-print('Selected features based on minimum MAPE error: ', sel_F[MAPE_index])
-print('Selected features names based on minimum MAPE error: ', sel_F_names[MAPE_index])
-print('Model size based on minimum MAPE error: ', len(sel_F[MAPE_index]))
-
-
-# predict training and test data using the model suggested by least MAPE error
-least_MAPE_model = Ridge(alpha_v[MAPE_index])
-least_MAPE_model.fit(X_train[:, sel_F[MAPE_index]], Y_train)
-
-Y_hat_training = least_MAPE_model.predict(X_train[:, sel_F[MAPE_index]])
-Y_hat_test = least_MAPE_model.predict(X_test[:, sel_F[MAPE_index]])
-
-# compute the MSE error
-Y_hat_training_real = denormalizeCol(Y_hat_training,y_mean,y_std)
-Y_training_real = denormalizeCol(Y_train,y_mean,y_std)
-Y_hat_test_real = denormalizeCol(Y_hat_test,y_mean,y_std)
-Y_test_real = denormalizeCol(Y_test,y_mean,y_std)
-
-
-
-MSE_training_real = calcMSE(Y_hat_training_real, Y_training_real)
-MSE_test_real = calcMSE(Y_hat_test_real, Y_test_real)
-
-
-MAPE_training_real = calcMAPE(Y_hat_training_real, Y_training_real)
-MAPE_test_real = calcMAPE(Y_hat_test_real, Y_test_real)
-
-
-
-
-# report the RSE and MAPE error
-print('MSE Error (Training)= ', MSE_training_real)
-print('MSE Error (Test) = ', MSE_test_real)
-print('MAPE Error (Training) = ', MAPE_training_real)
-print('MAPE Error (Test) = ', MAPE_test_real)
-
-
-# save info about model in the data variable
-data_conf['Min_MAPE'] = {}
-data_conf['Min_MAPE']['alpha'] = alpha_v[MAPE_index]
-data_conf['Min_MAPE']['Sel_features'] = list(sel_F[MAPE_index])
-data_conf['Min_MAPE']['Sel_features_name'] = sel_F_names[MAPE_index]
-data_conf['Min_MAPE']['Model_size'] = len(sel_F[MAPE_index])
-data_conf['Min_MAPE']['MSE_Error_TR'] = MSE_training_real
-data_conf['Min_MAPE']['MSE_Error_TE'] = MSE_test_real
-data_conf['Min_MAPE']['MAPE_Error_Training'] = MAPE_training_real
-data_conf['Min_MAPE']['MAPE_Error_Test'] = MAPE_test_real
-print('.........................................................................................')
 
 
 # save the data in a file
 with open('results.json', 'w') as fp:
     json.dump(data_conf, fp)
+
+
+
+
+
+
