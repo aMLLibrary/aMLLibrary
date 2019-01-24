@@ -1,6 +1,6 @@
 import sys
 sys.modules[__name__].__dict__.clear()
-
+import os
 import pandas as pd
 import numpy as np
 import math
@@ -8,10 +8,12 @@ import itertools
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, RidgeCV
 from sklearn.utils import shuffle
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import KFold
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 import json
-import matplotlib as plt
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import matplotlib.cm as cm
 
 # different input options:
 
@@ -22,6 +24,9 @@ import matplotlib as plt
 #input_path = "newdummy.csv"
 #input_path = "newd.csv"
 input_path = "testcase1.csv"
+run_num = 10
+
+result_path = "./results/"
 
 # variables:
 # TR and TE variables based on which the samples should be splitted
@@ -259,6 +264,134 @@ def calcMSE(Y_hat, Y):
     return MSE
 
 
+
+def plot_histogram(results, result_path):
+
+    plot_path = os.path.join(result_path, "Features_Ferquency_Histogram_plot")
+
+    """Plot the histogram of features selection frequency"""
+    names_list = results[0]['ext_feature_names']
+    name_count = []
+    for i in range(len(names_list)):
+        name_count.append(0)
+    iternum = len(results)
+
+    for i in range(iternum):
+        for j in results[i]['Results']['Sel_features']:
+            name_count[j] += 1
+
+
+    plt.bar(range(len(names_list)), name_count)
+    plt.xticks(range(len(names_list)), names_list)
+    plt.xticks(rotation = 90)
+    plt.title(results[0]['case']+' - Histogram of features selection frequency')
+    plt.show()
+    plt.tight_layout()
+    plt.savefig(plot_path + ".pdf")
+
+
+def plot_MSE_Errors(results, result_path):
+
+    plot_path = os.path.join(result_path, "MSE_Error_plot")
+    MSE_list_TR = []
+    MSE_list_TE = []
+    for i in range(len(results)):
+        MSE_list_TR.append(results[i]['Results']['MSE_Error_TR'])
+        MSE_list_TE.append(results[i]['Results']['MSE_Error_TE'])
+
+
+    plt.plot(range(1, len(results)+1), MSE_list_TR, 'bs', range(1, len(results)+1), MSE_list_TE, 'r^')
+    plt.xlabel('runs')
+    plt.ylabel('MSE Error')
+    plt.title('MSE Error in Training and Test Sets')
+    plt.xlim(1, len(MSE_list_TE))
+    plt.show()
+    plt.savefig(plot_path + ".pdf")
+
+
+def plot_MAPE_Errors(results, result_path):
+
+    plot_path = os.path.join(result_path, "MAPE_Error_plot")
+    MAPE_list_TR = []
+    MAPE_list_TE = []
+    for i in range(len(results)):
+        MAPE_list_TR.append(results[i]['Results']['MAPE_Error_Training'])
+        MAPE_list_TE.append(results[i]['Results']['MAPE_Error_Test'])
+
+    plt.plot(range(1, len(results) + 1), MAPE_list_TR, 'bs', range(1, len(results) + 1), MAPE_list_TE, 'r^')
+    plt.xlabel('runs')
+    plt.ylabel('MAPE Error')
+    plt.title('MAPE Error in Training and Test Sets')
+    plt.xlim(1, len(MAPE_list_TE))
+    plt.show()
+    plt.savefig(plot_path + ".pdf")
+
+
+def plot_Model_Size(results, result_path):
+
+    plot_path = os.path.join(result_path, "Model_Size_Plot")
+    model_size_list = []
+    for i in range(len(results)):
+        model_size_list.append(results[i]['Results']['Model_size'])
+
+    plt.bar(range(1, len(results) + 1), model_size_list)
+    plt.xlabel('runs')
+    plt.ylabel('Model Size')
+    plt.title('Number of Selected Features in Runs')
+    plt.xlim(1, len(model_size_list))
+    plt.ylim(1, len(results[0]['ext_feature_names']))
+    plt.show()
+    plt.savefig(plot_path + ".pdf")
+
+
+
+
+def plot_predicted_true(results, result_path):
+
+    plot_path = os.path.join(result_path,"true_pred_plot")
+
+    # find the best run
+    MSE_list_TE = []
+    for i in range(len(results)):
+        MSE_list_TE.append(results[i]['Results']['MSE_Error_TE'])
+    best_run = MSE_list_TE.index(min(MSE_list_TE))
+
+    data_conf = results[best_run]
+    y_true_train = results[best_run]['Results']['Y_training_real']
+    y_pred_train = results[best_run]['Results']['Y_hat_training_real']
+    y_true_test = results[best_run]['Results']['Y_test_real']
+    y_pred_test = results[best_run]['Results']['Y_hat_test_real']
+
+    font = {'family':'normal','size': 15}
+    matplotlib.rc('font', **font)
+    colors = cm.rainbow(np.linspace(0, 0.5, 3))
+    fig = plt.figure(figsize=(9,6))
+    plt.scatter(y_pred_train, y_true_train, marker='o',s=300,facecolors='none',label="Train Set",color=colors[0])
+    plt.scatter(y_pred_test, y_true_test, marker='^',s=300,facecolors='none',label="Test Set",color=colors[1])
+    #if y_pred_test.values != []:
+    min_val = min(min(y_pred_train),min(y_true_train),min(y_pred_test),min(y_true_test))
+    max_val = max(max(y_pred_train),max(y_true_train),max(y_pred_test),max(y_true_test))
+    #if y_pred_test.values == []:
+    min_val = min(min(y_pred_train),min(y_true_train))
+    max_val = max(max(y_pred_train),max(y_true_train))
+    lines = plt.plot([min_val, max_val], [min_val, max_val], '-')
+    plt.setp(lines, linewidth=0.9, color=colors[2])
+    plt.title("Predicted vs True Values for " +  regressor_name +"\n" + \
+                data_conf["input_name"]  + " " + str(data_conf["case"])  + " " + \
+                str(data_conf["image_nums_train_data"]) + \
+                str(data_conf["image_nums_test_data"]) )
+    plt.xlabel("Predicted values of applicationCompletionTime (ms)")
+    plt.ylabel("True values of " + "\n" + "applicationCompletionTime (ms)")
+    fig.text(.5, .01, 'alpha = '+ str(results[best_run]['Results']['alpha']), ha='center')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.legend(prop={'size': 20})
+    plt.show()
+    plt.savefig(plot_path + ".pdf")
+
+
+
+
 # read the data from .csv file:
 df = pd.read_csv(input_path)
 sample_num = df.shape[0]
@@ -278,310 +411,320 @@ data_matrix = pd.DataFrame.as_matrix(df)
 # remove constant valued columns
 df = df.loc[:, (df != df.iloc[0]).any()]
 
+results = []
+for iter in range(run_num):
 
-# randomize the samples
-seed = 1234
-df = shuffle(df, random_state = seed)
+    # randomize the samples
+    seed = 1234
+    df = shuffle(df, random_state = seed)
 
 
-# Dictionary keeping the information about the input and training and test samples
-data_conf = {}
-data_conf["case"] = "same datasize in TR and TE_even cores in TR, odds in TE"
-data_conf["input_name"] = "K_means"
+    # Dictionary keeping the information about the input and training and test samples
+    data_conf = {}
+    data_conf["case"] = "same datasize in TR and TE_even cores in TR, odds in TE"
+    data_conf["input_name"] = "K_means"
 
-# Separate the training and test sets based on the datasize
-# case1:
-# Training and test samples have the same datasizes:
+    # Separate the training and test sets based on the datasize
+    # case1:
+    # Training and test samples have the same datasizes:
 
-# locating the indices of traing and test samples based on datasize and core numbers:
-"""################################################ Datasize indices #######################################"""
-if "dataSize" in df.columns:
-    data_size_indices = pd.DataFrame([[k, v.values] for k, v in df.groupby('dataSize').groups.items()],
-                                          columns=['col', 'indices'])
+    # locating the indices of traing and test samples based on datasize and core numbers:
+    """################################################ Datasize indices #######################################"""
+    if "dataSize" in df.columns:
+        data_size_indices = pd.DataFrame([[k, v.values] for k, v in df.groupby('dataSize').groups.items()],
+                                              columns=['col', 'indices'])
 
-    data_size_train_indices = \
-    data_size_indices.loc[(data_size_indices['col'].isin(image_nums_train_data))]['indices']
-    data_size_test_indices = \
-    data_size_indices.loc[(data_size_indices['col'].isin(image_nums_test_data))]['indices']
+        data_size_train_indices = \
+        data_size_indices.loc[(data_size_indices['col'].isin(image_nums_train_data))]['indices']
+        data_size_test_indices = \
+        data_size_indices.loc[(data_size_indices['col'].isin(image_nums_test_data))]['indices']
 
-    data_size_train_indices = np.concatenate(list(data_size_train_indices), axis=0)
-    data_size_test_indices = np.concatenate(list(data_size_test_indices), axis=0)
+        data_size_train_indices = np.concatenate(list(data_size_train_indices), axis=0)
+        data_size_test_indices = np.concatenate(list(data_size_test_indices), axis=0)
 
-else:
+    else:
 
-    data_size_train_indices = range(0, df.shape[0])
-    data_size_test_indices = range(0, df.shape[0])
+        data_size_train_indices = range(0, df.shape[0])
+        data_size_test_indices = range(0, df.shape[0])
 
-# save the info about training and test datasize in the data dictionary
-data_conf["image_nums_train_data"] = image_nums_train_data
-data_conf["image_nums_test_data"] = image_nums_test_data
+    # save the info about training and test datasize in the data dictionary
+    data_conf["image_nums_train_data"] = image_nums_train_data
+    data_conf["image_nums_test_data"] = image_nums_test_data
 
-"""################################################ Core number indices #######################################"""
+    """################################################ Core number indices #######################################"""
 
-core_num_indices = pd.DataFrame([[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
-                                     columns=['col', 'indices'])
+    core_num_indices = pd.DataFrame([[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
+                                         columns=['col', 'indices'])
 
 
-# For interpolation and extrapolation, put all the cores to the test set.
-if set(image_nums_train_data) != set(image_nums_test_data):
-    core_nums_test_data = core_nums_test_data + core_nums_train_data
+    # For interpolation and extrapolation, put all the cores to the test set.
+    if set(image_nums_train_data) != set(image_nums_test_data):
+        core_nums_test_data = core_nums_test_data + core_nums_train_data
 
-core_num_train_indices = \
-    core_num_indices.loc[(core_num_indices['col'].isin(core_nums_train_data))]['indices']
-core_num_test_indices = \
-    core_num_indices.loc[(core_num_indices['col'].isin(core_nums_test_data))]['indices']
+    core_num_train_indices = \
+        core_num_indices.loc[(core_num_indices['col'].isin(core_nums_train_data))]['indices']
+    core_num_test_indices = \
+        core_num_indices.loc[(core_num_indices['col'].isin(core_nums_test_data))]['indices']
 
-core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
-core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
+    core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
+    core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
 
-# save the info about training and test core numbers in the data dictionary
-data_conf["core_nums_train_data"] = core_nums_train_data
-data_conf["core_nums_test_data"] = core_nums_test_data
+    # save the info about training and test core numbers in the data dictionary
+    data_conf["core_nums_train_data"] = core_nums_train_data
+    data_conf["core_nums_test_data"] = core_nums_test_data
 
-################## get together all the TR and TE indices:
-train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
-test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
+    ################## get together all the TR and TE indices:
+    train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
+    test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
 
 
 
 
 
-"""################################################ Inversing #################################################"""
+    """################################################ Inversing #################################################"""
 
-# adding the inverse of nContainers columns to the data
-if inversing == True:
-    inv_df, inversed_cols_tr = add_inverse_features(df, inverseColNameList)
+    # adding the inverse of nContainers columns to the data
+    if inversing == True:
+        inv_df, inversed_cols_tr = add_inverse_features(df, inverseColNameList)
 
 
 
-# check the feature names after inversing
-inv_feature_names = inv_df.columns.values
+    # check the feature names after inversing
+    inv_feature_names = inv_df.columns.values
 
 
 
 
-"""################################################ Extension #################################################"""
+    """################################################ Extension #################################################"""
 
 
-# save the output
-#output_df = inv_df['applicationCompletionTime']
-#inv_df = inv_df.drop(['applicationCompletionTime'], axis=1)
+    # save the output
+    #output_df = inv_df['applicationCompletionTime']
+    #inv_df = inv_df.drop(['applicationCompletionTime'], axis=1)
 
 
 
-# Extend the df by adding combinations of features as new features to the df
-if extension == True:
+    # Extend the df by adding combinations of features as new features to the df
+    if extension == True:
 
-    ext_df = add_all_comb(inv_df, inversed_cols_tr, 0, degree)
+        ext_df = add_all_comb(inv_df, inversed_cols_tr, 0, degree)
 
-ext_feature_names = ext_df.columns.values[1:]
+    ext_feature_names = ext_df.columns.values[1:]
 
 
-# check the feature names after extension
+    # check the feature names after extension
 
-data_conf["ext_feature_names"] = ext_feature_names.tolist()
+    data_conf["ext_feature_names"] = ext_feature_names.tolist()
 
 
 
-"""################################################ Splitting  ##############################################"""
+    """################################################ Splitting  ##############################################"""
 
 
-# splitting the data (normalized data):
-# input_df_org = pd.DataFrame(ext_df.iloc[:, 1:])
-# output_df_org = pd.DataFrame(ext_df.iloc[:, 0])
+    # splitting the data (normalized data):
+    # input_df_org = pd.DataFrame(ext_df.iloc[:, 1:])
+    # output_df_org = pd.DataFrame(ext_df.iloc[:, 0])
 
 
-train_df = ext_df.ix[train_indices]
-test_df = ext_df.ix[test_indices]
+    train_df = ext_df.ix[train_indices]
+    test_df = ext_df.ix[test_indices]
 
-train_labels = train_df.iloc[:, 0]
-train_features = train_df.iloc[:, 1:]
-test_labels = test_df.iloc[:, 0]
-test_features = test_df.iloc[:, 1:]
+    train_labels = train_df.iloc[:, 0]
+    train_features = train_df.iloc[:, 1:]
+    test_labels = test_df.iloc[:, 0]
+    test_features = test_df.iloc[:, 1:]
 
 
 
 
-"""############################################## Normalization ###############################################"""
+    """############################################## Normalization ###############################################"""
 
-# scale the data
-scaled_train_labels, train_labels_scaler = scale_data(pd.DataFrame(train_labels))
-scaled_train_features, train_features_scaler = scale_data(train_features)
-scaled_test_labels, test_labels_scaler = scale_data(pd.DataFrame(test_labels))
-scaled_test_features, test_features_scaler = scale_data(test_features)
+    # scale the data
+    scaled_train_labels, train_labels_scaler = scale_data(pd.DataFrame(train_labels))
+    scaled_train_features, train_features_scaler = scale_data(train_features)
+    scaled_test_labels, test_labels_scaler = scale_data(pd.DataFrame(test_labels))
+    scaled_test_features, test_features_scaler = scale_data(test_features)
 
 
 
 
-"""##########################  SFS and Hyper Params tunning using grid search and CV ##########################"""
+    """##########################  SFS and Hyper Params tunning using grid search and CV ##########################"""
 
-# computing the range of accepted number of features: (k_features)
-if select_features_sfs == True:
+    # computing the range of accepted number of features: (k_features)
+    if select_features_sfs == True:
 
-    min_k_features = int(min_features)
-    max_k_features = int(max_features)
-    # Selecting from all features
-    if max_k_features == -1:
-        k_features = (min_k_features, train_features.shape[1])
-        # Selecting from the given range
-    if max_k_features != -1:
-        k_features = (min_k_features, max_k_features)
+        min_k_features = int(min_features)
+        max_k_features = int(max_features)
+        # Selecting from all features
+        if max_k_features == -1:
+            k_features = (min_k_features, train_features.shape[1])
+            # Selecting from the given range
+        if max_k_features != -1:
+            k_features = (min_k_features, max_k_features)
 
 
 
-# finding the best model using Kfold-CV and just the traing set
+    # finding the best model using Kfold-CV and just the traing set
 
-fold_num = fold_num
+    fold_num = fold_num
 
-# determining the size of data
-feature_num = train_features.shape[1]
+    # determining the size of data
+    feature_num = train_features.shape[1]
 
-# vector of parameters to be search through
-alpha_v = ridge_params
+    # vector of parameters to be search through
+    alpha_v = ridge_params
 
 
-# input and output preparation to use in CV iterations
-X = pd.DataFrame.as_matrix(scaled_train_features)
-Y = pd.DataFrame.as_matrix(scaled_train_labels)
+    # input and output preparation to use in CV iterations
+    X = pd.DataFrame.as_matrix(scaled_train_features)
+    Y = pd.DataFrame.as_matrix(scaled_train_labels)
 
 
 
-# list of MSE error for different alpha values:
-param_overal_MSE = []
+    # list of MSE error for different alpha values:
+    param_overal_MSE = []
 
-# list of MAPE error for different alpha values:
-Mape_overal_error = []
+    # list of MAPE error for different alpha values:
+    Mape_overal_error = []
 
-# Dictionary keeping information about all scores and values and selected features in all iterations for all params
-cv_info = {}
+    # Dictionary keeping information about all scores and values and selected features in all iterations for all params
+    cv_info = {}
 
-# Selected features for each alpha
-sel_F = []
+    # Selected features for each alpha
+    sel_F = []
 
-# Selected features names for each alpha
-sel_F_names = []
+    # Selected features names for each alpha
+    sel_F_names = []
 
 
-for a in alpha_v:
+    for a in alpha_v:
 
-    # building the models
-    ridge = Ridge(a)
-    model = Ridge(a)
-    this_a = 'alpha = '+str(a)
-    cv_info[this_a] = {}
+        # building the models
+        ridge = Ridge(a)
+        model = Ridge(a)
+        this_a = 'alpha = '+str(a)
+        cv_info[this_a] = {}
 
-    # building the sfs
-    sfs = SFS(clone_estimator=True,
-              estimator = model,
-              k_features = k_features,
-              forward=True,
-              floating=False,
-              scoring='neg_mean_squared_error',
-              cv = fold_num,
-              n_jobs = -1)
+        # building the sfs
+        sfs = SFS(clone_estimator=True,
+                  estimator = model,
+                  k_features = k_features,
+                  forward=True,
+                  floating=False,
+                  scoring='neg_mean_squared_error',
+                  cv = fold_num,
+                  n_jobs = -1)
 
-    # fit the sfs on training part (scaled) and evaluate the score on test part of this fold
-    sfs = sfs.fit(X, Y)
-    sel_F_idx = sfs.k_feature_idx_
-    sel_F.append(sel_F_idx)
-    cv_info[this_a]['Selected_Features'] = list(sel_F_idx)
+        # fit the sfs on training part (scaled) and evaluate the score on test part of this fold
+        sfs = sfs.fit(X, Y)
+        sel_F_idx = sfs.k_feature_idx_
+        sel_F.append(sel_F_idx)
+        cv_info[this_a]['Selected_Features'] = list(sel_F_idx)
 
-    sel_F_names.append(ext_feature_names[list(sel_F_idx)].tolist())
-    cv_info[this_a]['Selected_Features_Names'] = ext_feature_names[list(sel_F_idx)].tolist()
+        sel_F_names.append(ext_feature_names[list(sel_F_idx)].tolist())
+        cv_info[this_a]['Selected_Features_Names'] = ext_feature_names[list(sel_F_idx)].tolist()
 
 
-    # fit the ridge model with the scaled version of the selected features
-    ridge.fit(X[:, sfs.k_feature_idx_], Y)
+        # fit the ridge model with the scaled version of the selected features
+        ridge.fit(X[:, sfs.k_feature_idx_], Y)
 
-    # evaluate the MSE error on the whole (scaled) training data only using the selected features
-    Y_hat = ridge.predict(X[:, sfs.k_feature_idx_])
-    MSE = calcMSE(Y_hat, Y)
-    param_overal_MSE.append(MSE)
-    cv_info[this_a]['MSE_error'] = MSE
+        # evaluate the MSE error on the whole (scaled) training data only using the selected features
+        Y_hat = ridge.predict(X[:, sfs.k_feature_idx_])
+        MSE = calcMSE(Y_hat, Y)
+        param_overal_MSE.append(MSE)
+        cv_info[this_a]['MSE_error'] = MSE
 
 
-    # evaluate the MAPE error on the whole training data only using the selected features
-    Mape_error = calcMAPE(Y_hat, Y)
-    Mape_overal_error.append(Mape_error)
-    cv_info[this_a]['MAPE_error'] = Mape_error
-    print('alpha = ', a,    '      MSE Error= ', MSE,     '     MAPE Error = ', Mape_error, '      Ridge Coefs= ', ridge.coef_)
+        # evaluate the MAPE error on the whole training data only using the selected features
+        Mape_error = calcMAPE(Y_hat, Y)
+        Mape_overal_error.append(Mape_error)
+        cv_info[this_a]['MAPE_error'] = Mape_error
+        print('alpha = ', a,    '      MSE Error= ', MSE,     '     MAPE Error = ', Mape_error, '      Ridge Coefs= ', ridge.coef_ ,'     SEl = ', ext_feature_names[list(sel_F_idx)])
 
 
-"""################################################## Results #####################################################"""
+    """################################################## Results #####################################################"""
 
-# select the best alpha based on obtained values
-MSE_index = param_overal_MSE.index(min(param_overal_MSE))
-MAPE_index = Mape_overal_error.index(min(Mape_overal_error))
+    # select the best alpha based on obtained values
+    MSE_index = param_overal_MSE.index(min(param_overal_MSE))
+    MAPE_index = Mape_overal_error.index(min(Mape_overal_error))
 
 
-# report the best alpha based on obtained values
-print('Least_MSE_Error_index = ', MSE_index, ' => Least_RSE_Error_alpha = ', alpha_v[MSE_index])
-print('Least_MAPE_Error_index = ', MAPE_index, ' => Least_MAPE_Error_alpha = ', alpha_v[MAPE_index])
+    # report the best alpha based on obtained values
+    print('Least_MSE_Error_index = ', MSE_index, ' => Least_RSE_Error_alpha = ', alpha_v[MSE_index])
+    print('Least_MAPE_Error_index = ', MAPE_index, ' => Least_MAPE_Error_alpha = ', alpha_v[MAPE_index])
 
 
-# prepare the data for final error on test dataset based on different (scaled version)
-X_train = pd.DataFrame.as_matrix(scaled_train_features)
-Y_train = pd.DataFrame.as_matrix(scaled_train_labels)
-X_test = pd.DataFrame.as_matrix(scaled_test_features)
-Y_test = pd.DataFrame.as_matrix(scaled_test_labels)
+    # prepare the data for final error on test dataset based on different (scaled version)
+    X_train = pd.DataFrame.as_matrix(scaled_train_features)
+    Y_train = pd.DataFrame.as_matrix(scaled_train_labels)
+    X_test = pd.DataFrame.as_matrix(scaled_test_features)
+    Y_test = pd.DataFrame.as_matrix(scaled_test_labels)
 
 
 
+    '''############################################ MSE ####################################################'''
+    print('.................................... Results based on MSE ...........................................')
+    # RSE error computations for the model consisting of the selected features:
+    print('Best alpha by selecting model having minimum MSE error in the grid search = ', alpha_v[MSE_index])
+    print('Selected features based on minimum MSE error: ', sel_F[MSE_index])
+    print('Selected features names based on minimum MSE error: ', sel_F_names[MSE_index])
+    print('Model size based on minimum MSE error: ', len(sel_F[MSE_index]))
 
-'''############################################ MSE ####################################################'''
-print('.................................... Results based on MSE ...........................................')
-# RSE error computations for the model consisting of the selected features:
-print('Best alpha by selecting model having minimum MSE error in the grid search = ', alpha_v[MSE_index])
-print('Selected features based on minimum MSE error: ', sel_F[MSE_index])
-print('Selected features names based on minimum MSE error: ', sel_F_names[MSE_index])
-print('Model size based on minimum MSE error: ', len(sel_F[MSE_index]))
 
+    # predict training and test data using the model suggested by least RSE error
+    least_MSE_model = Ridge(alpha_v[MSE_index])
+    least_MSE_model.fit(X_train[:, sel_F[MSE_index]], Y_train)
 
-# predict training and test data using the model suggested by least RSE error
-least_MSE_model = Ridge(alpha_v[MSE_index])
-least_MSE_model.fit(X_train[:, sel_F[MSE_index]], Y_train)
 
+    Y_hat_training_scaled = least_MSE_model.predict(X_train[:, sel_F[MSE_index]])
+    Y_hat_training_real = train_labels_scaler.inverse_transform(Y_hat_training_scaled)
+    Y_training_real = train_labels_scaler.inverse_transform(scaled_train_labels)
+    MSE_training_real = calcMSE(Y_hat_training_real, Y_training_real)
+    MAPE_training_real = calcMAPE(Y_hat_training_real, Y_training_real)
+    print('MSE Error (Training)= ', MSE_training_real)
+    print('MAPE Error (Training) = ', MAPE_training_real)
 
-Y_hat_training_scaled = least_MSE_model.predict(X_train[:, sel_F[MSE_index]])
-Y_hat_training_real = train_labels_scaler.inverse_transform(Y_hat_training_scaled)
-Y_training_real = train_labels_scaler.inverse_transform(scaled_train_labels)
-MSE_training_real = calcMSE(Y_hat_training_real, Y_training_real)
-MAPE_training_real = calcMAPE(Y_hat_training_real, Y_training_real)
-print('MSE Error (Training)= ', MSE_training_real)
-print('MAPE Error (Training) = ', MAPE_training_real)
 
 
+    Y_hat_test_scaled = least_MSE_model.predict(X_test[:, sel_F[MSE_index]])
+    Y_hat_test_real = test_labels_scaler.inverse_transform(Y_hat_test_scaled)
+    Y_test_real = test_labels_scaler.inverse_transform(scaled_test_labels)
+    MSE_test_real = calcMSE(Y_hat_test_real, Y_test_real)
+    MAPE_test_real = calcMAPE(Y_hat_test_real, Y_test_real)
+    print('MSE Error (Test) = ', MSE_test_real)
+    print('MAPE Error (Test) = ', MAPE_test_real)
 
-Y_hat_test_scaled = least_MSE_model.predict(X_test[:, sel_F[MSE_index]])
-Y_hat_test_real = test_labels_scaler.inverse_transform(Y_hat_test_scaled)
-Y_test_real = test_labels_scaler.inverse_transform(scaled_test_labels)
-MSE_test_real = calcMSE(Y_hat_test_real, Y_test_real)
-MAPE_test_real = calcMAPE(Y_hat_test_real, Y_test_real)
-print('MSE Error (Test) = ', MSE_test_real)
-print('MAPE Error (Test) = ', MAPE_test_real)
 
+    # save info about model in the data variable
 
-# save info about model in the data variable
+    data_conf['Results'] = {}
+    data_conf['Results']['alpha'] = alpha_v[MSE_index]
+    data_conf['Results']['Sel_features'] = list(sel_F[MSE_index])
+    data_conf['Results']['Sel_features_name'] = sel_F_names[MSE_index]
+    data_conf['Results']['Model_size'] = len(sel_F[MSE_index])
+    data_conf['Results']['MSE_Error_TR'] = MSE_training_real
+    data_conf['Results']['MSE_Error_TE'] = MSE_test_real
+    data_conf['Results']['MAPE_Error_Training'] =  MAPE_training_real
+    data_conf['Results']['MAPE_Error_Test'] = MAPE_test_real
+    data_conf['Results']['Y_training_real'] = Y_training_real.tolist()
+    data_conf['Results']['Y_hat_training_real'] = Y_hat_training_real.tolist()
+    data_conf['Results']['Y_test_real'] = Y_test_real.tolist()
+    data_conf['Results']['Y_hat_test_real'] = Y_hat_test_real.tolist()
 
-data_conf['Results'] = {}
-data_conf['Results']['alpha'] = alpha_v[MSE_index]
-data_conf['Results']['Sel_features'] = list(sel_F[MSE_index])
-data_conf['Results']['Sel_features_name'] = sel_F_names[MSE_index]
-data_conf['Results']['Model_size'] = len(sel_F[MSE_index])
-data_conf['Results']['MSE_Error_TR'] = MSE_training_real
-data_conf['Results']['MSE_Error_TE'] = MSE_test_real
-data_conf['Results']['MAPE_Error_Training'] =  MAPE_training_real
-data_conf['Results']['MAPE_Error_Test'] = MAPE_test_real
+    results.append(data_conf)
+
+
 
 
 
 
 # save the data in a file
-with open('results.json', 'w') as fp:
-    json.dump(data_conf, fp)
+# with open('results.json', 'w') as fp:
+#    json.dump(data_conf, fp)
 
 
-
-
-
-
+plot_histogram(results, result_path)
+plot_MSE_Errors(results, result_path)
+plot_MAPE_Errors(results, result_path)
+plot_Model_Size(results, result_path)
+plot_predicted_true(results, result_path)
