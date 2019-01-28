@@ -23,13 +23,10 @@ mpl.use('Agg')
 target_column = 1
 input_name = 'kmeans'
 split = 'split2'
-image_nums_train_data = [5]
-image_nums_test_data = [5]
 case = 'case1'
-core_nums_train_data = [6, 10, 14, 18, 24, 28, 32, 36, 40, 44]
-core_nums_test_data = [8, 12, 16, 22, 26, 30, 34, 38, 42]
 use_spark_info = False
-
+input_path = 'P8_kmeans.csv'
+result_path = "./results/"
 
 #[DebugLevel]
 debug = True # This is for printing the logs. If debug is true, we also print the logs in the DEBUG level. Otherwise, only the logs in INFO level is printed.
@@ -38,22 +35,7 @@ debug = True # This is for printing the logs. If debug is true, we also print th
 n_terms = [2]
 degree = 1
 
-#[FeatureSelector]
-select_features_vif = False
-select_features_sfs = True
-min_features = 1
-max_features = -1
-is_floating = False
-fold_num = 5
-regressor_name = 'dt'
-# regressor_name = ridge
-ridge = [0.1,0.5]
-lasso = [0.1,0.5]
 
-max_features_dt = '[sqrt]'
-max_depth_dt = [7]
-min_samples_leaf_dt = [4]
-min_samples_split_dt = [5]
 
 # max_features_dt = [auto,sqrt]
 # max_depth_dt = [10, 20, 30]
@@ -74,9 +56,6 @@ n_neighbors = '[5,10]'
 
 
 
-input_name = 'kmeans'
-input_path = 'P8_kmeans.csv'
-result_path = "./results/"
 
 run_num = 10
 
@@ -423,7 +402,7 @@ def Ridge_SFS_GridSearch(ridge_params, ext_train_features,train_labels,k_feature
         Mape_error = calcMAPE(Y_hat, Y)
         Mape_overal_error.append(Mape_error)
         cv_info[this_a]['MAPE_error'] = Mape_error
-        print('alpha = ', a, '     MSE Error= ', MSE, '    MAPE Error = ', Mape_error, '    \n Ridge Coefs= ', ridge.coef_ ,'    \n Intercept = ', ridge.intercept_, '    \n SEL = ', ext_feature_names[list(sel_F_idx)]  )
+        print('alpha = ', a, '     MSE Error= ', MSE, '    MAPE Error = ', Mape_error, '    Ridge Coefs= ', ridge.coef_ ,'     Intercept = ', ridge.intercept_, '     SEL = ', ext_feature_names[list(sel_F_idx)]  )
 
 
     """################################################## Results #####################################################"""
@@ -948,6 +927,7 @@ for iter in range(run_num):
     run_info[iter]['Sel_features'] = sel_idx
     run_info[iter]['Sel_features_names'] = ext_feature_names[list(sel_idx)]
     run_info[iter]['best_param'] = Least_MSE_alpha
+    run_info[iter]['best_model'] = best_trained_model
 
     err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores = \
         mean_absolute_percentage_error(y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, scaler)
