@@ -423,7 +423,7 @@ def Ridge_SFS_GridSearch(ridge_params, ext_train_features,train_labels,k_feature
         Mape_error = calcMAPE(Y_hat, Y)
         Mape_overal_error.append(Mape_error)
         cv_info[this_a]['MAPE_error'] = Mape_error
-        print('alpha = ', a, '     MSE Error= ', MSE, '    MAPE Error = ', Mape_error, '    Ridge Coefs= ', ridge.coef_ ,'    Intercept = ', ridge.intercept_, '    SEl = ', ext_feature_names[list(sel_F_idx)]  )
+        print('alpha = ', a, '     MSE Error= ', MSE, '    MAPE Error = ', Mape_error, '    \n Ridge Coefs= ', ridge.coef_ ,'    \n Intercept = ', ridge.intercept_, '    \n SEL = ', ext_feature_names[list(sel_F_idx)]  )
 
 
     """################################################## Results #####################################################"""
@@ -640,6 +640,8 @@ def get_result_name(degree, select_features_sfs, k_features, is_floating):
     #    self.result_name += "_test_without_apriori"
     #if self.data_conf["fixed_features"] == True:
     #    self.result_name = "fixed_features"
+
+
     return result_name
 
 
@@ -921,6 +923,7 @@ df, inversing_cols = add_inverse_features(df, to_be_inv_List)
 
 run_info = []
 for iter in range(run_num):
+    result_path = "./results/"
 
     this_run = 'run_'+str(iter)
     print(this_run)
