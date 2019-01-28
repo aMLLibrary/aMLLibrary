@@ -29,7 +29,8 @@ input_path = 'P8_kmeans.csv'
 result_path = "./results/"
 
 #[DebugLevel]
-debug = True # This is for printing the logs. If debug is true, we also print the logs in the DEBUG level. Otherwise, only the logs in INFO level is printed.
+debug = True # This is for printing the logs. If debug is true, we also print the logs in the DEBUG level. Otherwise,
+# only the logs in INFO level is printed.
 
 #[FeatureExtender]
 n_terms = [2]
@@ -62,8 +63,8 @@ run_num = 10
 
 # variables:
 # TR and TE variables based on which the samples should be splitted
-image_nums_train_data = [5]
-image_nums_test_data = [5]
+image_nums_train_data = [10]
+image_nums_test_data = [10]
 core_nums_train_data = [6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46]
 core_nums_test_data = [8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]
 
@@ -920,6 +921,7 @@ for iter in range(run_num):
 
     k_features = calc_k_features(min_features, max_features, ext_feature_names)
 
+    print('selecting features in range ', k_features, ':')
 
     cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test = \
         sfs_and_grid_search(ridge_params, ext_train_features, train_labels, k_features, fold_num)
