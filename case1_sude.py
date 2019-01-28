@@ -42,9 +42,9 @@ degree = 1
 select_features_vif = False
 select_features_sfs = True
 min_features = 1
-max_features = 2
+max_features = -1
 is_floating = False
-fold_num = 10
+fold_num = 5
 regressor_name = 'dt'
 # regressor_name = ridge
 ridge = [0.1,0.5]
@@ -78,7 +78,7 @@ input_name = 'kmeans'
 input_path = 'P8_kmeans.csv'
 result_path = "./results/"
 
-run_num = 1
+run_num = 10
 
 
 # variables:
@@ -670,7 +670,7 @@ def save_results(err_train, err_test, result_name, result_path, data_conf, cv_in
     return result_path, results
 
 def plot_predicted_true(result_path, y_true_train, y_pred_train, y_true_test, y_pred_test):
-    params_txt = 'params:'
+    params_txt = 'best alpha: ' + str(run_info[-1]['best_param'])
     font = {'family': 'normal', 'size': 15}
     matplotlib.rc('font', **font)
     plot_path = os.path.join(result_path, "true_pred_plot")
@@ -700,7 +700,7 @@ def plot_predicted_true(result_path, y_true_train, y_pred_train, y_true_test, y_
     plt.legend(prop={'size': 20})
     plt.savefig(plot_path + ".pdf")
 
-def plot_cores_runtime(result_path, core_nums_train_data, core_nums_test_data , y_true_train, y_true_test):
+def plot_cores_runtime(run_info, result_path, core_nums_train_data, core_nums_test_data , y_true_train, y_true_test):
 
     font = {'family': 'normal', 'size': 15}
     matplotlib.rc('font', **font)
@@ -710,7 +710,7 @@ def plot_cores_runtime(result_path, core_nums_train_data, core_nums_test_data , 
     #if self.data_conf["fixed_features"] == False:
 
 
-    params_txt = 'params: 0.1'
+    params_txt = 'best alpha: ' + str(run_info[-1]['best_param'])
     regressor_name = 'Logistic Regression'
 
     core_num_indices = pd.DataFrame(
@@ -718,7 +718,7 @@ def plot_cores_runtime(result_path, core_nums_train_data, core_nums_test_data , 
         columns=['col', 'indices'])
     plot_dict = {}
     # Training
-
+    legcount1 = 0
     for Trcore in core_nums_train_data:
 
         #plot_dict[str(Trcore)] ={}
@@ -732,19 +732,19 @@ def plot_cores_runtime(result_path, core_nums_train_data, core_nums_test_data , 
 
         for yi in y_idx_list:
             if yi in y_true_train.index:
-
-                #y_tr_true.append(y_true_train.loc[yi])
-                #y_tr_pred.append(y_pred_train.loc[yi])
-
-                plt.scatter(Trcore, y_pred_train.loc[yi], marker='o', s=300, facecolors='none',
+                legcount1 += 1
+                if legcount1 <= 1:
+                    plt.scatter(Trcore, y_pred_train.loc[yi], marker='o', s=300, facecolors='none',
                         label="Train Predicted Values", color=colors[1])
-                plt.scatter(Trcore, y_true_train.loc[yi], marker='o', s=300, facecolors='none',
+                    plt.scatter(Trcore, y_true_train.loc[yi], marker='o', s=300, facecolors='none',
                         label="Train True Values", color=colors[2])
 
-        #plot_dict[str(Trcore)]['y_tr_true'] = y_tr_true
-        #plot_dict[str(Trcore)]['y_tr_pred'] = y_tr_pred
+                if legcount1 > 1:
 
+                    plt.scatter(Trcore, y_pred_train.loc[yi], marker='o', s=300, facecolors='none', color=colors[1])
+                    plt.scatter(Trcore, y_true_train.loc[yi], marker='o', s=300, facecolors='none', color=colors[2])
 
+    legcount2 = 0
     for Tecore in core_nums_test_data:
         # DF of samples having the core number equal to Tecore
         y_idx_te = core_num_indices.loc[core_num_indices['col'] == Tecore]['indices']
@@ -752,13 +752,20 @@ def plot_cores_runtime(result_path, core_nums_train_data, core_nums_test_data , 
         # convert them to list
         y_idx_te_list = y_idx_te.iloc[0].tolist() # no need to iterate
 
+
         for yie in y_idx_te_list:
             if yie in y_true_test.index:
+                legcount2 += 1
+                if legcount2 <= 1:
+                    plt.scatter(Tecore, y_pred_test.loc[yie], marker='^', s=300, facecolors='none',
+                        label="Test Predicted Values", color='C1')
+                    plt.scatter(Tecore, y_true_test.loc[yie], marker='^', s=300, facecolors='none',
+                        label="Test True Values", color='C3')
 
-                plt.scatter(Tecore, y_pred_test.loc[yie], marker='^', s=300, facecolors='none',
-                    label="Test Predicted Values", color='C1')
-                plt.scatter(Tecore, y_true_test.loc[yie], marker='^', s=300, facecolors='none',
-                    label="Test True Values", color='C3')
+                if legcount2 > 1:
+                    plt.scatter(Tecore, y_pred_test.loc[yie], marker='^', s=300, facecolors='none', color='C1')
+                    plt.scatter(Tecore, y_true_test.loc[yie], marker='^', s=300, facecolors='none', color='C3')
+
     #if self.data_conf["fixed_features"] == True:
     #    plt.scatter(self.data_conf["train_cores"], self.y_pred_train, marker='o', s=300, facecolors='none',
     #                label="Train Predicted Values", color=colors[1])
@@ -779,7 +786,7 @@ def plot_cores_runtime(result_path, core_nums_train_data, core_nums_test_data , 
     fig.text(.5, .01, params_txt, ha='center')
     plt.grid(True)
     plt.tight_layout()
-    #plt.legend(prop={'size': 20})
+    plt.legend(prop={'size': 20})
     plt.savefig(plot_path + ".pdf")
 
 
@@ -817,7 +824,7 @@ def plot_histogram(run_info, result_path):
     plt.bar(range(len(names_list)), name_count)
     plt.xticks(range(len(names_list)), names_list)
     plt.xticks(rotation = 90)
-    plt.title('Histogram of features selection frequency')
+    plt.title('Histogram of features selection frequency in '+str(len(run_info))+' runs')
     # plt.show()
     plt.tight_layout()
     fig.savefig(plot_path + ".pdf")
@@ -848,7 +855,7 @@ def plot_MSE_Errors(run_info, result_path):
     plt.plot(range(1, len(run_info)+1), MSE_list_TR, 'bs', range(1, len(run_info)+1), MSE_list_TE, 'r^')
     plt.xlabel('runs')
     plt.ylabel('MSE Error')
-    plt.title('MSE Error in Training and Test Sets')
+    plt.title('MSE Error in Training and Test Sets in '+str(len(run_info))+' runs')
     plt.xlim(1, len(MSE_list_TE))
     # plt.show()
     fig1.savefig(plot_path + ".pdf")
@@ -879,7 +886,7 @@ def plot_MAPE_Errors(run_info, result_path):
     plt.plot(range(1, len(run_info) + 1), MAPE_list_TR, 'bs', range(1, len(run_info) + 1), MAPE_list_TE, 'r^')
     plt.xlabel('runs')
     plt.ylabel('MAPE Error')
-    plt.title('MAPE Error in Training and Test Sets')
+    plt.title('MAPE Error in Training and Test Sets in '+str(len(run_info))+' runs')
     plt.xlim(1, len(MAPE_list_TE))
     # plt.legend()
     # plt.show()
@@ -901,14 +908,14 @@ def plot_Model_Size(run_info, result_path):
     plt.bar(range(1, len(run_info) + 1), model_size_list)
     plt.xlabel('runs')
     plt.ylabel('Model Size')
-    plt.title('Number of Selected Features in Runs')
+    plt.title('Number of Selected Features in '+str(len(run_info))+' runs')
     plt.xlim(1, len(model_size_list))
     plt.ylim(1, len(run_info[0]['ext_feature_names']))
     # plt.show()
     fig3.savefig(plot_path + ".pdf")
 
 
-
+seed_v = [1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012, 1023]
 df = read_inputs()
 df, inversing_cols = add_inverse_features(df, to_be_inv_List)
 
@@ -921,7 +928,7 @@ for iter in range(run_num):
     run_info.append({})
 
     train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf = \
-        split_data(1234, df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data)
+        split_data(seed_v[iter], df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data)
 
     ext_train_features = add_all_comb(train_features, inversing_cols, 0, degree)
     ext_test_features = add_all_comb(test_features, inversing_cols, 0, degree)
@@ -956,7 +963,7 @@ for iter in range(run_num):
 
 
 plot_predicted_true(result_path, y_true_train, y_pred_train, y_true_test, y_pred_test)
-plot_cores_runtime(result_path, core_nums_train_data, core_nums_test_data , y_true_train, y_true_test)
+plot_cores_runtime(run_info, result_path, core_nums_train_data, core_nums_test_data , y_true_train, y_true_test)
 plot_histogram(run_info, result_path)
 plot_MSE_Errors(run_info, result_path)
 plot_MAPE_Errors(run_info, result_path)
