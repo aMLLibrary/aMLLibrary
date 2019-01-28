@@ -11,6 +11,7 @@ from sklearn.utils import shuffle
 from sklearn.preprocessing import StandardScaler
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 import json
+from pprint import pprint
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -18,6 +19,64 @@ import matplotlib.cm as cm
 mpl.use('Agg')
 
 # different input options:
+#[DataPreparation]
+target_column = 1
+input_name = 'kmeans'
+split = 'split2'
+image_nums_train_data = [5]
+image_nums_test_data = [5]
+case = 'case1'
+core_nums_train_data = [6, 10, 14, 18, 24, 28, 32, 36, 40, 44]
+core_nums_test_data = [8, 12, 16, 22, 26, 30, 34, 38, 42]
+use_spark_info = False
+
+
+#[DebugLevel]
+debug = True # This is for printing the logs. If debug is true, we also print the logs in the DEBUG level. Otherwise, only the logs in INFO level is printed.
+
+#[FeatureExtender]
+n_terms = [2]
+
+#[FeatureSelector]
+select_features_vif = False
+select_features_sfs = True
+min_features = 1
+max_features = -1
+is_floating = False
+fold_num = 10
+regressor_name = 'dt'
+# regressor_name = ridge
+ridge = [0.1,0.5]
+lasso = [0.1,0.5]
+
+max_features_dt = '[sqrt]'
+max_depth_dt = [7]
+min_samples_leaf_dt = [4]
+min_samples_split_dt = [5]
+
+# max_features_dt = [auto,sqrt]
+# max_depth_dt = [10, 20, 30]
+# min_samples_leaf_dt = [1, 2, 4]
+# min_samples_split_dt = [2, 5, 10]
+
+n_estimators = '[20, 40, 60, 80]'
+max_features_rf = '[auto, sqrt]'
+max_depth_rf = '[10, 20, 30]'
+min_samples_leaf_rf = '[5, 6, 7]'
+min_samples_split_rf = '[2, 5, 10]'
+bootstrap = '[True, False]'
+kernel = '[rbf]'
+c = '[10]'
+epsilon = '[0.1]'
+gamma = '[0.01]'
+n_neighbors = '[5,10]'
+
+
+
+
+
+
+
 
 input_path = 'P8_kmeans.csv'
 #input_path = 'dumydata2.csv'
@@ -30,7 +89,7 @@ input_path = 'P8_kmeans.csv'
 
 result_path = "./results/"
 
-run_num = 1
+run_num = 10
 
 
 # variables:
@@ -44,7 +103,7 @@ core_nums_test_data = [8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]
 select_features_vif = False
 select_features_sfs = True
 min_features = 1
-max_features = 2
+max_features = -1
 is_floating = False
 fold_num = 5
 regressor_name = "lr"
@@ -60,25 +119,16 @@ min_samples_leaf_dt = '[4]'
 min_samples_split_dt = '[5]'
 
 
-n_estimators = '[20, 40, 60, 80]'
-max_features_rf = '[auto, sqrt]'
-max_depth_rf = '[10, 20, 30]'
-min_samples_leaf_rf = '[5, 6, 7]'
-min_samples_split_rf = '[2, 5, 10]'
-bootstrap = '[True, False]'
 
-kernel = '[rbf]'
-c = '[10]'
-epsilon = '[0.1]'
-gamma = '[0.01]'
-n_neighbors = '[5,10]'
+
+
 
 test_without_apriori = False
 
 # preprocessing related variables (DT)
 inversing = True
 inverseColNameList = ['nContainers']
-extension = True
+extension = False
 degree = 2
 
 
@@ -285,14 +335,20 @@ def plot_histogram(results, result_path):
         for j in results[i]['Results']['Sel_features']:
             name_count[j] += 1
 
-
+    font = {'family':'normal','size': 10}
+    matplotlib.rc('font', **font)
+    colors = cm.rainbow(np.linspace(0, 0.5, 3))
+    fig = plt.figure(figsize=(10,5))
     plt.bar(range(len(names_list)), name_count)
     plt.xticks(range(len(names_list)), names_list)
     plt.xticks(rotation = 90)
     plt.title(results[0]['case']+' - Histogram of features selection frequency')
     plt.show()
     plt.tight_layout()
-    plt.savefig(plot_path + ".pdf")
+    fig.savefig(plot_path + ".pdf")
+
+
+
 
 
 def plot_MSE_Errors(results, result_path):
@@ -304,14 +360,17 @@ def plot_MSE_Errors(results, result_path):
         MSE_list_TR.append(results[i]['Results']['MSE_Error_TR'])
         MSE_list_TE.append(results[i]['Results']['MSE_Error_TE'])
 
-
+    font = {'family':'normal','size': 15}
+    matplotlib.rc('font', **font)
+    colors = cm.rainbow(np.linspace(0, 0.5, 3))
+    fig1 = plt.figure(figsize=(9,6))
     plt.plot(range(1, len(results)+1), MSE_list_TR, 'bs', range(1, len(results)+1), MSE_list_TE, 'r^')
     plt.xlabel('runs')
     plt.ylabel('MSE Error')
     plt.title('MSE Error in Training and Test Sets')
     plt.xlim(1, len(MSE_list_TE))
     plt.show()
-    plt.savefig(plot_path + ".pdf")
+    fig1.savefig(plot_path + ".pdf")
 
 
 def plot_MAPE_Errors(results, result_path):
@@ -322,7 +381,10 @@ def plot_MAPE_Errors(results, result_path):
     for i in range(len(results)):
         MAPE_list_TR.append(results[i]['Results']['MAPE_Error_Training'])
         MAPE_list_TE.append(results[i]['Results']['MAPE_Error_Test'])
-
+    font = {'family':'normal','size': 15}
+    matplotlib.rc('font', **font)
+    colors = cm.rainbow(np.linspace(0, 0.5, 3))
+    fig2 = plt.figure(figsize=(9,6))
     plt.plot(range(1, len(results) + 1), MAPE_list_TR, 'bs', range(1, len(results) + 1), MAPE_list_TE, 'r^')
     plt.xlabel('runs')
     plt.ylabel('MAPE Error')
@@ -330,7 +392,7 @@ def plot_MAPE_Errors(results, result_path):
     plt.xlim(1, len(MAPE_list_TE))
     plt.legend()
     plt.show()
-    plt.savefig(plot_path + ".pdf")
+    fig2.savefig(plot_path + ".pdf")
 
 
 def plot_Model_Size(results, result_path):
@@ -339,7 +401,10 @@ def plot_Model_Size(results, result_path):
     model_size_list = []
     for i in range(len(results)):
         model_size_list.append(results[i]['Results']['Model_size'])
-
+    font = {'family':'normal','size': 15}
+    matplotlib.rc('font', **font)
+    colors = cm.rainbow(np.linspace(0, 0.5, 3))
+    fig3 = plt.figure(figsize=(9,6))
     plt.bar(range(1, len(results) + 1), model_size_list)
     plt.xlabel('runs')
     plt.ylabel('Model Size')
@@ -347,7 +412,7 @@ def plot_Model_Size(results, result_path):
     plt.xlim(1, len(model_size_list))
     plt.ylim(1, len(results[0]['ext_feature_names']))
     plt.show()
-    plt.savefig(plot_path + ".pdf")
+    fig3.savefig(plot_path + ".pdf")
 
 
 
@@ -371,7 +436,7 @@ def plot_predicted_true(results, result_path):
     font = {'family':'normal','size': 15}
     matplotlib.rc('font', **font)
     colors = cm.rainbow(np.linspace(0, 0.5, 3))
-    fig = plt.figure(figsize=(9,6))
+    fig4 = plt.figure(figsize=(9,6))
     plt.scatter(y_pred_train, y_true_train, marker='o',s=300,facecolors='none',label="Train Set",color=colors[0])
     plt.scatter(y_pred_test, y_true_test, marker='^',s=300,facecolors='none',label="Test Set",color=colors[1])
     #if y_pred_test.values != []:
@@ -388,14 +453,12 @@ def plot_predicted_true(results, result_path):
                 str(data_conf["image_nums_test_data"]) )
     plt.xlabel("Predicted values of applicationCompletionTime (ms)")
     plt.ylabel("True values of " + "\n" + "applicationCompletionTime (ms)")
-    fig.text(.5, .01, 'alpha = '+ str(results[best_run]['Results']['alpha']), ha='center')
+    fig4.text(.5, .01, 'alpha = '+ str(results[best_run]['Results']['alpha']), ha='center')
     plt.grid(True)
     plt.tight_layout()
     plt.legend(prop={'size': 20})
     plt.show()
-    plt.savefig(plot_path + ".pdf")
-
-
+    fig4.savefig(plot_path + ".pdf")
 
 
 def Ridge_SFS_GridSearch(alpha_v, X,Y,k_features,fold_num):
@@ -631,9 +694,11 @@ for iter in range(run_num):
     if extension == True:
 
         ext_df = add_all_comb(inv_df, inversed_cols_tr, 0, degree)
+        ext_feature_names = ext_df.columns.values[1:]
 
-    ext_feature_names = ext_df.columns.values[1:]
-
+    if extension == False:
+        ext_df = inv_df
+        ext_feature_names = ext_df.columns.values[1:]
 
     # check the feature names after extension
 
@@ -777,6 +842,8 @@ plot_predicted_true(results, result_path)
 
 
 
+finalresults = {}
+finalresults["case1"] = results
 
 f = open('resultslist.pckl', 'wb')
 pickle.dump(results, f)
@@ -786,5 +853,15 @@ f.close()
 #f = open('resultslist.pckl', 'rb')
 #savedresults = pickle.load(f)
 #f.close()
+
+
+
+# save the data
+
+with open('output.txt', 'wt') as out:
+    pprint(finalresults, stream=out)
+
+with open('output2.txt', 'wt') as out:
+    pprint(results, stream=out)
 
 
