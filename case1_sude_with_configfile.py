@@ -16,9 +16,10 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 
+# keep the starting time to compute the execution time
 start = time.time()
 
-
+# making the config file
 config = configparser.ConfigParser()
 config.sections()
 config.read('params.ini')
@@ -26,15 +27,27 @@ config.sections()
 
 
 
+
+#[General]
+# Number of independent runs of the whole code with different shuffling
+# some diagrams are plotted using the best run among these, the others collect all runs information
+run_num = int(config['General']['run_num'])
+
+
+
 # different input options:
 #[DataPreparation]
 
+# index of output column
 target_column = int(config['DataPreparation']['target_column'])
 input_name = config['DataPreparation']['input_name']
 split = config['DataPreparation']['split']
 case = config['DataPreparation']['case']
 use_spark_info = config['DataPreparation'].getboolean('use_spark_info')
 input_path = config['DataPreparation']['input_path']
+
+# main folder to store diagrams and variables
+# the main result path should exist
 result_path = config['DataPreparation']['result_path']
 
 
@@ -46,10 +59,27 @@ debug = config['DebugLevel'].getboolean('debug')
 
 
 
+#[Splitting]
+# How data will be splitted: just the samples that comply with the following specifications are placed
+# in training and test data
+image_nums_train_data = config['Splitting']['image_nums_train_data']
+image_nums_train_data = [int(i) for i in ast.literal_eval(image_nums_train_data)]
+
+image_nums_test_data = config['Splitting']['image_nums_test_data']
+image_nums_test_data = [int(i) for i in ast.literal_eval(image_nums_test_data)]
+
+
+core_nums_train_data = config['Splitting']['core_nums_train_data']
+core_nums_train_data = [int(i) for i in ast.literal_eval(core_nums_train_data)]
+
+core_nums_test_data = config['Splitting']['core_nums_test_data']
+core_nums_test_data = [int(i) for i in ast.literal_eval(core_nums_test_data)]
+
+
 
 
 #[FeatureExtender]
-
+# the degree of combinatorial terms computing as the extended features
 degree = int(config['FeatureExtender']['degree'])
 
 n_terms = config['FeatureExtender']['n_terms']
@@ -61,6 +91,8 @@ n_terms = [int(i) for i in ast.literal_eval(n_terms)]
 
 
 # [rf]
+
+# parameters for random forest
 n_estimators = config['rf']['n_estimators']
 n_estimators = [int(i) for i in ast.literal_eval(n_estimators)]
 max_features_rf = config['rf']['max_features_rf']
@@ -92,29 +124,9 @@ gamma = [i for i in ast.literal_eval(gamma)]
 n_neighbors = config['rf']['n_neighbors']
 n_neighbors = [int(i) for i in ast.literal_eval(n_neighbors)]
 
-#[General]
-run_num = int(config['General']['run_num'])
-
-
-
-
-#[Splitting]
-
-image_nums_train_data = config['Splitting']['image_nums_train_data']
-image_nums_train_data = [int(i) for i in ast.literal_eval(image_nums_train_data)]
-
-image_nums_test_data = config['Splitting']['image_nums_test_data']
-image_nums_test_data = [int(i) for i in ast.literal_eval(image_nums_test_data)]
-
-
-core_nums_train_data = config['Splitting']['core_nums_train_data']
-core_nums_train_data = [int(i) for i in ast.literal_eval(core_nums_train_data)]
-
-core_nums_test_data = config['Splitting']['core_nums_test_data']
-core_nums_test_data = [int(i) for i in ast.literal_eval(core_nums_test_data)]
-
 
 #[FS]
+# information about the feature selection method
 select_features_vif = config['FS'].getboolean('select_features_vif')
 select_features_sfs = config['FS'].getboolean('select_features_sfs')
 min_features = int(config['FS']['min_features'])
@@ -125,6 +137,7 @@ fold_num = int(config['FS']['fold_num'])
 
 
 # [Regression]
+# which regressor is going to used for the prediction
 regressor_name = config['Regression']['regressor_name']
 
 
@@ -155,13 +168,14 @@ min_samples_split_dt = [int(i) for i in ast.literal_eval(min_samples_split_dt)]
 
 
 # [Inverse]
+# the name of to be inverted column in the dataset
 to_be_inv_List = []
 to_be_inv_List.append(config['Inverse']['to_be_inv_List'])
 
 
 
 def read_inputs():
-    """reads inputs and drop the run col"""
+    """reads inputs and drop the run col and columns with constant values"""
     df = pd.read_csv(input_path)
 
     if target_column != 1:
@@ -203,7 +217,9 @@ def split_data(seed, df, image_nums_train_data, image_nums_test_data, core_nums_
 
         df = shuffle(df, random_state=seed)
 
+
         # If dataSize column has different values
+        # finds out which are the datasizes in dataset to select corresponding indices for the TR and TE part
         if "dataSize" in df.columns:
             data_size_indices = pd.DataFrame(
                 [[k, v.values] for k, v in df.groupby('dataSize').groups.items()], columns=['col', 'indices'])
@@ -228,6 +244,7 @@ def split_data(seed, df, image_nums_train_data, image_nums_test_data, core_nums_
             #core_num_indices = pd.DataFrame(
                 #[[k, v.values] for k, v in df.groupby('nCores').groups.items()], columns=['col', 'indices'])
 
+        # finds out which are the core numbers in dataset to select corresponding indices for the TR and TE part
         core_num_indices = pd.DataFrame(
             [[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
             columns=['col', 'indices'])
@@ -287,7 +304,10 @@ def split_data(seed, df, image_nums_train_data, image_nums_test_data, core_nums_
         train_indices = range(0, len(cores))
         test_indices = []
 
-    # Scale the data.
+
+    # Scale the dataset, all together.
+    # IMPORTANT: Since this functions does the scaling and we need the scaler be consistent with the test data, this
+    # function should be applied on the extended dataset
     df, scaler = scale_data(df)
     train_df = df.ix[train_indices]
     test_df = df.ix[test_indices]
@@ -334,6 +354,7 @@ def add_all_comb(inv_df, inversed_cols_tr, output_column_idx, degree):
                 remove_list_idx.append(ii)
         for r in range(0,len(remove_list_idx)):
             combs.remove(remove_list_idx[r])
+
         # compute resulting column of the remaining combinations and add to the df
         for cc in combs:
             new_col = calculate_new_col(data_matrix, list(cc))
@@ -388,34 +409,15 @@ def calc_k_features(min_features, max_features, ext_feature_names):
     if max_k_features != -1:
         k_features = (min_k_features, max_k_features)
     return k_features
-"""
-def read_inputs_sfs(ext_train_features, ext_test_features, train_labels, test_labels,
-                    ext_feature_names, scaler, data_conf):
 
-    ext_train_features = ext_train_features.as_matrix()
-    ext_test_features = ext_test_features.as_matrix()
-    train_labels = train_labels.as_matrix()
-    test_labels = test_labels.as_matrix()
-    feature_names = np.array(ext_feature_names)
-    test_features_org = data_conf["test_features_org"]
-    train_features_org = data_conf["train_features_org"]
-    # del data_conf["test_features_org"]
-    # del data_conf["train_features_org"]
-
-    return train_features_org, test_features_org
-"""
-
-def calcMSE(Y_hat, Y):
-    MSE = np.mean((Y_hat - Y) ** 2)
-    return MSE
-
-def calcMAPE(Y_hat, Y):
-    """given true and predicted values returns MAPE error"""
-    Mapeerr = np.mean(np.abs((Y - Y_hat) / Y)) * 100
-    return Mapeerr
 
 
 def Ridge_SFS_GridSearch(ridge_params, train_features,train_labels, test_features, test_labels, k_features, fold_num):
+    """given training and test input and output, required parameters to be searched among and the fold number, it
+    first searches for the best features using SFS with CV, and using ONLY training set, then computes the MSE using
+    only the SFS selected features and training set. Then select the parameter according to the least MSE error. Then
+    it trains the model using that parameter, selected features and training data, then predicts the out of both
+    training and test set"""
 
     X = pd.DataFrame.as_matrix(train_features)
     Y = pd.DataFrame.as_matrix(train_labels)
@@ -514,7 +516,10 @@ def Ridge_SFS_GridSearch(ridge_params, train_features,train_labels, test_feature
 
 
 def mean_absolute_percentage_error(y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, scaler):
-
+    """This function concatenates TR input and TR output, and TE input and TE output (one time it considers real
+    (scaled) TR and TE, then it considers predicted TR and TE output for concatenation),  once the data has the same
+    number of columns when it was scaled, performs inverse scaling to compute the unscaled predicted output. Then MAPE
+    error is computed using the unscaled data."""
 
     train_features_org = train_features
     if "y_true_train" in train_features_org.columns.values:
@@ -657,7 +662,8 @@ def mean_absolute_percentage_error(y_pred_test, y_pred_train, test_features, tes
 
 
 def get_result_name(degree, select_features_sfs, k_features, is_floating):
-
+    """Produces a meaningful name for creating a folder in order to save the diagrams and variables inside the
+    result path"""
     if degree == [] :
         result_name = "d=0_"
     if degree != [] :
@@ -708,7 +714,7 @@ def get_result_name(degree, select_features_sfs, k_features, is_floating):
 
 def save_results(err_train, err_test, result_name, result_path, data_conf, cv_info, ridge_params, best_trained_model,
                                degree, Least_MSE_alpha):
-
+    """it saves the results in a variabl and makes the directory if not exist"""
     selected_feature_indices = list(sel_idx)
     best_params = Least_MSE_alpha
 
@@ -733,7 +739,7 @@ def save_results(err_train, err_test, result_name, result_path, data_conf, cv_in
     return result_path, results
 
 def plot_predicted_true(result_path, run_info, best_run_idx):
-
+    """Plots the predicted values of output, as opposed to the real values in TR and TE sets"""
 
     data_conf = run_info[best_run_idx]['data_conf']
 
@@ -774,7 +780,7 @@ def plot_predicted_true(result_path, run_info, best_run_idx):
     plt.savefig(plot_path + ".pdf")
 
 def plot_cores_runtime(result_path, run_info, best_run_idx, core_nums_train_data, core_nums_test_data):
-
+    """Plot the real and predicted values of output based on the values of cores number in the corresponding samples"""
     data_conf = run_info[best_run_idx]['data_conf']
 
 
@@ -799,10 +805,10 @@ def plot_cores_runtime(result_path, run_info, best_run_idx, core_nums_train_data
         [[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
         columns=['col', 'indices'])
     # Training
+    # This part is for making the legend
     legcount1 = 0
     for Trcore in core_nums_train_data:
 
-        #plot_dict[str(Trcore)] ={}
         # DF of samples having the core number equal to Trcore
         y_idx = core_num_indices.loc[core_num_indices['col'] == Trcore]['indices']
 
@@ -811,6 +817,7 @@ def plot_cores_runtime(result_path, run_info, best_run_idx, core_nums_train_data
         #y_tr_true = []
         #y_tr_pred = []
 
+        # scatter the points of different core numbers in TR set
         for yi in y_idx_list:
             if yi in y_true_train.index:
                 legcount1 += 1
@@ -825,6 +832,7 @@ def plot_cores_runtime(result_path, run_info, best_run_idx, core_nums_train_data
                     plt.scatter(Trcore, y_pred_train.loc[yi], marker='o', s=300, facecolors='none', color=colors[1])
                     plt.scatter(Trcore, y_true_train.loc[yi], marker='o', s=300, facecolors='none', color=colors[2])
 
+    # This part is for making the legend
     legcount2 = 0
     for Tecore in core_nums_test_data:
         # DF of samples having the core number equal to Tecore
@@ -833,6 +841,7 @@ def plot_cores_runtime(result_path, run_info, best_run_idx, core_nums_train_data
         # convert them to list
         y_idx_te_list = y_idx_te.iloc[0].tolist() # no need to iterate
 
+        # scatter the points of different core numbers in TE set
 
         for yie in y_idx_te_list:
             if yie in y_true_test.index:
@@ -873,16 +882,20 @@ def plot_cores_runtime(result_path, run_info, best_run_idx, core_nums_train_data
 
 
 def calcMSE(Y_hat, Y):
+    """given true and predicted values in 2 vectors (scaled version), calculate the MSE error for the sole use in
+    the cross validation and grid search"""
     MSE = np.mean((Y_hat - Y) ** 2)
     return MSE
 
 def calcMAPE(Y_hat, Y):
-    """given true and predicted values returns MAPE error"""
+    """given true and predicted values in 2 vectors (scaled version), calculate the MAPE error for the sole use in
+    the cross validation and grid search"""
     Mapeerr = np.mean(np.abs((Y - Y_hat) / Y)) * 100
     return Mapeerr
 
 
 def select_best_run(run_info):
+    """This function selects the best run among independent runs according to the least MAPE error on Test set"""
     Mape_list = []
     for i in range(len(run_info)):
         Mape_list.append(run_info[i]['MAPE_test'])
@@ -899,10 +912,10 @@ def select_best_run(run_info):
 
 
 def plot_histogram(result_path, run_info, degree):
+    """Plot the histogram of features selection frequency in independent runs"""
 
     plot_path = os.path.join(result_path, "Features_Ferquency_Histogram_plot")
 
-    """Plot the histogram of features selection frequency"""
     names_list = run_info[0]['ext_feature_names']
     name_count = []
     for i in range(len(names_list)):
@@ -947,6 +960,7 @@ def plot_histogram(result_path, run_info, degree):
 
 
 def plot_MSE_Errors(result_path, run_info):
+    """Plot the MSE error of unscaled version in TR and TE set in independent runs"""
 
     plot_path = os.path.join(result_path, "MSE_Error_plot")
     MSE_list_TR = []
@@ -977,6 +991,7 @@ def plot_MSE_Errors(result_path, run_info):
 
 
 def plot_MAPE_Errors(result_path, run_info):
+    """Plot the MAPE error of unscaled version in TR and TE set in independent runs"""
 
     plot_path = os.path.join(result_path, "MAPE_Error_plot")
     MAPE_list_TR = []
@@ -1009,6 +1024,7 @@ def plot_MAPE_Errors(result_path, run_info):
 
 
 def plot_Model_Size(result_path, run_info):
+    """Plot the selected model size in independent runs"""
 
     plot_path = os.path.join(result_path, "Model_Size_Plot")
     model_size_list = []
@@ -1030,33 +1046,40 @@ def plot_Model_Size(result_path, run_info):
     fig3.savefig(plot_path + ".pdf")
 
 
+# Set the seed vector for performing the shuffling in different runs
 seed_v = [1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012, 1023]
+
+# read the csv data into a pandas DataFrame
 df = read_inputs()
+
+# invert the columns specifiying in inverting columns
 df, inversing_cols = add_inverse_features(df, to_be_inv_List)
 
+# extend the features
+ext_df = add_all_comb(df, inversing_cols, 0, degree)
+
+# The list for keeping independent runs information
 run_info = []
 for iter in range(run_num):
-    result_path = "./results/"
 
     this_run = 'run_'+str(iter)
     print(this_run)
 
     run_info.append({})
 
-
-    ext_df = add_all_comb(df, inversing_cols, 0, degree)
-
-
+    # shuffle the samples and split the data
     train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf = \
         split_data(seed_v[iter], ext_df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data)
 
     run_info[iter]['ext_feature_names'] = features_names
     run_info[iter]['data_conf'] = data_conf
 
+    # computes the range of final model size
     k_features = calc_k_features(min_features, max_features, features_names)
 
     print('selecting features in range ', k_features, ':')
 
+    # Grid search
     cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test = \
         Ridge_SFS_GridSearch(ridge_params, train_features, train_labels, test_features, test_labels, k_features, fold_num)
 
@@ -1067,7 +1090,7 @@ for iter in range(run_num):
     run_info[iter]['best_param'] = Least_MSE_alpha
     run_info[iter]['best_model'] = best_trained_model
 
-
+    # compute MAPE training and test error for uscaled data
     err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores = \
         mean_absolute_percentage_error(y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, scaler)
 
@@ -1079,16 +1102,19 @@ for iter in range(run_num):
     run_info[iter]['y_pred_test'] = y_pred_test
 
 
-
+# computes the best run based on minimum MAPE on test set
 best_run_idx, best_data_conf, best_cv_info, best_trained_model, best_Least_MSE_alpha, best_err_train, best_err_test = \
     select_best_run(run_info)
 
+# get the result folder name
 result_name = get_result_name(degree, select_features_sfs, k_features, is_floating)
 
+# create the path and save variables
 result_path, results = save_results(best_err_train, best_err_test, result_name, result_path,
                                     best_data_conf, best_cv_info, ridge_params, best_trained_model, degree, best_Least_MSE_alpha)
 
 
+# plot the diagrams
 plot_predicted_true(result_path, run_info, best_run_idx)
 plot_cores_runtime(result_path, run_info, best_run_idx, core_nums_train_data, core_nums_test_data)
 plot_histogram(result_path, run_info, degree)
@@ -1096,11 +1122,13 @@ plot_MSE_Errors(result_path, run_info)
 plot_MAPE_Errors(result_path, run_info)
 plot_Model_Size(result_path, run_info)
 
-
+# save run information variable for later use
 target = open(os.path.join(result_path, "run_info"), 'a')
 target.write(str(run_info))
 target.close()
 
 end = time.time()
+
+# computes and report the execution time
 execution_time = str(end-start)
 print("Execution Time : " + execution_time)
