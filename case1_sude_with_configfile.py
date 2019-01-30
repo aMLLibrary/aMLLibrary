@@ -75,7 +75,8 @@ core_nums_train_data = [int(i) for i in ast.literal_eval(core_nums_train_data)]
 core_nums_test_data = config['Splitting']['core_nums_test_data']
 core_nums_test_data = [int(i) for i in ast.literal_eval(core_nums_test_data)]
 
-
+seed_v = config['Splitting']['seed_vector']
+seed_v = [int(i) for i in ast.literal_eval(seed_v)]
 
 
 #[FeatureExtender]
@@ -84,7 +85,6 @@ degree = int(config['FeatureExtender']['degree'])
 
 n_terms = config['FeatureExtender']['n_terms']
 n_terms = [int(i) for i in ast.literal_eval(n_terms)]
-
 
 
 
@@ -1029,7 +1029,6 @@ def plot_Model_Size(result_path, run_info):
     plot_path = os.path.join(result_path, "Model_Size_Plot")
     model_size_list = []
     for i in range(len(run_info)):
-        len(run_info[i]['Sel_features'])
         model_size_list.append(len(run_info[i]['Sel_features']))
 
     font = {'family':'normal','size': 15}
@@ -1047,7 +1046,7 @@ def plot_Model_Size(result_path, run_info):
 
 
 # Set the seed vector for performing the shuffling in different runs
-seed_v = [1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012, 1023]
+# seed_v = [1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012, 1023]
 
 # read the csv data into a pandas DataFrame
 df = read_inputs()
