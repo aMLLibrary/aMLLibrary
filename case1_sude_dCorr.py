@@ -1048,6 +1048,32 @@ def plot_Model_Size(result_path, run_info):
     # plt.show()
     fig3.savefig(plot_path + ".pdf")
 
+def performScreening_with_output(df, target_column_idx, Confidence_level):
+    irrelevant_col = Screening2(df, target_column_idx, Confidence_level)
+
+    irrelevant_features_names = [df.columns.values[i] for i in irrelevant_col]
+
+    print(len(irrelevant_col), ' irrelevant features')
+    relevant_features_idx = list(set(range(1, df.shape[1]))-set(irrelevant_col))
+    relevant_features_names = [df.columns.values[i] for i in relevant_features_idx]
+    target_names = [df.columns.values[target_column_idx]]
+    for i in range(len(relevant_features_names)):
+        target_names.append(relevant_features_names[i])
+
+    df = df.loc[:, target_names]
+
+    return df, relevant_features_idx, relevant_features_names, irrelevant_col
+
+def performScreening_without_output(train_features, train_labels, Confidence_level):
+    irrelevant_col = Screening(train_features, train_labels, Confidence_level)
+    print(len(irrelevant_col), ' irrelevant features')
+
+    relevant_features_idx = list(set(range(0, train_features.shape[1])) - set(irrelevant_col))
+    relevant_features_names = [train_features.columns.values[i] for i in relevant_features_idx]
+
+    new_train_features = train_features.loc[:, relevant_features_names]
+    return new_train_features, relevant_features_idx, relevant_features_names, irrelevant_col
+
 
 def Screening2(df, target_column_idx, Confidence_level):
 
@@ -1065,6 +1091,12 @@ def Screening2(df, target_column_idx, Confidence_level):
             independence_list.append(independentTest(X[:, f], Y, Confidence_level))
 
     irrelevant_col = [col for col, e in enumerate(independence_list) if e == 1]
+
+    # Computing the index of irrelevant features in accordance to df including output at the beginning
+    if target_column_idx == 0:
+        for i in range(len(irrelevant_col)):
+            irrelevant_col[i] = irrelevant_col[i] + 1
+
     return irrelevant_col
 
 
@@ -1203,7 +1235,9 @@ df = read_inputs()
 # invert the columns specifiying in inverting columns
 df, inversing_cols = add_inverse_features(df, to_be_inv_List)
 
-# irrelevant_features = Screening2(df, 0, 0.999999)
+
+df, relevant_features_idx, relevant_features_names, irrelevant_col = \
+    performScreening_with_output(df, 0, Confidence_level)
 
 
 # extend the features
@@ -1236,11 +1270,8 @@ for iter in range(run_num):
     irrelevant_features = Screening(train_features, train_labels, 0.999999)
     print(len(irrelevant_features), ' irrelevant features')
 
-    #run_info[iter]['irrelevant_features'] = irrelevant_features
-    irrelevant_features_names = [features_names[i] for i in irrelevant_features]
-    #relevant_features_idx = list(set(range(len(features_names)))-set(irrelevant_features))
+    run_info[iter]['relevant_features'] = relevant_features
 
-    #relevant_features_names = [features_names[i] for i in relevant_features_idx]
 
     #ranking_list = dCorRanking(train_features, train_labels)
 
