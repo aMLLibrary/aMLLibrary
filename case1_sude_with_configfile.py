@@ -15,6 +15,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import scipy.stats as stats
+import math
 
 
 # keep the starting time to compute the execution time
@@ -134,6 +135,8 @@ min_features = int(config['FS']['min_features'])
 max_features = int(config['FS']['max_features'])
 is_floating = config['FS'].getboolean('is_floating')
 fold_num = int(config['FS']['fold_num'])
+Confidence_level = config['FS']['Confidence_level']
+Confidence_level = ast.literal_eval(Confidence_level)
 
 
 
@@ -1046,13 +1049,30 @@ def plot_Model_Size(result_path, run_info):
     fig3.savefig(plot_path + ".pdf")
 
 
-def Screening(df, target_column_idx, Confidence_level):
+def Screening2(df, target_column_idx, Confidence_level):
 
-    Y = df.iloc[:,target_column_idx]
+    Y = df.iloc[:, target_column_idx]
     Y = pd.DataFrame.as_matrix(Y)
 
     output_name = df.columns.values[target_column_idx]
-    X = df.loc[:,df.columns != output_name]
+    X = df.loc[:, df.columns != output_name]
+    X = pd.DataFrame.as_matrix(X)
+
+
+    independence_list = []
+    if X.shape[0] == Y.shape[0]:
+        for f in range(X.shape[1]):
+            independence_list.append(independentTest(X[:, f], Y, Confidence_level))
+
+    irrelevant_col = [col for col, e in enumerate(independence_list) if e == 1]
+    return irrelevant_col
+
+
+def Screening(train_features, train_labels, Confidence_level):
+    Y = train_labels
+    Y = pd.DataFrame.as_matrix(Y)
+
+    X = train_features
     X = pd.DataFrame.as_matrix(X)
 
     independence_list = []
@@ -1108,6 +1128,72 @@ def independentTest(x,y, Confidence_level):
 
     return 1 if P else 0
 
+def dCorRanking(train_features, train_labels):
+    Y = train_labels
+    Y = pd.DataFrame.as_matrix(Y)
+
+    X = train_features
+    X = pd.DataFrame.as_matrix(X)
+
+    nancount = 0
+    rel_ranking_list = []
+    if X.shape[0] == Y.shape[0]:
+        for f in range(X.shape[1]):
+            rel_ranking_list.append(rel_rank(X[:, f], Y))
+            if math.isnan(rel_rank(X[:, f], Y)):
+                nancount += 1
+    print(nancount)
+    return rel_ranking_list
+
+
+def rel_rank(x, y):
+
+    N = x.shape[0]
+    x = x.reshape(N, 1)
+    y = y.reshape(N, 1)
+
+    xx = np.tile(x, [1,N])
+    xxp = xx.transpose()
+    diff_x = xx - xxp
+    norm_x = np.sqrt(diff_x**2)
+
+    temp1_x = norm_x.mean(0).reshape((1, N))
+    temp2_x = np.tile(temp1_x, [N, 1])
+
+    temp3_x = norm_x.mean(1).reshape((N, 1))
+    temp4_x = np.tile(temp3_x, [1, N])
+
+    X_MATRIX = norm_x - temp2_x - temp4_x + norm_x.mean()
+
+    yy = np.tile(y, [1,N])
+    yyp = yy.transpose()
+    diff_y = yy - yyp
+    norm_y = np.sqrt(diff_y**2)
+
+    temp1_y = norm_y.mean(0).reshape((1, N))
+    temp2_y = np.tile(temp1_y, [N, 1])
+
+    temp3_y = norm_y.mean(1).reshape((N, 1))
+    temp4_y = np.tile(temp3_y, [1, N])
+
+    Y_MATRIX = norm_y - temp2_y - temp4_y + norm_y.mean()
+
+    XYPair = np.multiply(X_MATRIX, Y_MATRIX)
+
+    Vxy = XYPair.mean()
+
+    # alpha = 1 - Confidence_level
+    T = N * Vxy / (norm_x.mean() * norm_y.mean())
+    # P = T <= (stats.norm.ppf(1 - alpha / 2)**2)
+    if math.isnan(T):
+        print('norm x mean: ', norm_x.mean())
+        print('norm y mean: ', norm_y.mean())
+
+    return T
+
+
+
+
 # Set the seed vector for performing the shuffling in different runs
 # seed_v = [1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012, 1023]
 
@@ -1117,8 +1203,12 @@ df = read_inputs()
 # invert the columns specifiying in inverting columns
 df, inversing_cols = add_inverse_features(df, to_be_inv_List)
 
+# irrelevant_features = Screening2(df, 0, 0.999999)
+
+
 # extend the features
 ext_df = add_all_comb(df, inversing_cols, 0, degree)
+
 
 # The list for keeping independent runs information
 run_info = []
@@ -1140,6 +1230,29 @@ for iter in range(run_num):
     k_features = calc_k_features(min_features, max_features, features_names)
 
     print('selecting features in range ', k_features, ':')
+
+
+    # screening:
+    #irrelevant_features = Screening(train_features, train_labels, 0.999999)
+    #print(len(irrelevant_features), ' irrelevant features')
+
+    #run_info[iter]['irrelevant_features'] = irrelevant_features
+    #irrelevant_features_names = [features_names[i] for i in irrelevant_features]
+    #relevant_features_idx = list(set(range(len(features_names)))-set(irrelevant_features))
+    #relevant_features_names = [features_names[i] for i in relevant_features_idx]
+
+    #ranking_list = dCorRanking(train_features, train_labels)
+
+
+    # train_features = train_features.drop(train_features.columns[irrelevant_features], axis=1)
+    # test_features = test_features.drop(test_features.columns[irrelevant_features], axis=1)
+
+    # train_features = train_features.loc[:, relevant_features_names]
+    # test_features = test_features.loc[:, relevant_features_names]
+
+
+
+
 
     # Grid search
     cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test = \
