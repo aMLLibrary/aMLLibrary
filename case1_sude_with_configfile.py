@@ -14,6 +14,7 @@ matplotlib.use('Agg')
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import scipy.stats as stats
 
 
 # keep the starting time to compute the execution time
@@ -1045,6 +1046,68 @@ def plot_Model_Size(result_path, run_info):
     fig3.savefig(plot_path + ".pdf")
 
 
+def Screening(df, target_column_idx, Confidence_level):
+
+    Y = df.iloc[:,target_column_idx]
+    Y = pd.DataFrame.as_matrix(Y)
+
+    output_name = df.columns.values[target_column_idx]
+    X = df.loc[:,df.columns != output_name]
+    X = pd.DataFrame.as_matrix(X)
+
+    independence_list = []
+    if X.shape[0] == Y.shape[0]:
+        for f in range(X.shape[1]):
+            independence_list.append(independentTest(X[:, f], Y, Confidence_level))
+
+    irrelevant_col = [col for col, e in enumerate(independence_list) if e == 1]
+    return irrelevant_col
+
+
+
+def independentTest(x,y, Confidence_level):
+
+
+    N = x.shape[0]
+    x = x.reshape(N, 1)
+    y = y.reshape(N, 1)
+
+    xx = np.tile(x, [1,N])
+    xxp = xx.transpose()
+    diff_x = xx - xxp
+    norm_x = np.sqrt(diff_x**2)
+
+    temp1_x = norm_x.mean(0).reshape((1, N))
+    temp2_x = np.tile(temp1_x, [N, 1])
+
+    temp3_x = norm_x.mean(1).reshape((N, 1))
+    temp4_x = np.tile(temp3_x, [1, N])
+
+    X_MATRIX = norm_x - temp2_x - temp4_x + norm_x.mean()
+
+    yy = np.tile(y, [1,N])
+    yyp = yy.transpose()
+    diff_y = yy - yyp
+    norm_y = np.sqrt(diff_y**2)
+
+    temp1_y = norm_y.mean(0).reshape((1, N))
+    temp2_y = np.tile(temp1_y, [N, 1])
+
+    temp3_y = norm_y.mean(1).reshape((N, 1))
+    temp4_y = np.tile(temp3_y, [1, N])
+
+    Y_MATRIX = norm_y - temp2_y - temp4_y + norm_y.mean()
+
+    XYPair = np.multiply(X_MATRIX, Y_MATRIX)
+
+    Vxy = XYPair.mean()
+
+    alpha = 1 - Confidence_level
+    T = N * Vxy / (norm_x.mean() * norm_y.mean())
+    P = T <= (stats.norm.ppf(1 - alpha / 2)**2)
+
+    return 1 if P else 0
+
 # Set the seed vector for performing the shuffling in different runs
 # seed_v = [1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012, 1023]
 
@@ -1131,3 +1194,7 @@ end = time.time()
 # computes and report the execution time
 execution_time = str(end-start)
 print("Execution Time : " + execution_time)
+
+
+
+
