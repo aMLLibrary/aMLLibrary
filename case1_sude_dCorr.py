@@ -1193,11 +1193,18 @@ def rel_rank(x, y):
 
 
 
+
+# Set the seed vector for performing the shuffling in different runs
+# seed_v = [1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012, 1023]
+
 # read the csv data into a pandas DataFrame
 df = read_inputs()
 
 # invert the columns specifiying in inverting columns
 df, inversing_cols = add_inverse_features(df, to_be_inv_List)
+
+# irrelevant_features = Screening2(df, 0, 0.999999)
+
 
 # extend the features
 ext_df = add_all_comb(df, inversing_cols, 0, degree)
@@ -1223,6 +1230,29 @@ for iter in range(run_num):
     k_features = calc_k_features(min_features, max_features, features_names)
 
     print('selecting features in range ', k_features, ':')
+
+
+    # screening:
+    irrelevant_features = Screening(train_features, train_labels, 0.999999)
+    print(len(irrelevant_features), ' irrelevant features')
+
+    #run_info[iter]['irrelevant_features'] = irrelevant_features
+    irrelevant_features_names = [features_names[i] for i in irrelevant_features]
+    #relevant_features_idx = list(set(range(len(features_names)))-set(irrelevant_features))
+
+    #relevant_features_names = [features_names[i] for i in relevant_features_idx]
+
+    #ranking_list = dCorRanking(train_features, train_labels)
+
+
+    # train_features = train_features.drop(train_features.columns[irrelevant_features], axis=1)
+    # test_features = test_features.drop(test_features.columns[irrelevant_features], axis=1)
+
+    # train_features = train_features.loc[:, relevant_features_names]
+    # test_features = test_features.loc[:, relevant_features_names]
+
+
+
 
 
     # Grid search
