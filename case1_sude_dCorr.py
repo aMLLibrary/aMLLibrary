@@ -1235,14 +1235,21 @@ df = read_inputs()
 # invert the columns specifiying in inverting columns
 df, inversing_cols = add_inverse_features(df, to_be_inv_List)
 
+original_columns_names = df.columns.values
 
-df, relevant_features_idx, relevant_features_names, irrelevant_col = \
+new_df, relevant_features_idx, relevant_features_names, irrelevant_col = \
     performScreening_with_output(df, 0, Confidence_level)
 
+relevant_col_names = new_df.columns.values
+
+inversing_cols = [(len(relevant_features_idx)-1, len(relevant_features_idx))]
 
 # extend the features
-ext_df = add_all_comb(df, inversing_cols, 0, degree)
+ext_df = add_all_comb(new_df, inversing_cols, 0, degree)
 
+# Perform another screening
+new_ext_df, relevant_features_idx, relevant_features_names, irrelevant_col = \
+    performScreening_with_output(ext_df, 0, Confidence_level)
 
 # The list for keeping independent runs information
 run_info = []
@@ -1255,7 +1262,7 @@ for iter in range(run_num):
 
     # shuffle the samples and split the data
     train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf = \
-        split_data(seed_v[iter], ext_df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data)
+        split_data(seed_v[iter], new_ext_df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data)
 
     run_info[iter]['ext_feature_names'] = features_names
     run_info[iter]['data_conf'] = data_conf
@@ -1264,26 +1271,6 @@ for iter in range(run_num):
     k_features = calc_k_features(min_features, max_features, features_names)
 
     print('selecting features in range ', k_features, ':')
-
-
-    # screening:
-    irrelevant_features = Screening(train_features, train_labels, 0.999999)
-    print(len(irrelevant_features), ' irrelevant features')
-
-    run_info[iter]['relevant_features'] = relevant_features
-
-
-    #ranking_list = dCorRanking(train_features, train_labels)
-
-
-    # train_features = train_features.drop(train_features.columns[irrelevant_features], axis=1)
-    # test_features = test_features.drop(test_features.columns[irrelevant_features], axis=1)
-
-    # train_features = train_features.loc[:, relevant_features_names]
-    # test_features = test_features.loc[:, relevant_features_names]
-
-
-
 
 
     # Grid search
