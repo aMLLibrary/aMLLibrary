@@ -137,6 +137,8 @@ is_floating = config['FS'].getboolean('is_floating')
 fold_num = int(config['FS']['fold_num'])
 Confidence_level = config['FS']['Confidence_level']
 Confidence_level = ast.literal_eval(Confidence_level)
+clipping_no = int(config['FS']['clipping_no'])
+
 
 
 
@@ -1161,6 +1163,7 @@ def independentTest(x,y, Confidence_level):
     return 1 if P else 0
 
 def dCorRanking(train_features, train_labels):
+
     Y = train_labels
     Y = pd.DataFrame.as_matrix(Y)
 
@@ -1176,6 +1179,42 @@ def dCorRanking(train_features, train_labels):
                 nancount += 1
     print(nancount)
     return rel_ranking_list
+
+
+def dCorRanking_with_output(df, target_column_idx, clipping_no):
+
+    output_name = df.columns.values[target_column_idx]
+    Orig_Feature_names = df.columns.values[df.columns != output_name]
+
+    Y = df.iloc[:, target_column_idx]
+    Y = pd.DataFrame.as_matrix(Y)
+
+    X = df.loc[:, df.columns != output_name]
+    X = pd.DataFrame.as_matrix(X)
+
+    nancount = 0
+    rel_ranking_list = []
+    if X.shape[0] == Y.shape[0]:
+        for f in range(X.shape[1]):
+            rel_ranking_list.append(rel_rank(X[:, f], Y))
+            if math.isnan(rel_rank(X[:, f], Y)):
+                nancount += 1
+    print('nan numbers = ', nancount)
+
+    ranked_list_idx = np.argsort(rel_ranking_list)[::-1]
+    ranked_features_list = Orig_Feature_names[ranked_list_idx]
+
+    ranked_clipped_f = ranked_list_idx[:clipping_no]
+    ranked_clipped_f_names = ranked_features_list[:clipping_no]
+
+    df_needed_cols = [output_name]
+
+    for c in range(len(ranked_clipped_f_names)):
+        df_needed_cols.append(ranked_clipped_f_names[c])
+
+    clipped_df = df[df_needed_cols]
+
+    return clipped_df, ranked_clipped_f, ranked_clipped_f_names
 
 
 def rel_rank(x, y):
@@ -1237,19 +1276,23 @@ df, inversing_cols = add_inverse_features(df, to_be_inv_List)
 
 original_columns_names = df.columns.values
 
-new_df, relevant_features_idx, relevant_features_names, irrelevant_col = \
-    performScreening_with_output(df, 0, Confidence_level)
+target_column_idx = 0
+clipped_df, ranked_clipped_f, ranked_clipped_f_names = dCorRanking_with_output(df, target_column_idx, clipping_no)
 
-relevant_col_names = new_df.columns.values
 
-inversing_cols = [(len(relevant_features_idx)-1, len(relevant_features_idx))]
+# new_df, relevant_features_idx, relevant_features_names, irrelevant_col = \
+#    performScreening_with_output(df, 0, Confidence_level)
 
+# relevant_col_names = new_df.columns.values
+
+# inversing_cols = [(len(relevant_features_idx)-1, len(relevant_features_idx))]
+inversing_cols = [(47,48)]
 # extend the features
-ext_df = add_all_comb(new_df, inversing_cols, 0, degree)
+ext_df = add_all_comb(clipped_df, inversing_cols, 0, degree)
 
 # Perform another screening
-new_ext_df, relevant_features_idx, relevant_features_names, irrelevant_col = \
-    performScreening_with_output(ext_df, 0, Confidence_level)
+#new_ext_df, relevant_features_idx, relevant_features_names, irrelevant_col = \
+#    performScreening_with_output(ext_df, 0, Confidence_level)
 
 # The list for keeping independent runs information
 run_info = []
@@ -1262,7 +1305,7 @@ for iter in range(run_num):
 
     # shuffle the samples and split the data
     train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf = \
-        split_data(seed_v[iter], new_ext_df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data)
+        split_data(seed_v[iter], ext_df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data)
 
     run_info[iter]['ext_feature_names'] = features_names
     run_info[iter]['data_conf'] = data_conf
