@@ -207,6 +207,89 @@ def scale_data(df):
     scaled_df = pd.DataFrame(scaled_array, index = df.index, columns = df.columns)
     return scaled_df, scaler
 
+def getTRTEindices(df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data, seed):
+
+    data_conf = {}
+    data_conf["case"] = case
+    data_conf["split"] = split
+    data_conf["input_name"] = input_name
+    # data_conf["sparkdl_run"] = sparkdl_run
+    df = shuffle(df, random_state=seed)
+    if "dataSize" in df.columns:
+        data_size_indices = pd.DataFrame(
+            [[k, v.values] for k, v in df.groupby('dataSize').groups.items()], columns=['col', 'indices'])
+
+        data_size_train_indices = \
+            data_size_indices.loc[(data_size_indices['col'].isin(image_nums_train_data))]['indices']
+        data_size_test_indices = \
+            data_size_indices.loc[(data_size_indices['col'].isin(image_nums_test_data))]['indices']
+
+        data_size_train_indices = np.concatenate(list(data_size_train_indices), axis=0)
+        data_size_test_indices = np.concatenate(list(data_size_test_indices), axis=0)
+
+    else:
+
+        data_size_train_indices = range(0, df.shape[0])
+        data_size_test_indices = range(0, df.shape[0])
+
+    data_conf["image_nums_train_data"] = image_nums_train_data
+    data_conf["image_nums_test_data"] = image_nums_test_data
+
+    # if input_name in sparkdl_inputs:
+    # core_num_indices = pd.DataFrame(
+    # [[k, v.values] for k, v in df.groupby('nCores').groups.items()], columns=['col', 'indices'])
+
+    # finds out which are the core numbers in dataset to select corresponding indices for the TR and TE part
+    core_num_indices = pd.DataFrame(
+        [[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
+        columns=['col', 'indices'])
+
+    # For interpolation and extrapolation, put all the cores to the test set.
+    print('image_nums_train_data: ', image_nums_train_data)
+    print('image_nums_test_data: ', image_nums_test_data)
+    if set(image_nums_train_data) != set(image_nums_test_data):
+        core_nums_test_data = core_nums_test_data + core_nums_train_data
+
+    core_num_train_indices = \
+        core_num_indices.loc[(core_num_indices['col'].isin(core_nums_train_data))]['indices']
+    core_num_test_indices = \
+        core_num_indices.loc[(core_num_indices['col'].isin(core_nums_test_data))]['indices']
+
+    core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
+    core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
+
+    data_conf["core_nums_train_data"] = core_nums_train_data
+    data_conf["core_nums_test_data"] = core_nums_test_data
+
+    # Take the intersect of indices of datasize and core
+    train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
+    test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
+
+    return train_indices, test_indices, data_conf
+
+def scale_and_split_TRTE(df, train_indices, test_indices):
+
+    """split the original dataframe into Training Input (train_features), Training Output(train_labels),
+    Test Input(test_features) and Test Output(test_labels)"""
+
+    df, scaler = scale_data(df)
+    train_df = df.ix[train_indices]
+    test_df = df.ix[test_indices]
+    train_labels = train_df.iloc[:, 0]
+    train_features = train_df.iloc[:, 1:]
+
+    test_labels = test_df.iloc[:, 0]
+    test_features = test_df.iloc[:, 1:]
+
+    features_names = list(df.columns.values)[1:]
+    data_conf["train_features_org"] = train_features.as_matrix()
+    data_conf["test_features_org"] = test_features.as_matrix()
+    # print(features_names)
+
+    data_conf["test_without_apriori"] = False
+
+    return train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf
+
 
 
 def split_data(seed, df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data):
@@ -1276,6 +1359,10 @@ df, inversing_cols = add_inverse_features(df, to_be_inv_List)
 
 original_columns_names = df.columns.values
 
+
+train_indices, test_indices, data_conf =\
+    getTRTEindices(df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data, 1234)
+
 target_column_idx = 0
 clipped_df, ranked_clipped_f, ranked_clipped_f_names = dCorRanking_with_output(df, target_column_idx, clipping_no)
 
@@ -1304,8 +1391,11 @@ for iter in range(run_num):
     run_info.append({})
 
     # shuffle the samples and split the data
+    #train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf = \
+    #    split_data(seed_v[iter], ext_df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data)
+
     train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf = \
-        split_data(seed_v[iter], ext_df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data)
+        scale_and_split_TRTE(ext_df, train_indices, test_indices)
 
     run_info[iter]['ext_feature_names'] = features_names
     run_info[iter]['data_conf'] = data_conf
