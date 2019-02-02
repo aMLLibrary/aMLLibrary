@@ -67,7 +67,7 @@ core_nums_test_data = [8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]
 select_features_vif = False
 select_features_sfs = True
 min_features = 1
-max_features = -1
+max_features = 2
 is_floating = False
 fold_num = 5
 
