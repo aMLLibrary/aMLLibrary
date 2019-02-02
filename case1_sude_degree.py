@@ -53,7 +53,7 @@ n_neighbors = '[5,10]'
 
 
 
-run_num = 2
+run_num = 1
 
 
 # variables:
@@ -67,7 +67,7 @@ core_nums_test_data = [8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]
 select_features_vif = False
 select_features_sfs = True
 min_features = 1
-max_features = 2
+max_features = -1
 is_floating = False
 fold_num = 5
 
@@ -315,22 +315,7 @@ def calc_k_features(min_features, max_features, ext_feature_names):
     if max_k_features != -1:
         k_features = (min_k_features, max_k_features)
     return k_features
-"""
-def read_inputs_sfs(ext_train_features, ext_test_features, train_labels, test_labels,
-                    ext_feature_names, scaler, data_conf):
 
-    ext_train_features = ext_train_features.as_matrix()
-    ext_test_features = ext_test_features.as_matrix()
-    train_labels = train_labels.as_matrix()
-    test_labels = test_labels.as_matrix()
-    feature_names = np.array(ext_feature_names)
-    test_features_org = data_conf["test_features_org"]
-    train_features_org = data_conf["train_features_org"]
-    # del data_conf["test_features_org"]
-    # del data_conf["train_features_org"]
-
-    return train_features_org, test_features_org
-"""
 
 def calcMSE(Y_hat, Y):
     MSE = np.mean((Y_hat - Y) ** 2)
@@ -349,7 +334,6 @@ def Ridge_SFS_GridSearch(ridge_params, train_features,train_labels, test_feature
     ext_feature_names = train_features.columns.values
 
     alpha_v = ridge_params
-
 
     # list of MSE error for different alpha values:
     param_overal_MSE = []
@@ -383,7 +367,7 @@ def Ridge_SFS_GridSearch(ridge_params, train_features,train_labels, test_feature
                   floating=False,
                   scoring='neg_mean_squared_error',
                   cv = fold_num,
-                  n_jobs = -1)
+                  n_jobs = 16)
 
         # fit the sfs on training part (scaled) and evaluate the score on test part of this fold
         sfs = sfs.fit(X, Y)
@@ -952,7 +936,7 @@ def plot_Model_Size(result_path, run_info):
     plt.ylabel('Model Size')
     plt.title('Number of Selected Features in '+str(len(run_info))+' runs')
     plt.xlim(1, len(model_size_list))
-    plt.ylim(1, len(run_info[0]['ext_feature_names']))
+    plt.ylim(1, max(model_size_list))
     # plt.show()
     fig3.savefig(plot_path + ".pdf")
 
@@ -969,7 +953,6 @@ for iter in range(run_num):
     print(this_run)
 
     run_info.append({})
-
 
     ext_df = add_all_comb(df, inversing_cols, 0, degree)
 
@@ -1006,6 +989,11 @@ for iter in range(run_num):
     run_info[iter]['y_pred_test'] = y_pred_test
 
 
+    target = open(os.path.join('./results/', "temp_run_info"), 'a')
+    target.write(str(run_info))
+    target.close()
+
+
 
 best_run_idx, best_data_conf, best_cv_info, best_trained_model, best_Least_MSE_alpha, best_err_train, best_err_test = \
     select_best_run(run_info)
@@ -1027,7 +1015,3 @@ plot_Model_Size(result_path, run_info)
 target = open(os.path.join(result_path, "run_info"), 'a')
 target.write(str(run_info))
 target.close()
-
-
-
-
