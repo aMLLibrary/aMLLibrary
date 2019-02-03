@@ -179,16 +179,21 @@ to_be_inv_List = []
 to_be_inv_List.append(config['Inverse']['to_be_inv_List'])
 
 
+target_column_idx = 0
+
+
 
 def read_inputs():
     """reads inputs and drop the run col and columns with constant values"""
     df = pd.read_csv(input_path)
 
+    # bring the output at the first position
     if target_column != 1:
         column_names = list(df)
         column_names[1], column_names[target_column] = column_names[target_column], column_names[1]
         df = df.reindex(columns=column_names)
 
+    # drops the run column is the kmeans data
     if input_name == 'kmeans':
         # df['inverse_nContainers'] = 1 / df['nContainers']
         df = df.drop(['run'], axis=1)
@@ -208,21 +213,29 @@ def scale_data(df):
     return scaled_df, scaler
 
 def getTRTEindices(df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data, seed):
+    """returns the indices of TR and TE sets based on information about datasize and core numbers """
 
+    # saving the necessary information in data_config dictionary for later use
     data_conf = {}
     data_conf["case"] = case
     data_conf["split"] = split
     data_conf["input_name"] = input_name
     # data_conf["sparkdl_run"] = sparkdl_run
+
+    # shuffling the samples
     df = shuffle(df, random_state=seed)
+
+    # group the samples based on datasize
     if "dataSize" in df.columns:
         data_size_indices = pd.DataFrame(
             [[k, v.values] for k, v in df.groupby('dataSize').groups.items()], columns=['col', 'indices'])
 
+        # locate the indices of samples that correspond to the training and test datasizes
         data_size_train_indices = \
             data_size_indices.loc[(data_size_indices['col'].isin(image_nums_train_data))]['indices']
         data_size_test_indices = \
             data_size_indices.loc[(data_size_indices['col'].isin(image_nums_test_data))]['indices']
+
 
         data_size_train_indices = np.concatenate(list(data_size_train_indices), axis=0)
         data_size_test_indices = np.concatenate(list(data_size_test_indices), axis=0)
@@ -1133,77 +1146,10 @@ def plot_Model_Size(result_path, run_info):
     # plt.show()
     fig3.savefig(plot_path + ".pdf")
 
-def performScreening_with_output(df, target_column_idx, Confidence_level):
-    irrelevant_col = Screening2(df, target_column_idx, Confidence_level)
-
-    irrelevant_features_names = [df.columns.values[i] for i in irrelevant_col]
-
-    print(len(irrelevant_col), ' irrelevant features')
-    relevant_features_idx = list(set(range(1, df.shape[1]))-set(irrelevant_col))
-    relevant_features_names = [df.columns.values[i] for i in relevant_features_idx]
-    target_names = [df.columns.values[target_column_idx]]
-    for i in range(len(relevant_features_names)):
-        target_names.append(relevant_features_names[i])
-
-    df = df.loc[:, target_names]
-
-    return df, relevant_features_idx, relevant_features_names, irrelevant_col
-
-def performScreening_without_output(train_features, train_labels, Confidence_level):
-    irrelevant_col = Screening(train_features, train_labels, Confidence_level)
-    print(len(irrelevant_col), ' irrelevant features')
-
-    relevant_features_idx = list(set(range(0, train_features.shape[1])) - set(irrelevant_col))
-    relevant_features_names = [train_features.columns.values[i] for i in relevant_features_idx]
-
-    new_train_features = train_features.loc[:, relevant_features_names]
-    return new_train_features, relevant_features_idx, relevant_features_names, irrelevant_col
-
-
-def Screening2(df, target_column_idx, Confidence_level):
-
-    Y = df.iloc[:, target_column_idx]
-    Y = pd.DataFrame.as_matrix(Y)
-
-    output_name = df.columns.values[target_column_idx]
-    X = df.loc[:, df.columns != output_name]
-    X = pd.DataFrame.as_matrix(X)
-
-
-    independence_list = []
-    if X.shape[0] == Y.shape[0]:
-        for f in range(X.shape[1]):
-            independence_list.append(independentTest(X[:, f], Y, Confidence_level))
-
-    irrelevant_col = [col for col, e in enumerate(independence_list) if e == 1]
-
-    # Computing the index of irrelevant features in accordance to df including output at the beginning
-    if target_column_idx == 0:
-        for i in range(len(irrelevant_col)):
-            irrelevant_col[i] = irrelevant_col[i] + 1
-
-    return irrelevant_col
-
-
-def Screening(train_features, train_labels, Confidence_level):
-    Y = train_labels
-    Y = pd.DataFrame.as_matrix(Y)
-
-    X = train_features
-    X = pd.DataFrame.as_matrix(X)
-
-    independence_list = []
-    if X.shape[0] == Y.shape[0]:
-        for f in range(X.shape[1]):
-            independence_list.append(independentTest(X[:, f], Y, Confidence_level))
-
-    irrelevant_col = [col for col, e in enumerate(independence_list) if e == 1]
-    return irrelevant_col
 
 
 
 def independentTest(x,y, Confidence_level):
-
 
     N = x.shape[0]
     x = x.reshape(N, 1)
@@ -1244,6 +1190,125 @@ def independentTest(x,y, Confidence_level):
     P = T <= (stats.norm.ppf(1 - alpha / 2)**2)
 
     return 1 if P else 0
+
+
+
+def rel_rank(x, y):
+
+    N = x.shape[0]
+    x = x.reshape(N, 1)
+    y = y.reshape(N, 1)
+
+    xx = np.tile(x, [1,N])
+    xxp = xx.transpose()
+    diff_x = xx - xxp
+    norm_x = np.sqrt(diff_x**2)
+
+    temp1_x = norm_x.mean(0).reshape((1, N))
+    temp2_x = np.tile(temp1_x, [N, 1])
+
+    temp3_x = norm_x.mean(1).reshape((N, 1))
+    temp4_x = np.tile(temp3_x, [1, N])
+
+    X_MATRIX = norm_x - temp2_x - temp4_x + norm_x.mean()
+
+    yy = np.tile(y, [1,N])
+    yyp = yy.transpose()
+    diff_y = yy - yyp
+    norm_y = np.sqrt(diff_y**2)
+
+    temp1_y = norm_y.mean(0).reshape((1, N))
+    temp2_y = np.tile(temp1_y, [N, 1])
+
+    temp3_y = norm_y.mean(1).reshape((N, 1))
+    temp4_y = np.tile(temp3_y, [1, N])
+
+    Y_MATRIX = norm_y - temp2_y - temp4_y + norm_y.mean()
+
+    XYPair = np.multiply(X_MATRIX, Y_MATRIX)
+
+    Vxy = XYPair.mean()
+
+    # alpha = 1 - Confidence_level
+    T = N * Vxy / (norm_x.mean() * norm_y.mean())
+    # P = T <= (stats.norm.ppf(1 - alpha / 2)**2)
+    if math.isnan(T):
+        print('norm x mean: ', norm_x.mean())
+        print('norm y mean: ', norm_y.mean())
+
+    return T
+
+
+def getIrrelevantFeatures_with_output(df, target_column_idx, Confidence_level):
+
+    Y = df.iloc[:, target_column_idx]
+    Y = pd.DataFrame.as_matrix(Y)
+
+    output_name = df.columns.values[target_column_idx]
+    X = df.loc[:, df.columns != output_name]
+    X = pd.DataFrame.as_matrix(X)
+
+
+    independence_list = []
+    if X.shape[0] == Y.shape[0]:
+        for f in range(X.shape[1]):
+            independence_list.append(independentTest(X[:, f], Y, Confidence_level))
+
+    irrelevant_col = [col for col, e in enumerate(independence_list) if e == 1]
+
+    # Computing the index of irrelevant features in accordance to df including output at the beginning
+    if target_column_idx == 0:
+        for i in range(len(irrelevant_col)):
+            irrelevant_col[i] = irrelevant_col[i] + 1
+
+    return irrelevant_col
+
+
+def getIrrelevantFeatures_without_output(train_features, train_labels, Confidence_level):
+    Y = train_labels
+    Y = pd.DataFrame.as_matrix(Y)
+
+    X = train_features
+    X = pd.DataFrame.as_matrix(X)
+
+    independence_list = []
+    if X.shape[0] == Y.shape[0]:
+        for f in range(X.shape[1]):
+            independence_list.append(independentTest(X[:, f], Y, Confidence_level))
+
+    irrelevant_col = [col for col, e in enumerate(independence_list) if e == 1]
+    return irrelevant_col
+
+
+
+def performScreening_with_output(df, target_column_idx, Confidence_level):
+    irrelevant_col = getIrrelevantFeatures_with_output(df, target_column_idx, Confidence_level)
+
+    irrelevant_features_names = [df.columns.values[i] for i in irrelevant_col]
+
+    print(len(irrelevant_col), ' irrelevant features')
+    relevant_features_idx = list(set(range(1, df.shape[1]))-set(irrelevant_col))
+    relevant_features_names = [df.columns.values[i] for i in relevant_features_idx]
+    target_names = [df.columns.values[target_column_idx]]
+    for i in range(len(relevant_features_names)):
+        target_names.append(relevant_features_names[i])
+
+    df = df.loc[:, target_names]
+
+    return df, relevant_features_idx, relevant_features_names, irrelevant_col
+
+
+def performScreening_without_output(train_features, train_labels, Confidence_level):
+    irrelevant_col = getIrrelevantFeatures_without_output(train_features, train_labels, Confidence_level)
+    print(len(irrelevant_col), ' irrelevant features')
+
+    relevant_features_idx = list(set(range(0, train_features.shape[1])) - set(irrelevant_col))
+    relevant_features_names = [train_features.columns.values[i] for i in relevant_features_idx]
+
+    new_train_features = train_features.loc[:, relevant_features_names]
+    return new_train_features, relevant_features_idx, relevant_features_names, irrelevant_col
+
+
 
 def dCorRanking(train_features, train_labels):
 
@@ -1300,54 +1365,6 @@ def dCorRanking_with_output(df, target_column_idx, clipping_no):
     return clipped_df, ranked_clipped_f, ranked_clipped_f_names
 
 
-def rel_rank(x, y):
-
-    N = x.shape[0]
-    x = x.reshape(N, 1)
-    y = y.reshape(N, 1)
-
-    xx = np.tile(x, [1,N])
-    xxp = xx.transpose()
-    diff_x = xx - xxp
-    norm_x = np.sqrt(diff_x**2)
-
-    temp1_x = norm_x.mean(0).reshape((1, N))
-    temp2_x = np.tile(temp1_x, [N, 1])
-
-    temp3_x = norm_x.mean(1).reshape((N, 1))
-    temp4_x = np.tile(temp3_x, [1, N])
-
-    X_MATRIX = norm_x - temp2_x - temp4_x + norm_x.mean()
-
-    yy = np.tile(y, [1,N])
-    yyp = yy.transpose()
-    diff_y = yy - yyp
-    norm_y = np.sqrt(diff_y**2)
-
-    temp1_y = norm_y.mean(0).reshape((1, N))
-    temp2_y = np.tile(temp1_y, [N, 1])
-
-    temp3_y = norm_y.mean(1).reshape((N, 1))
-    temp4_y = np.tile(temp3_y, [1, N])
-
-    Y_MATRIX = norm_y - temp2_y - temp4_y + norm_y.mean()
-
-    XYPair = np.multiply(X_MATRIX, Y_MATRIX)
-
-    Vxy = XYPair.mean()
-
-    # alpha = 1 - Confidence_level
-    T = N * Vxy / (norm_x.mean() * norm_y.mean())
-    # P = T <= (stats.norm.ppf(1 - alpha / 2)**2)
-    if math.isnan(T):
-        print('norm x mean: ', norm_x.mean())
-        print('norm y mean: ', norm_y.mean())
-
-    return T
-
-
-
-
 # Set the seed vector for performing the shuffling in different runs
 # seed_v = [1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012, 1023]
 
@@ -1359,31 +1376,11 @@ df, inversing_cols = add_inverse_features(df, to_be_inv_List)
 
 original_columns_names = df.columns.values
 
-
-train_indices, test_indices, data_conf =\
-    getTRTEindices(df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data, 1234)
-
-target_column_idx = 0
-clipped_df, ranked_clipped_f, ranked_clipped_f_names = dCorRanking_with_output(df, target_column_idx, clipping_no)
-
-
-# new_df, relevant_features_idx, relevant_features_names, irrelevant_col = \
-#    performScreening_with_output(df, 0, Confidence_level)
-
-# relevant_col_names = new_df.columns.values
-
-# inversing_cols = [(len(relevant_features_idx)-1, len(relevant_features_idx))]
-inversing_cols = [(47,48)]
-# extend the features
-ext_df = add_all_comb(clipped_df, inversing_cols, 0, degree)
-
-# Perform another screening
-#new_ext_df, relevant_features_idx, relevant_features_names, irrelevant_col = \
-#    performScreening_with_output(ext_df, 0, Confidence_level)
-
 # The list for keeping independent runs information
 run_info = []
 for iter in range(run_num):
+
+    result_path = "./results/"
 
     this_run = 'run_'+str(iter)
     print(this_run)
@@ -1391,11 +1388,23 @@ for iter in range(run_num):
     run_info.append({})
 
     # shuffle the samples and split the data
-    #train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf = \
-    #    split_data(seed_v[iter], ext_df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data)
+    train_indices, test_indices, data_conf =\
+        getTRTEindices(df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data, seed_v[iter])
 
+    # The first ranking and clipping features
+    clipped_df, ranked_clipped_f, ranked_clipped_f_names = dCorRanking_with_output(df, target_column_idx, 50)
+
+    inversing_cols = [(20, 25)]
+
+    # extend the features
+    ext_df = add_all_comb(clipped_df, inversing_cols, 0, degree)
+
+    # The second ranking and clipping features
+    clipped_ext_df, ranked_clipped_ext_f, ranked_clipped_ext_f_names = dCorRanking_with_output(ext_df, target_column_idx, 200)
+
+    # scale and split the data
     train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf = \
-        scale_and_split_TRTE(ext_df, train_indices, test_indices)
+        scale_and_split_TRTE(clipped_ext_df, train_indices, test_indices)
 
     run_info[iter]['ext_feature_names'] = features_names
     run_info[iter]['data_conf'] = data_conf
@@ -1428,6 +1437,11 @@ for iter in range(run_num):
     run_info[iter]['y_true_test'] = y_true_test
     run_info[iter]['y_pred_test'] = y_pred_test
 
+    # save run information variable for later use
+    target = open(os.path.join(result_path, "run_info"), 'a')
+    target.write(str(run_info))
+    target.close()
+
 
 # computes the best run based on minimum MAPE on test set
 best_run_idx, best_data_conf, best_cv_info, best_trained_model, best_Least_MSE_alpha, best_err_train, best_err_test = \
@@ -1439,7 +1453,6 @@ result_name = get_result_name(degree, select_features_sfs, k_features, is_floati
 # create the path and save variables
 result_path, results = save_results(best_err_train, best_err_test, result_name, result_path,
                                     best_data_conf, best_cv_info, ridge_params, best_trained_model, degree, best_Least_MSE_alpha)
-
 
 # plot the diagrams
 plot_predicted_true(result_path, run_info, best_run_idx)
