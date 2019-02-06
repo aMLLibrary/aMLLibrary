@@ -3,7 +3,6 @@ from SequenceDataProcessing import *
 
 def main():
     dp = SequenceDataProcessing()
-
     dp.process()
 
 
