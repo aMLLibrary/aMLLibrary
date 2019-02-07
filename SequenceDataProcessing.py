@@ -28,6 +28,8 @@ class SequenceDataProcessing(object):
         # df = read_inputs()
         temp = self.preliminary_data_processing.process(None)
 
+        splitting_df = self.data_splitting.make_splitting_df(temp, self.data_splitting.criterion_col_list)
+
         # df, inversing_cols = add_inverse_features(df, to_be_inv_List)
         temp, inversing_cols = self.data_preprocessing.process(temp)
 
@@ -43,14 +45,17 @@ class SequenceDataProcessing(object):
             this_run = 'run_' + str(iter)
             print(this_run)
             self.run_info.append({})
-            print(self.seed_v[iter])
 
-            temp = self.data_splitting.process(temp, self.seed_v[iter])
+        #    Should be replaced with basic functions of splitting:
+        #    temp = self.data_splitting.process(temp, splitting_df, self.seed_v[iter])
 
-        #     train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf = \
-        #         split_data(seed_v[iter], ext_df, image_nums_train_data, image_nums_test_data, core_nums_train_data,
-        #                    core_nums_test_data)
+            train_features, train_labels, test_features, test_labels, features_names, scaler \
+                = self.data_splitting.process(temp, self.seed_v[iter])
+            self.run_info[iter]['ext_feature_names'] = features_names
 
+
+
+            print('tamoom shod iter')
 
 
 
@@ -158,20 +163,20 @@ class Normalization(DataPrepration):
 
     def __init__(self):
         DataPrepration.__init__(self)
-        self.scaler = StandardScaler()
+        # self.scaler = StandardScaler()
 
-    def process(self, inputDF):
-        print('process of normalization')
-        self.inputDF = inputDF
-        self.outputDF, self.scaler = self.scale_data(self.inputDF)
+    # def process(self, inputDF):
+    #     print('process of normalization')
+    #     self.inputDF = inputDF
+    #     self.outputDF, self.scaler = self.scale_data(self.inputDF)
+    #
+    #     return self.outputDF, self.scaler
 
-        return self.outputDF, self.scaler
-
-    def scale_data(self, df):
-        """scale the dataframe"""
-        scaled_array = self.scaler.fit_transform(df.values)
-        scaled_df = pd.DataFrame(scaled_array, index=df.index, columns=df.columns)
-        return scaled_df, self.scaler
+    # def scale_data(self, df):
+    #     """scale the dataframe"""
+    #     scaled_array = self.scaler.fit_transform(df.values)
+    #     scaled_df = pd.DataFrame(scaled_array, index=df.index, columns=df.columns)
+    #     return scaled_df, self.scaler
 
 
 class PreliminaryDataProcessing(DataPrepration):
@@ -252,7 +257,7 @@ class DataPreprocessing(DataPrepration):
                 combs.remove(remove_list_idx[r])
             # compute resulting column of the remaining combinations and add to the df
             for cc in combs:
-                new_col = calculate_new_col(data_matrix, list(cc))
+                new_col = self.calculate_new_col(data_matrix, list(cc))
                 new_feature_name = ''
                 for i in range(len(cc)-1):
                     new_feature_name = new_feature_name+features_names[cc[i]]+'_'
@@ -262,14 +267,14 @@ class DataPreprocessing(DataPrepration):
         ext_df = pd.DataFrame.from_dict(df_dict)
         return ext_df
 
-def calculate_new_col(X, indices):
-    """Given two indices and input matrix returns the multiplication of the columns corresponding columns"""
-    index = 0
-    new_col = X[:, indices[index]]
-    for ii in list(range(1, len(indices))):
-        new_col = np.multiply(new_col, X[:, indices[index + 1]])
-        index += 1
-    return new_col
+    def calculate_new_col(self, X, indices):
+        """Given two indices and input matrix returns the multiplication of the columns corresponding columns"""
+        index = 0
+        new_col = X[:, indices[index]]
+        for ii in list(range(1, len(indices))):
+            new_col = np.multiply(new_col, X[:, indices[index + 1]])
+            index += 1
+        return new_col
 
 
 
@@ -286,9 +291,9 @@ class Splitting(DataPrepration):
         self.split = ""
         self.training_indices = []
         self.test_indices = []
-
         # self.data_size_indices = []
         # self.core_num_indices = []
+        self.input_name = ""
 
         #self.data_size_train_indices = self.parameters['Splitting']['image_nums_train_data']
         #self.data_size_test_indices = self.parameters['Splitting']['image_nums_test_data']
@@ -299,20 +304,31 @@ class Splitting(DataPrepration):
         self.image_nums_train_data = self.parameters['Splitting']['image_nums_train_data']
         self.image_nums_test_data = self.parameters['Splitting']['image_nums_test_data']
 
+        self.criterion_col_list = self.parameters['Splitting']['criterion_col_list']
 
         # self.seed_v = self.parameters['Splitting']['seed_vector']
-        self.features_name = []
 
+        self.train_features = None
+        self.train_labels = None
+        self.test_features = None
+        self.test_labels = None
+        self.features_names = []
 
-
+        self.scaler = StandardScaler()
 
 
     def process(self, inputDF, seed):
 
         self.inputDF = inputDF
+        self.train_features, self.train_labels, self.test_features, self.test_labels, self.features_names, self.scaler = \
+            self.split_data(seed, self.inputDF, )
 
-        # shuffling the samples:
-        self.outputDF = self.shuffleSamples(self.inputDF, seed)
+        return self.train_features, self.train_labels, self.test_features, self.test_labels, self.features_names, self.scaler
+
+
+
+        #print(self.splitting_df)
+        #print(self.outputDF)
 
         # locate training and test indices
         # self.training_indices, self.test_indices = self.getTRTEindices(self.outputDF)
@@ -322,8 +338,6 @@ class Splitting(DataPrepration):
         #self.outputDF = self.split_data(seed, self.inputDF, self)
 
         #train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf
-
-        return self.outputDF
 
 
 
@@ -348,72 +362,92 @@ class Splitting(DataPrepration):
         self.parameters['Splitting']['core_nums_test_data'] = self.conf.get('Splitting', 'core_nums_test_data')
         self.parameters['Splitting']['core_nums_test_data'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['core_nums_test_data'])]
 
+        self.parameters['Splitting']['criterion_col_list'] = self.conf.get('Splitting', 'criterion_col_list')
+        self.parameters['Splitting']['criterion_col_list'] = [i for i in ast.literal_eval(self.parameters['Splitting']['criterion_col_list'])]
+        print(self.parameters['Splitting']['criterion_col_list'])
+
 
         # self.parameters['Splitting']['seed_vector'] = self.conf.get('Splitting', 'seed_vector')
         # self.parameters['Splitting']['seed_vector'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['seed_vector'])]
 
 
+    def make_splitting_df (self, df, criterion_col_list):
+        criterion_col_list = ['nContainers', 'dataSize']
+        splitting_df = pd.DataFrame(index=range(df.shape[0]))
+        splitting_df['original_index'] = df.index
+        for col in criterion_col_list:
+            splitting_df[col] = df[col]
 
-    def shuffleSamples(self, df, seed):
-        df = shuffle(df, random_state = seed)
-        return df
-
-    def getTRTEindices(self, df):
+        return splitting_df
 
 
-        if "dataSize" in df.columns:
+    def shuffleSamples(self, df, splitting_df, seed):
+        df , splitting_df= shuffle(df, splitting_df, random_state = seed)
+        return df, splitting_df
 
-            data_size_indices = pd.DataFrame(
-                [[k, v.values] for k, v in df.groupby('dataSize').groups.items()], columns=['col', 'indices'])
+    # def getTRTEindices(self, df):
+    #
+    #
+    #     if "dataSize" in df.columns:
+    #
+    #         data_size_indices = pd.DataFrame(
+    #             [[k, v.values] for k, v in df.groupby('dataSize').groups.items()], columns=['col', 'indices'])
+    #
+    #         data_size_train_indices = \
+    #             data_size_indices.loc[(data_size_indices['col'].isin(self.image_nums_train_data))]['indices']
+    #         data_size_test_indices = \
+    #             data_size_indices.loc[(data_size_indices['col'].isin(self.image_nums_test_data))]['indices']
+    #
+    #         data_size_train_indices = np.concatenate(list(data_size_train_indices), axis=0)
+    #         data_size_test_indices = np.concatenate(list(data_size_test_indices), axis=0)
+    #
+    #     # else:
+    #     #
+    #     #     data_size_train_indices = range(0, df.shape[0])
+    #     #     data_size_test_indices = range(0, df.shape[0])
+    #     #
+    #     # data_conf["image_nums_train_data"] = image_nums_train_data
+    #     # data_conf["image_nums_test_data"] = image_nums_test_data
+    #     #
+    #     # # if input_name in sparkdl_inputs:
+    #     # # core_num_indices = pd.DataFrame(
+    #     # # [[k, v.values] for k, v in df.groupby('nCores').groups.items()], columns=['col', 'indices'])
+    #
+    #     core_num_indices = pd.DataFrame(
+    #         [[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
+    #         columns=['col', 'indices'])
+    #
+    #     # For interpolation and extrapolation, put all the cores to the test set.
+    #     print('image_nums_train_data: ', self.image_nums_train_data)
+    #     print('image_nums_test_data: ', self.image_nums_test_data)
+    #     if set(self.image_nums_train_data) != set(self.image_nums_test_data):
+    #         self.core_nums_test_data = self.core_nums_test_data + self.core_nums_train_data
+    #
+    #     core_num_train_indices = \
+    #         core_num_indices.loc[(core_num_indices['col'].isin(self.core_nums_train_data))]['indices']
+    #     core_num_test_indices = \
+    #         core_num_indices.loc[(core_num_indices['col'].isin(self.core_nums_test_data))]['indices']
+    #
+    #     core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
+    #     core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
+    #
+    #     #data_conf["core_nums_train_data"] = core_nums_train_data
+    #     #data_conf["core_nums_test_data"] = core_nums_test_data
+    #
+    #     # Take the intersect of indices of datasize and core
+    #     train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
+    #     test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
+    #
+    #     return train_indices, test_indices
 
-            data_size_train_indices = \
-                data_size_indices.loc[(data_size_indices['col'].isin(self.image_nums_train_data))]['indices']
-            data_size_test_indices = \
-                data_size_indices.loc[(data_size_indices['col'].isin(self.image_nums_test_data))]['indices']
+    def scale_data(self, df):
+        """scale the dataframe"""
+        scaled_array = self.scaler.fit_transform(df.values)
+        scaled_df = pd.DataFrame(scaled_array, index=df.index, columns=df.columns)
+        return scaled_df, self.scaler
 
-            data_size_train_indices = np.concatenate(list(data_size_train_indices), axis=0)
-            data_size_test_indices = np.concatenate(list(data_size_test_indices), axis=0)
 
-        # else:
-        #
-        #     data_size_train_indices = range(0, df.shape[0])
-        #     data_size_test_indices = range(0, df.shape[0])
-        #
-        # data_conf["image_nums_train_data"] = image_nums_train_data
-        # data_conf["image_nums_test_data"] = image_nums_test_data
-        #
-        # # if input_name in sparkdl_inputs:
-        # # core_num_indices = pd.DataFrame(
-        # # [[k, v.values] for k, v in df.groupby('nCores').groups.items()], columns=['col', 'indices'])
-
-        core_num_indices = pd.DataFrame(
-            [[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
-            columns=['col', 'indices'])
-
-        # For interpolation and extrapolation, put all the cores to the test set.
-        print('image_nums_train_data: ', self.image_nums_train_data)
-        print('image_nums_test_data: ', self.image_nums_test_data)
-        if set(self.image_nums_train_data) != set(self.image_nums_test_data):
-            self.core_nums_test_data = self.core_nums_test_data + self.core_nums_train_data
-
-        core_num_train_indices = \
-            core_num_indices.loc[(core_num_indices['col'].isin(self.core_nums_train_data))]['indices']
-        core_num_test_indices = \
-            core_num_indices.loc[(core_num_indices['col'].isin(self.core_nums_test_data))]['indices']
-
-        core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
-        core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
-
-        #data_conf["core_nums_train_data"] = core_nums_train_data
-        #data_conf["core_nums_test_data"] = core_nums_test_data
-
-        # Take the intersect of indices of datasize and core
-        train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
-        test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
-
-        return train_indices, test_indices
-
-    def split_data(seed, df, image_nums_train_data, image_nums_test_data, core_nums_train_data, core_nums_test_data):
+    def split_data(self, seed, df):
 
         """split the original dataframe into Training Input (train_features), Training Output(train_labels),
         Test Input(test_features) and Test Output(test_labels)"""
@@ -421,11 +455,9 @@ class Splitting(DataPrepration):
         # data_conf["case"] = case
         # data_conf["split"] = split
         # data_conf["input_name"] = input_name
-        # #data_conf["sparkdl_run"] = sparkdl_run
-        #
-        # if input_name != "classifierselection":
+        # data_conf["sparkdl_run"] = sparkdl_run
 
-        if True:
+        if self.input_name != "classifierselection":
 
             df = shuffle(df, random_state=seed)
 
@@ -435,9 +467,9 @@ class Splitting(DataPrepration):
                     [[k, v.values] for k, v in df.groupby('dataSize').groups.items()], columns=['col', 'indices'])
 
                 data_size_train_indices = \
-                data_size_indices.loc[(data_size_indices['col'].isin(image_nums_train_data))]['indices']
+                    data_size_indices.loc[(data_size_indices['col'].isin(self.image_nums_train_data))]['indices']
                 data_size_test_indices = \
-                data_size_indices.loc[(data_size_indices['col'].isin(image_nums_test_data))]['indices']
+                    data_size_indices.loc[(data_size_indices['col'].isin(self.image_nums_test_data))]['indices']
 
                 data_size_train_indices = np.concatenate(list(data_size_train_indices), axis=0)
                 data_size_test_indices = np.concatenate(list(data_size_test_indices), axis=0)
@@ -447,34 +479,33 @@ class Splitting(DataPrepration):
                 data_size_train_indices = range(0, df.shape[0])
                 data_size_test_indices = range(0, df.shape[0])
 
-            #data_conf["image_nums_train_data"] = image_nums_train_data
-            #data_conf["image_nums_test_data"] = image_nums_test_data
+            # data_conf["image_nums_train_data"] = image_nums_train_data
+            # data_conf["image_nums_test_data"] = image_nums_test_data
 
-            #if input_name in sparkdl_inputs:
-                #core_num_indices = pd.DataFrame(
-                    #[[k, v.values] for k, v in df.groupby('nCores').groups.items()], columns=['col', 'indices'])
+            # if input_name in sparkdl_inputs:
+            # core_num_indices = pd.DataFrame(
+            # [[k, v.values] for k, v in df.groupby('nCores').groups.items()], columns=['col', 'indices'])
 
             core_num_indices = pd.DataFrame(
                 [[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
                 columns=['col', 'indices'])
 
-
             # For interpolation and extrapolation, put all the cores to the test set.
-            print('image_nums_train_data: ', image_nums_train_data)
-            print('image_nums_test_data: ', image_nums_test_data)
-            if set(image_nums_train_data) != set(image_nums_test_data):
-                core_nums_test_data = core_nums_test_data + core_nums_train_data
+            print('image_nums_train_data: ', self.image_nums_train_data)
+            print('image_nums_test_data: ', self.image_nums_test_data)
+            # if set(self.image_nums_train_data) != set(self.image_nums_test_data):
+            #     core_nums_test_data = core_nums_test_data + core_nums_train_data
 
             core_num_train_indices = \
-            core_num_indices.loc[(core_num_indices['col'].isin(core_nums_train_data))]['indices']
+                core_num_indices.loc[(core_num_indices['col'].isin(self.core_nums_train_data))]['indices']
             core_num_test_indices = \
-            core_num_indices.loc[(core_num_indices['col'].isin(core_nums_test_data))]['indices']
+                core_num_indices.loc[(core_num_indices['col'].isin(self.core_nums_test_data))]['indices']
 
             core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
             core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
 
-            #data_conf["core_nums_train_data"] = core_nums_train_data
-            #data_conf["core_nums_test_data"] = core_nums_test_data
+            # data_conf["core_nums_train_data"] = core_nums_train_data
+            # data_conf["core_nums_test_data"] = core_nums_test_data
 
             # Take the intersect of indices of datasize and core
             train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
@@ -499,22 +530,22 @@ class Splitting(DataPrepration):
             #                    "nTask_S2","SHavg_S3","Bavg_S4"]]
 
         # Classifier selection, the analysis are only on the train set
-        # # if input_name == "classifierselection":
-        #     # Drop the constant columns
-        #     df = df.loc[:, (df != df.iloc[0]).any()]
-        #     cores = df["nCores"]
-        #     # Read
-        #
-        #     data_conf["core_nums_train_data"] = core_nums_train_data
-        #     data_conf["core_nums_test_data"] = []
-        #     data_conf["image_nums_train_data"] = image_nums_train_data
-        #     data_conf["image_nums_test_data"] = []
-        #
-        #     train_indices = range(0, len(cores))
-        #     test_indices = []
+        if self.input_name == "classifierselection":
+            # Drop the constant columns
+            df = df.loc[:, (df != df.iloc[0]).any()]
+            cores = df["nCores"]
+            # Read
+
+            # data_conf["core_nums_train_data"] = core_nums_train_data
+            # data_conf["core_nums_test_data"] = []
+            # data_conf["image_nums_train_data"] = image_nums_train_data
+            # data_conf["image_nums_test_data"] = []
+
+            train_indices = range(0, len(cores))
+            test_indices = []
 
         # Scale the data.
-        df, scaler = scale_data(df)
+        df, self.scaler = self.scale_data(df)
         train_df = df.ix[train_indices]
         test_df = df.ix[test_indices]
         train_labels = train_df.iloc[:, 0]
@@ -529,28 +560,31 @@ class Splitting(DataPrepration):
         # data_conf["test_cores"] = test_cores
         # features_names[0] : applicationCompletionTime
         features_names = list(df.columns.values)[1:]
-        data_conf["train_features_org"] = train_features.as_matrix()
-        data_conf["test_features_org"] = test_features.as_matrix()
-        # print(features_names)
+        # data_conf["train_features_org"] = train_features.as_matrix()
+        # data_conf["test_features_org"] = test_features.as_matrix()
+        # # print(features_names)
+        #
+        # data_conf["test_without_apriori"] = False
 
-        data_conf["test_without_apriori"] = False
-
-        return train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf
-
-
-
-
-
-
-
-
+        #return train_features, train_labels, test_features, test_labels, features_names, self.scaler, data_conf
+        return train_features, train_labels, test_features, test_labels, features_names, self.scaler
 
 
 class FeatureSelection(DataPrepration):
 
     def __init__(self):
         DataPrepration.__init__(self)
-
+        self.conf = cp.ConfigParser()
+        self.parameters = {}
+        self.get_parameters()
+        self.select_features_vif = False
+        self.select_features_sfs = True
+        self.min_features = 1
+        self.max_features = -1
+        self.is_floating = False
+        self.fold_num = 5
+        self.Confidence_level = 0.999999
+        self.clipping_no = 20
 
 
 class DataAnalysis(Task):
