@@ -5,6 +5,8 @@ import numpy as np
 import ast
 import itertools
 from sklearn.utils import shuffle
+from sklearn.linear_model import LinearRegression, Lasso, Ridge, RidgeCV
+from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 
 
 
@@ -21,6 +23,7 @@ class SequenceDataProcessing(object):
         self.normalization = Normalization()
         self.seed_v = [1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012, 1023]
         self.scaler = None
+        self.feature_selection = FeatureSelection()
 
     def process(self):
 
@@ -30,14 +33,7 @@ class SequenceDataProcessing(object):
 
         splitting_df = self.data_splitting.make_splitting_df(temp, self.data_splitting.criterion_col_list)
 
-        # df, inversing_cols = add_inverse_features(df, to_be_inv_List)
-        temp, inversing_cols = self.data_preprocessing.process(temp)
-
-        # ext_df = add_all_comb(df, inversing_cols, 0, degree)
-        temp = self.data_preprocessing.add_all_comb(temp, inversing_cols, 0, 2)
-
-        # scale the whole data
-        # temp, self.scaler = self.normalization.process(temp)
+        temp = self.data_preprocessing.process(temp)
 
 
         for iter in range(self.run_num):
@@ -53,7 +49,12 @@ class SequenceDataProcessing(object):
                 = self.data_splitting.process(temp, self.seed_v[iter])
             self.run_info[iter]['ext_feature_names'] = features_names
 
+            cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test = \
+                    self.feature_selection.process(train_features, train_labels, test_features, test_labels, features_names)
 
+            # cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test = \
+            #     #         Ridge_SFS_GridSearch(ridge_params, train_features, train_labels, test_features, test_labels, k_features,
+            # #                              fold_num)
 
             print('tamoom shod iter')
 
@@ -204,12 +205,32 @@ class DataPreprocessing(DataPrepration):
 
     def __init__(self):
         DataPrepration.__init__(self)
-        self.to_be_inv_List = ['nContainers']
+
+        self.conf = cp.ConfigParser()
+        # self.to_be_inv_List = ['nContainers']
+        self.parameters = {}
+        self.get_parameters()
+        self.to_be_inv_List = self.parameters['Inverse']['to_be_inv_List']
+        self.inversing_cols = None
+        self.degree = self.parameters['FeatureExtender']['degree']
+
 
     def process(self, inputDF):
         self.inputDF = inputDF
         self.outputDF, self.inversing_cols = self.add_inverse_features(self.inputDF, self.to_be_inv_List)
-        return self.outputDF, self.inversing_cols
+        self.outputDF = self.add_all_comb(self.outputDF, self.inversing_cols, 0, self.degree)
+
+        return self.outputDF
+
+    def get_parameters(self):
+        """Gets the parameters from the config file named parameters.ini and put them into a dictionary
+        named parameters"""
+        self.conf.read('params.ini')
+        self.parameters['Inverse'] = {}
+        self.parameters['Inverse']['to_be_inv_List'] = [str(self.conf['Inverse']['to_be_inv_List'])]
+        self.parameters['FeatureExtender'] = {}
+        self.parameters['FeatureExtender']['degree'] = int(self.conf['FeatureExtender']['degree'])
+
 
     def add_inverse_features(self, df, to_be_inv_List):
         """Given a dataframe and the name of columns that should be inversed, add the needed inversed columns and returns
@@ -323,6 +344,9 @@ class Splitting(DataPrepration):
         self.train_features, self.train_labels, self.test_features, self.test_labels, self.features_names, self.scaler = \
             self.split_data(seed, self.inputDF, )
 
+
+
+
         return self.train_features, self.train_labels, self.test_features, self.test_labels, self.features_names, self.scaler
 
 
@@ -364,7 +388,6 @@ class Splitting(DataPrepration):
 
         self.parameters['Splitting']['criterion_col_list'] = self.conf.get('Splitting', 'criterion_col_list')
         self.parameters['Splitting']['criterion_col_list'] = [i for i in ast.literal_eval(self.parameters['Splitting']['criterion_col_list'])]
-        print(self.parameters['Splitting']['criterion_col_list'])
 
 
         # self.parameters['Splitting']['seed_vector'] = self.conf.get('Splitting', 'seed_vector')
@@ -577,15 +600,159 @@ class FeatureSelection(DataPrepration):
         self.conf = cp.ConfigParser()
         self.parameters = {}
         self.get_parameters()
-        self.select_features_vif = False
-        self.select_features_sfs = True
-        self.min_features = 1
-        self.max_features = -1
-        self.is_floating = False
-        self.fold_num = 5
-        self.Confidence_level = 0.999999
-        self.clipping_no = 20
+        self.select_features_vif = self.parameters['FS']['select_features_vif']
+        self.select_features_sfs = self.parameters['FS']['select_features_sfs']
+        self.min_features = self.parameters['FS']['min_features']
+        self.max_features = self.parameters['FS']['max_features']
+        self.is_floating = self.parameters['FS']['is_floating']
+        self.fold_num = self.parameters['FS']['fold_num']
+        self.Confidence_level = self.parameters['FS']['Confidence_level']
+        self.clipping_no = self.parameters['FS']['clipping_no']
+        self.ridge_params = self.parameters['Ridge']['ridge_params']
 
+
+    def get_parameters(self):
+        """Gets the parameters from the config file named parameters.ini and put them into a dictionary
+        named parameters"""
+        self.conf.read('params.ini')
+        self.parameters['FS'] = {}
+
+        self.parameters['FS']['select_features_vif'] = bool(self.conf['FS']['select_features_vif'])
+        self.parameters['FS']['select_features_sfs'] = bool(self.conf['FS']['select_features_sfs'])
+        self.parameters['FS']['min_features'] = int(self.conf['FS']['min_features'])
+        self.parameters['FS']['max_features'] = int(self.conf['FS']['max_features'])
+        self.parameters['FS']['is_floating'] = bool(self.conf['FS']['is_floating'])
+        self.parameters['FS']['fold_num'] = int(self.conf['FS']['fold_num'])
+        self.parameters['FS']['Confidence_level'] = self.conf['FS']['Confidence_level']
+        self.parameters['FS']['clipping_no'] = int(self.conf['FS']['clipping_no'])
+        self.parameters['Ridge'] = {}
+        self.parameters['Ridge']['ridge_params'] = self.conf['Ridge']['ridge_params']
+        self.parameters['Ridge']['ridge_params'] = [i for i in ast.literal_eval(self.parameters['Ridge']['ridge_params'])]
+
+
+    def process(self, train_features, train_labels, test_features, test_labels, features_names):
+
+        k_features = self.calc_k_features(features_names)
+
+        cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test =\
+            self.Ridge_SFS_GridSearch(train_features, train_labels, test_features, test_labels, k_features)
+
+
+        return cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test
+
+    def Ridge_SFS_GridSearch(self, train_features, train_labels, test_features, test_labels, k_features):
+
+        X = pd.DataFrame.as_matrix(train_features)
+        Y = pd.DataFrame.as_matrix(train_labels)
+        ext_feature_names = train_features.columns.values
+
+        alpha_v = self.ridge_params
+
+        # list of MSE error for different alpha values:
+        param_overal_MSE = []
+
+        # list of MAPE error for different alpha values:
+        Mape_overal_error = []
+
+        # Dictionary keeping information about all scores and values and selected features in all iterations for all params
+        cv_info = {}
+
+        # Selected features for each alpha
+        sel_F = []
+
+        # Selected features names for each alpha
+        sel_F_names = []
+
+        for a in alpha_v:
+            # building the models
+            ridge = Ridge(a)
+            model = Ridge(a)
+            this_a = 'alpha = ' + str(a)
+            cv_info[this_a] = {}
+
+            # building the sfs
+            sfs = SFS(clone_estimator=True,
+                      estimator=model,
+                      k_features=k_features,
+                      forward=True,
+                      floating=False,
+                      scoring='neg_mean_squared_error',
+                      cv=self.fold_num,
+                      n_jobs=16)
+
+            # fit the sfs on training part (scaled) and evaluate the score on test part of this fold
+            sfs = sfs.fit(X, Y)
+            sel_F_idx = sfs.k_feature_idx_
+            sel_F.append(sel_F_idx)
+            cv_info[this_a]['Selected_Features'] = list(sel_F_idx)
+
+            sel_F_names.append(ext_feature_names[list(sel_F_idx)].tolist())
+            cv_info[this_a]['Selected_Features_Names'] = ext_feature_names[list(sel_F_idx)].tolist()
+
+            # fit the ridge model with the scaled version of the selected features
+            ridge.fit(X[:, sfs.k_feature_idx_], Y)
+
+            # evaluate the MSE error on the whole (scaled) training data only using the selected features
+            Y_hat = ridge.predict(X[:, sfs.k_feature_idx_])
+            MSE = self.calcMSE(Y_hat, Y)
+            param_overal_MSE.append(MSE)
+            cv_info[this_a]['MSE_error'] = MSE
+
+            # evaluate the MAPE error on the whole training data only using the selected features
+            Mape_error = self.calcMAPE(Y_hat, Y)
+            Mape_overal_error.append(Mape_error)
+            cv_info[this_a]['MAPE_error'] = Mape_error
+            print('alpha = ', a, '     MSE Error= ', MSE, '    MAPE Error = ', Mape_error, '    Ridge Coefs= ',
+                  ridge.coef_, '     Intercept = ', ridge.intercept_, '     SEL = ', ext_feature_names[list(sel_F_idx)])
+
+        # get the results:
+        # select the best alpha based on obtained values
+        MSE_index = param_overal_MSE.index(min(param_overal_MSE))
+
+        # report the best alpha based on obtained values
+        print('Least_MSE_Error_index = ', MSE_index, ' => Least_RSE_Error_alpha = ', alpha_v[MSE_index])
+        Least_MSE_alpha = alpha_v[MSE_index]
+        best_trained_model = Ridge(Least_MSE_alpha)
+        best_trained_model.fit(X[:, sel_F[MSE_index]], Y)
+        sel_idx = sel_F[MSE_index]
+
+        # Since the data for classsifierselection is too small, we only calculate the train error
+
+        X_train = pd.DataFrame.as_matrix(train_features)
+        Y_train = pd.DataFrame.as_matrix(train_labels)
+        X_test = pd.DataFrame.as_matrix(test_features)
+        Y_test = pd.DataFrame.as_matrix(test_labels)
+
+        # if data_conf["input_name"] == "classifierselection":
+        #     y_pred_test = []
+        # else:
+        #     y_pred_test = best_trained_model.predict(X_test[:, sel_idx])
+
+        y_pred_test = best_trained_model.predict(X_test[:, sel_idx])
+
+        y_pred_train = best_trained_model.predict(X_train[:, sel_idx])
+
+        return cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test
+
+    def calc_k_features(self, features_names):
+        """calculate the range of number of features that sfs is allowed to select"""
+
+        # Selecting from all features
+        if self.max_features == -1:
+            k_features = (self.min_features, len(features_names))
+            # Selecting from the given range
+        if self.max_features != -1:
+            k_features = (self.min_features, self.max_features)
+        return k_features
+
+    def calcMSE(self, Y_hat, Y):
+        MSE = np.mean((Y_hat - Y) ** 2)
+        return MSE
+
+    def calcMAPE(self, Y_hat, Y):
+        """given true and predicted values returns MAPE error"""
+        Mapeerr = np.mean(np.abs((Y - Y_hat) / Y)) * 100
+        return Mapeerr
 
 class DataAnalysis(Task):
     """This is class defining machine learning task"""
