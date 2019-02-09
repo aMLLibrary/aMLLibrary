@@ -12,21 +12,38 @@ from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 
 class SequenceDataProcessing(object):
     def __init__(self):
-        # self.steps = []
+        self.conf = cp.ConfigParser()
+        self.parameters = {}
+        self.get_parameters()
         self.seed_v = []
         self.run_info = []
-        self.run_num = 10
-        self.result_path = "./results/"
+        self.data_config = {}
+        self.run_num = self.parameters['General']['run_num']
+        self.result_path = self.parameters['DataPreparation']['result_path']
         self.preliminary_data_processing = PreliminaryDataProcessing("P8_kmeans.csv")
         self.data_preprocessing = DataPreprocessing()
         self.data_splitting = Splitting()
         self.normalization = Normalization()
-        self.seed_v = [1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012, 1023]
+        # self.seed_v = [1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012, 1023]
+        self.seed_v = self.parameters['Splitting']['seed_vector']
         self.scaler = None
         self.feature_selection = FeatureSelection()
+        self.regression = Regression()
+
+    def get_parameters(self):
+        """Gets the parameters from the config file named parameters.ini and put them into a dictionary
+        named parameters"""
+        self.conf.read('params.ini')
+        self.parameters['General'] = {}
+        self.parameters['General']['run_num'] = int(self.conf['General']['run_num'])
+        self.parameters['DataPreparation'] = {}
+        self.parameters['DataPreparation']['result_path'] = self.conf['DataPreparation']['result_path']
+        self.parameters['Splitting'] = {}
+        self.parameters['Splitting']['seed_vector'] = self.conf['Splitting']['seed_vector']
+        self.parameters['Splitting']['seed_vector'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['seed_vector'])]
+
 
     def process(self):
-
 
         # df = read_inputs()
         temp = self.preliminary_data_processing.process(None)
@@ -45,16 +62,24 @@ class SequenceDataProcessing(object):
         #    Should be replaced with basic functions of splitting:
         #    temp = self.data_splitting.process(temp, splitting_df, self.seed_v[iter])
 
-            train_features, train_labels, test_features, test_labels, features_names, scaler \
+            train_features, train_labels, test_features, test_labels, features_names, self.scaler \
                 = self.data_splitting.process(temp, self.seed_v[iter])
+            print(self.seed_v[iter])
             self.run_info[iter]['ext_feature_names'] = features_names
 
             cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test = \
                     self.feature_selection.process(train_features, train_labels, test_features, test_labels, features_names)
 
-            # cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test = \
-            #     #         Ridge_SFS_GridSearch(ridge_params, train_features, train_labels, test_features, test_labels, k_features,
-            # #                              fold_num)
+            self.run_info[iter]['cv_info'] = cv_info
+            self.run_info[iter]['Sel_features'] = list(sel_idx)
+            self.run_info[iter]['Sel_features_names'] = [features_names[i] for i in sel_idx]
+            self.run_info[iter]['best_param'] = Least_MSE_alpha
+            self.run_info[iter]['best_model'] = best_trained_model
+
+            err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores = \
+            self.regression.process(y_pred_test, y_pred_train, test_features, test_labels, train_features,
+            train_labels, self.scaler, features_names)
+            print(err_test, err_train)
 
             print('tamoom shod iter')
 
@@ -308,13 +333,13 @@ class Splitting(DataPrepration):
         self.conf = cp.ConfigParser()
         self.parameters = {}
         self.get_parameters()
-        self.case = ""
-        self.split = ""
+        self.case = self.parameters['DataPreparation']['case']
+        self.split = self.parameters['DataPreparation']['split']
         self.training_indices = []
         self.test_indices = []
         # self.data_size_indices = []
         # self.core_num_indices = []
-        self.input_name = ""
+        self.input_name = self.parameters['DataPreparation']['input_name']
 
         #self.data_size_train_indices = self.parameters['Splitting']['image_nums_train_data']
         #self.data_size_test_indices = self.parameters['Splitting']['image_nums_test_data']
@@ -326,8 +351,6 @@ class Splitting(DataPrepration):
         self.image_nums_test_data = self.parameters['Splitting']['image_nums_test_data']
 
         self.criterion_col_list = self.parameters['Splitting']['criterion_col_list']
-
-        # self.seed_v = self.parameters['Splitting']['seed_vector']
 
         self.train_features = None
         self.train_labels = None
@@ -345,10 +368,7 @@ class Splitting(DataPrepration):
             self.split_data(seed, self.inputDF, )
 
 
-
-
         return self.train_features, self.train_labels, self.test_features, self.test_labels, self.features_names, self.scaler
-
 
 
         #print(self.splitting_df)
@@ -389,9 +409,11 @@ class Splitting(DataPrepration):
         self.parameters['Splitting']['criterion_col_list'] = self.conf.get('Splitting', 'criterion_col_list')
         self.parameters['Splitting']['criterion_col_list'] = [i for i in ast.literal_eval(self.parameters['Splitting']['criterion_col_list'])]
 
+        self.parameters['DataPreparation'] = {}
+        self.parameters['DataPreparation']['input_name'] = self.conf.get('DataPreparation', 'input_name')
+        self.parameters['DataPreparation']['split'] = self.conf.get('DataPreparation', 'split')
+        self.parameters['DataPreparation']['case'] = self.conf.get('DataPreparation', 'case')
 
-        # self.parameters['Splitting']['seed_vector'] = self.conf.get('Splitting', 'seed_vector')
-        # self.parameters['Splitting']['seed_vector'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['seed_vector'])]
 
 
     def make_splitting_df (self, df, criterion_col_list):
@@ -474,11 +496,11 @@ class Splitting(DataPrepration):
 
         """split the original dataframe into Training Input (train_features), Training Output(train_labels),
         Test Input(test_features) and Test Output(test_labels)"""
-        # data_conf = {}
-        # data_conf["case"] = case
-        # data_conf["split"] = split
-        # data_conf["input_name"] = input_name
-        # data_conf["sparkdl_run"] = sparkdl_run
+        self.data_conf = {}
+        self.data_conf["case"] = self.parameters['DataPreparation']['case']
+        self.data_conf["split"] = self.parameters['DataPreparation']['split']
+        self.data_conf["input_name"] = self.parameters['DataPreparation']['input_name']
+        #self.data_conf["sparkdl_run"] = self.parameters['DataPreparation']['split']
 
         if self.input_name != "classifierselection":
 
@@ -527,12 +549,12 @@ class Splitting(DataPrepration):
             core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
             core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
 
-            # data_conf["core_nums_train_data"] = core_nums_train_data
-            # data_conf["core_nums_test_data"] = core_nums_test_data
+            self.data_conf["core_nums_train_data"] = self.core_nums_train_data
+            self.data_conf["core_nums_test_data"] = self.core_nums_test_data
 
             # Take the intersect of indices of datasize and core
-            train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
-            test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
+            self.train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
+            self.test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
 
             # Before Scaling (This is for testing whether split based on datasize is OK.)
             # train_df = self.df.ix[self.data_size_train_indices]
@@ -569,8 +591,8 @@ class Splitting(DataPrepration):
 
         # Scale the data.
         df, self.scaler = self.scale_data(df)
-        train_df = df.ix[train_indices]
-        test_df = df.ix[test_indices]
+        train_df = df.ix[self.train_indices]
+        test_df = df.ix[self.test_indices]
         train_labels = train_df.iloc[:, 0]
         train_features = train_df.iloc[:, 1:]
 
@@ -762,7 +784,165 @@ class DataAnalysis(Task):
         self.parameters = {}
 
 
+
+
+
 class Regression(DataAnalysis):
 
     def __init__(self):
         DataAnalysis.__init__(self)
+        self.conf = cp.ConfigParser()
+        # self.parameters = {}
+        # self.get_parameters()
+
+
+    def process(self, y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, scaler, features_names):
+
+        err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores = \
+            self.mean_absolute_percentage_error(y_pred_test, y_pred_train, test_features, test_labels, train_features,
+                                                train_labels, scaler, features_names)
+
+        return err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores
+
+    def mean_absolute_percentage_error(self, y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, scaler, features_names):
+
+
+        train_features_org = train_features
+        if "y_true_train" in train_features_org.columns.values:
+            train_features_org.drop("y_true_train", axis=1, inplace=True)
+        if "y_pred_train" in train_features_org.columns.values:
+            train_features_org.drop("y_pred_train", axis=1, inplace=True)
+
+        test_features_org = test_features
+        if 'y_true_test' in test_features_org.columns.values:
+            test_features_org.drop('y_true_test', axis=1, inplace=True)
+        if 'y_pred_test' in test_features_org.columns.values:
+            test_features_org.drop('y_pred_test', axis=1, inplace=True)
+
+
+        if y_pred_test != []:
+            # Test error
+            y_true_test = test_labels
+            test_features_with_true = pd.DataFrame(test_features_org)
+            test_features_with_pred = pd.DataFrame(test_features_org)
+
+            y_true_test = pd.DataFrame(y_true_test)
+            y_pred_test = pd.DataFrame(y_pred_test)
+
+            y_pred_test.index = y_true_test.index
+
+
+            test_features_with_true.insert(0, "y_true_test", y_true_test)
+            test_features_with_pred.insert(0, "y_pred_test", y_pred_test)
+
+
+
+            test_features_with_true.drop('y_pred_test', axis = 1, inplace=True)
+            test_features_with_pred.drop('y_true_test', axis = 1, inplace=True)
+
+
+            test_data_with_true = pd.DataFrame(scaler.inverse_transform(test_features_with_true.values))
+            test_data_with_pred = pd.DataFrame(scaler.inverse_transform(test_features_with_pred.values))
+
+            test_data_with_true_cols = ['y_true_test']
+            test_data_with_pred_cols = ['y_pred_test']
+            for elem in features_names:
+                test_data_with_true_cols.append(elem)
+                test_data_with_pred_cols.append(elem)
+
+
+            test_data_with_true.columns = test_data_with_true_cols
+            test_data_with_pred.columns = test_data_with_pred_cols
+            test_data_with_true.index = y_true_test.index
+            test_data_with_pred.index = y_true_test.index
+
+            cores = test_data_with_true['nContainers'].unique().tolist()
+            cores = list(map(lambda x: int(x), cores))
+            # if set(cores) == set(self.data_conf["core_nums_test_data"]):
+            y_true_test_cores = cores
+            print(y_true_test_cores)
+
+            cores = test_data_with_pred['nContainers'].unique().tolist()
+            cores = list(map(lambda x: int(x), cores))
+            # if set(cores) == set(self.data_conf["core_nums_test_data"]):
+            y_pred_test_cores = cores
+            print(y_pred_test_cores)
+
+            #for col in test_data_with_true:
+                #cores = test_data_with_true[col].unique().tolist()
+                #cores = list(map(lambda x: int(x), cores))
+                #if set(cores) == set(data_conf["core_nums_test_data"]):
+                    #y_true_test_cores = test_data_with_true[col].tolist()
+            # for col in test_data_with_pred:
+                # cores = test_data_with_pred[col].unique().tolist()
+                # cores = list(map(lambda x: int(x), cores))
+                # if set(cores) == set(data_conf["core_nums_test_data"]):
+                    # y_pred_test_cores = test_data_with_pred[col].tolist()
+
+            y_true_test = test_data_with_true.iloc[:, 0]
+            y_pred_test = test_data_with_pred.iloc[:, 0]
+
+            err_test = np.mean(np.abs((y_true_test - y_pred_test) / y_true_test)) * 100
+        #if y_pred_test == []:
+        #    err_test = -1
+
+        # Train error
+        y_true_train = train_labels
+        train_features_with_true = pd.DataFrame(train_features_org)
+        train_features_with_pred = pd.DataFrame(train_features_org)
+
+        y_true_train = pd.DataFrame(y_true_train)
+        y_pred_train = pd.DataFrame(y_pred_train)
+        y_pred_train.index = y_true_train.index
+
+        train_features_with_true.insert(0, "y_true_train", y_true_train)
+        train_features_with_pred.insert(0, "y_pred_train", y_pred_train)
+
+        train_features_with_true.drop('y_pred_train', axis=1, inplace=True)
+        train_features_with_pred.drop('y_true_train', axis=1, inplace=True)
+
+        train_data_with_true = pd.DataFrame(scaler.inverse_transform(train_features_with_true.values))
+        train_data_with_pred = pd.DataFrame(scaler.inverse_transform(train_features_with_pred.values))
+
+
+
+        train_data_with_true_cols = ['y_true_train']
+        train_data_with_pred_cols = ['y_pred_train']
+        for elem in features_names:
+            train_data_with_true_cols.append(elem)
+            train_data_with_pred_cols.append(elem)
+
+        train_data_with_true.columns = train_data_with_true_cols
+        train_data_with_pred.columns = train_data_with_pred_cols
+        train_data_with_true.index = y_true_train.index
+        train_data_with_pred.index = y_true_train.index
+
+        cores = train_data_with_true['nContainers'].unique().tolist()
+        cores = list(map(lambda x: int(x), cores))
+        # if set(cores) == set(self.data_conf["core_nums_train_data"]):
+        y_true_train_cores = cores
+        print(y_true_train_cores)
+
+        cores = train_data_with_pred['nContainers'].unique().tolist()
+        cores = list(map(lambda x: int(x), cores))
+        # if set(cores) == set(self.data_conf["core_nums_train_data"]):
+        y_pred_train_cores = cores
+        print(y_pred_train_cores)
+
+        # for col in train_data_with_true:
+            # cores = train_data_with_true[col].unique().tolist()
+            # cores = list(map(lambda x: int(x), cores))
+            # if set(cores) == set(data_conf["core_nums_train_data"]):
+                # y_true_train_cores = train_data_with_true[col].tolist()
+        # for col in train_data_with_pred:
+            # cores = train_data_with_pred[col].unique().tolist()
+            # cores = list(map(lambda x: int(x), cores))
+            # if set(cores) == set(data_conf["core_nums_train_data"]):
+                #y_pred_train_cores = train_data_with_pred[col].tolist()
+
+        y_true_train = train_data_with_true.iloc[:, 0]
+        y_pred_train = train_data_with_pred.iloc[:, 0]
+
+        err_train = np.mean(np.abs((y_true_train - y_pred_train) / y_true_train)) * 100
+
+        return err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores
