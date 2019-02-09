@@ -7,7 +7,7 @@ import itertools
 from sklearn.utils import shuffle
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, RidgeCV
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
-
+import os
 
 
 class SequenceDataProcessing(object):
@@ -29,6 +29,7 @@ class SequenceDataProcessing(object):
         self.scaler = None
         self.feature_selection = FeatureSelection()
         self.regression = Regression()
+        self.results = Results()
 
     def get_parameters(self):
         """Gets the parameters from the config file named parameters.ini and put them into a dictionary
@@ -48,7 +49,7 @@ class SequenceDataProcessing(object):
         # df = read_inputs()
         temp = self.preliminary_data_processing.process(None)
 
-        splitting_df = self.data_splitting.make_splitting_df(temp, self.data_splitting.criterion_col_list)
+        # splitting_df = self.data_splitting.make_splitting_df(temp, self.data_splitting.criterion_col_list)
 
         temp = self.data_preprocessing.process(temp)
 
@@ -79,9 +80,19 @@ class SequenceDataProcessing(object):
             err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores = \
             self.regression.process(y_pred_test, y_pred_train, test_features, test_labels, train_features,
             train_labels, self.scaler, features_names)
-            print(err_test, err_train)
 
+
+            self.run_info[iter]['MAPE_train'] = err_train
+            self.run_info[iter]['MAPE_test'] = err_test
+            self.run_info[iter]['y_true_train'] = y_true_train
+            self.run_info[iter]['y_pred_train'] = y_pred_train
+            self.run_info[iter]['y_true_test'] = y_true_test
+            self.run_info[iter]['y_pred_test'] = y_pred_test
+            self.run_info[iter]['data_conf'] = self.data_config
+            self.results.save_temporary_results(self.run_info)
             print('tamoom shod iter')
+        print(self.parameters)
+        self.results.process(self.run_info)
 
 
 
@@ -860,13 +871,11 @@ class Regression(DataAnalysis):
             cores = list(map(lambda x: int(x), cores))
             # if set(cores) == set(self.data_conf["core_nums_test_data"]):
             y_true_test_cores = cores
-            print(y_true_test_cores)
 
             cores = test_data_with_pred['nContainers'].unique().tolist()
             cores = list(map(lambda x: int(x), cores))
             # if set(cores) == set(self.data_conf["core_nums_test_data"]):
             y_pred_test_cores = cores
-            print(y_pred_test_cores)
 
             #for col in test_data_with_true:
                 #cores = test_data_with_true[col].unique().tolist()
@@ -921,13 +930,13 @@ class Regression(DataAnalysis):
         cores = list(map(lambda x: int(x), cores))
         # if set(cores) == set(self.data_conf["core_nums_train_data"]):
         y_true_train_cores = cores
-        print(y_true_train_cores)
+
 
         cores = train_data_with_pred['nContainers'].unique().tolist()
         cores = list(map(lambda x: int(x), cores))
         # if set(cores) == set(self.data_conf["core_nums_train_data"]):
         y_pred_train_cores = cores
-        print(y_pred_train_cores)
+
 
         # for col in train_data_with_true:
             # cores = train_data_with_true[col].unique().tolist()
@@ -946,3 +955,93 @@ class Regression(DataAnalysis):
         err_train = np.mean(np.abs((y_true_train - y_pred_train) / y_true_train)) * 100
 
         return err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores
+
+class Results(Task):
+    """This is class defining machine learning task"""
+
+    def __init__(self):
+        Task.__init__(self)
+
+    def process(self, run_info):
+        best_run_idx, best_data_conf, best_cv_info, best_trained_model, best_Least_MSE_alpha, best_err_train, best_err_test = \
+                self.select_best_run(run_info)
+        # print(self.parameters)
+
+        # result_name = self.get_result_name(degree, select_features_sfs, k_features, is_floating)
+        #
+        # result_path, results = save_results(best_err_train, best_err_test, result_name, result_path,
+        #                                     best_data_conf, best_cv_info, ridge_params, best_trained_model, degree,
+        #                                     best_Least_MSE_alpha)
+
+        return
+
+    def select_best_run(self, run_info):
+        Mape_list = []
+        for i in range(len(run_info)):
+            Mape_list.append(run_info[i]['MAPE_test'])
+
+        best_run_idx = Mape_list.index(min(Mape_list))
+        best_data_conf = run_info[best_run_idx]['data_conf']
+        best_cv_info = run_info[best_run_idx]['cv_info']
+        best_trained_model = run_info[best_run_idx]['best_model']
+        best_Least_MSE_alpha = run_info[best_run_idx]['best_param']
+        best_err_train = run_info[best_run_idx]['MAPE_train']
+        best_err_test = run_info[best_run_idx]['MAPE_test']
+
+        return best_run_idx, best_data_conf, best_cv_info, best_trained_model, best_Least_MSE_alpha, best_err_train, best_err_test
+
+
+    def get_result_name(self, degree, select_features_sfs, k_features, is_floating):
+
+        if degree == []:
+            result_name = "d=0_"
+        if degree != []:
+            # n_terms = list(map(lambda x: str(x), n_terms))
+            # n_terms = ','.join(n_terms)
+            degree = str(degree)
+            result_name = "d=" + degree + "_"
+        # if select_features_vif == True :
+        #    result_name += "vif_"
+        # if select_features_vif == False :
+        #    result_name += "no_vif_"
+        if select_features_sfs == False:
+            result_name += "baseline_results"
+        if select_features_sfs == True and is_floating == False:
+            result_name += "sfs_"
+            result_name += str(k_features[0]) + '_'
+            result_name += str(k_features[1])
+            # if max_k_features == -1:
+            #    result_name += "all_features_results"
+            # if max_k_features != -1 :
+            #    result_name += str(self.max_k_features) + "_features_results"
+        if select_features_sfs == True and is_floating == True:
+            result_name += "sffs_"
+            result_name += str(k_features[0]) + '_'
+            result_name += str(k_features[1])
+            # if self.max_k_features == -1 :
+            #    self.result_name += "all_features_results"
+            # if self.max_k_features != -1 :
+            #   self.result_name += str(self.max_k_features) + "_features_results"
+        # if self.data_conf["test_without_apriori"] == True:
+        #    self.result_name += "_test_without_apriori"
+        # if self.data_conf["fixed_features"] == True:
+        #    self.result_name = "fixed_features"
+        result_name = result_name + '_' + str(run_num) + '_runs'
+
+        Tr_size = '_Tr'
+        for sz in image_nums_train_data:
+            Tr_size = Tr_size + '_' + str(sz)
+
+        Te_size = '_Te'
+        for sz in image_nums_test_data:
+            Te_size = Te_size + '_' + str(sz)
+
+        result_name = result_name + Tr_size + Te_size
+
+        return result_name
+
+    def save_temporary_results(self, run_info):
+        target = open(os.path.join('./results/', "temp_run_info"), 'a')
+        target.write(str(run_info))
+        target.close()
+
