@@ -24,12 +24,39 @@ class SequenceDataProcessing(object):
         self.data_preprocessing = DataPreprocessing()
         self.data_splitting = Splitting()
         self.normalization = Normalization()
-        # self.seed_v = [1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012, 1023]
         self.seed_v = self.parameters['Splitting']['seed_vector']
+        # self.select_features_vif = self.parameters['FS']['select_features_vif']
+        self.select_features_vif = False
+
+        self.select_features_sfs = self.parameters['FS']['select_features_sfs']
+        self.min_features = self.parameters['FS']['min_features']
+        self.max_features = self.parameters['FS']['max_features']
+        # self.is_floating = self.parameters['FS']['is_floating']
+        self.is_floating = False
+
+        self.fold_num = self.parameters['FS']['fold_num']
+        self.Confidence_level = self.parameters['FS']['Confidence_level']
+        self.clipping_no = self.parameters['FS']['clipping_no']
+        self.ridge_params = self.parameters['Ridge']['ridge_params']
+        self.case = self.parameters['DataPreparation']['case']
+        self.split = self.parameters['DataPreparation']['split']
+        self.training_indices = []
+        self.test_indices = []
+        self.input_name = self.parameters['DataPreparation']['input_name']
+        self.core_nums_train_data = self.parameters['Splitting']['core_nums_train_data']
+        self.core_nums_test_data = self.parameters['Splitting']['core_nums_test_data']
+        self.image_nums_train_data = self.parameters['Splitting']['image_nums_train_data']
+        self.image_nums_test_data = self.parameters['Splitting']['image_nums_test_data']
+        self.criterion_col_list = self.parameters['Splitting']['criterion_col_list']
+
         self.scaler = None
         self.feature_selection = FeatureSelection()
         self.regression = Regression()
         self.results = Results()
+        self.to_be_inv_List = self.parameters['Inverse']['to_be_inv_List']
+        self.inversing_cols = None
+        self.degree = self.parameters['FeatureExtender']['degree']
+        self.k_features = None
 
     def get_parameters(self):
         """Gets the parameters from the config file named parameters.ini and put them into a dictionary
@@ -39,9 +66,39 @@ class SequenceDataProcessing(object):
         self.parameters['General']['run_num'] = int(self.conf['General']['run_num'])
         self.parameters['DataPreparation'] = {}
         self.parameters['DataPreparation']['result_path'] = self.conf['DataPreparation']['result_path']
+        self.parameters['DataPreparation']['input_name'] = self.conf.get('DataPreparation', 'input_name')
+        self.parameters['DataPreparation']['split'] = self.conf.get('DataPreparation', 'split')
+        self.parameters['DataPreparation']['case'] = self.conf.get('DataPreparation', 'case')
+        self.parameters['FS'] = {}
+        # self.parameters['FS']['select_features_vif'] = bool(self.conf['FS']['select_features_vif'])
+        self.parameters['FS']['select_features_sfs'] = bool(self.conf['FS']['select_features_sfs'])
+        self.parameters['FS']['min_features'] = int(self.conf['FS']['min_features'])
+        self.parameters['FS']['max_features'] = int(self.conf['FS']['max_features'])
+        # self.parameters['FS']['is_floating'] = bool(self.conf['FS']['is_floating'])
+        self.parameters['FS']['is_floating'] = False
+        self.parameters['FS']['fold_num'] = int(self.conf['FS']['fold_num'])
+        self.parameters['FS']['Confidence_level'] = self.conf['FS']['Confidence_level']
+        self.parameters['FS']['clipping_no'] = int(self.conf['FS']['clipping_no'])
+        self.parameters['Ridge'] = {}
+        self.parameters['Ridge']['ridge_params'] = self.conf['Ridge']['ridge_params']
+        self.parameters['Ridge']['ridge_params'] = [i for i in ast.literal_eval(self.parameters['Ridge']['ridge_params'])]
         self.parameters['Splitting'] = {}
         self.parameters['Splitting']['seed_vector'] = self.conf['Splitting']['seed_vector']
         self.parameters['Splitting']['seed_vector'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['seed_vector'])]
+        self.parameters['Splitting']['image_nums_train_data'] = self.conf['Splitting']['image_nums_train_data']
+        self.parameters['Splitting']['image_nums_train_data'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['image_nums_train_data'])]
+        self.parameters['Splitting']['image_nums_test_data'] = self.conf.get('Splitting', 'image_nums_test_data')
+        self.parameters['Splitting']['image_nums_test_data'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['image_nums_test_data'])]
+        self.parameters['Splitting']['core_nums_train_data'] = self.conf.get('Splitting', 'core_nums_train_data')
+        self.parameters['Splitting']['core_nums_train_data'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['core_nums_train_data'])]
+        self.parameters['Splitting']['core_nums_test_data'] = self.conf.get('Splitting', 'core_nums_test_data')
+        self.parameters['Splitting']['core_nums_test_data'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['core_nums_test_data'])]
+        self.parameters['Splitting']['criterion_col_list'] = self.conf.get('Splitting', 'criterion_col_list')
+        self.parameters['Splitting']['criterion_col_list'] = [i for i in ast.literal_eval(self.parameters['Splitting']['criterion_col_list'])]
+        self.parameters['Inverse'] = {}
+        self.parameters['Inverse']['to_be_inv_List'] = [str(self.conf['Inverse']['to_be_inv_List'])]
+        self.parameters['FeatureExtender'] = {}
+        self.parameters['FeatureExtender']['degree'] = int(self.conf['FeatureExtender']['degree'])
 
 
     def process(self):
@@ -63,12 +120,14 @@ class SequenceDataProcessing(object):
         #    Should be replaced with basic functions of splitting:
         #    temp = self.data_splitting.process(temp, splitting_df, self.seed_v[iter])
 
-            train_features, train_labels, test_features, test_labels, features_names, self.scaler \
+            train_features, train_labels, test_features, test_labels, features_names, self.scaler, data_conf \
                 = self.data_splitting.process(temp, self.seed_v[iter])
             print(self.seed_v[iter])
             self.run_info[iter]['ext_feature_names'] = features_names
+            self.run_info[iter]['data_conf'] = data_conf
 
-            cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test = \
+
+            self.k_features, cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test = \
                     self.feature_selection.process(train_features, train_labels, test_features, test_labels, features_names)
 
             self.run_info[iter]['cv_info'] = cv_info
@@ -88,11 +147,10 @@ class SequenceDataProcessing(object):
             self.run_info[iter]['y_pred_train'] = y_pred_train
             self.run_info[iter]['y_true_test'] = y_true_test
             self.run_info[iter]['y_pred_test'] = y_pred_test
-            self.run_info[iter]['data_conf'] = self.data_config
             self.results.save_temporary_results(self.run_info)
-            print('tamoom shod iter')
-        print(self.parameters)
-        self.results.process(self.run_info)
+
+
+        self.results.process(self.run_info, self.parameters, self.k_features)
 
 
 
@@ -375,11 +433,11 @@ class Splitting(DataPrepration):
     def process(self, inputDF, seed):
 
         self.inputDF = inputDF
-        self.train_features, self.train_labels, self.test_features, self.test_labels, self.features_names, self.scaler = \
+        self.train_features, self.train_labels, self.test_features, self.test_labels, self.features_names, self.scaler, data_conf = \
             self.split_data(seed, self.inputDF, )
 
 
-        return self.train_features, self.train_labels, self.test_features, self.test_labels, self.features_names, self.scaler
+        return self.train_features, self.train_labels, self.test_features, self.test_labels, self.features_names, self.scaler, data_conf
 
 
         #print(self.splitting_df)
@@ -507,10 +565,10 @@ class Splitting(DataPrepration):
 
         """split the original dataframe into Training Input (train_features), Training Output(train_labels),
         Test Input(test_features) and Test Output(test_labels)"""
-        self.data_conf = {}
-        self.data_conf["case"] = self.parameters['DataPreparation']['case']
-        self.data_conf["split"] = self.parameters['DataPreparation']['split']
-        self.data_conf["input_name"] = self.parameters['DataPreparation']['input_name']
+        data_conf = {}
+        data_conf["case"] = self.parameters['DataPreparation']['case']
+        data_conf["split"] = self.parameters['DataPreparation']['split']
+        data_conf["input_name"] = self.parameters['DataPreparation']['input_name']
         #self.data_conf["sparkdl_run"] = self.parameters['DataPreparation']['split']
 
         if self.input_name != "classifierselection":
@@ -535,8 +593,8 @@ class Splitting(DataPrepration):
                 data_size_train_indices = range(0, df.shape[0])
                 data_size_test_indices = range(0, df.shape[0])
 
-            # data_conf["image_nums_train_data"] = image_nums_train_data
-            # data_conf["image_nums_test_data"] = image_nums_test_data
+            data_conf["image_nums_train_data"] = self.image_nums_train_data
+            data_conf["image_nums_test_data"] = self.image_nums_test_data
 
             # if input_name in sparkdl_inputs:
             # core_num_indices = pd.DataFrame(
@@ -560,8 +618,8 @@ class Splitting(DataPrepration):
             core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
             core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
 
-            self.data_conf["core_nums_train_data"] = self.core_nums_train_data
-            self.data_conf["core_nums_test_data"] = self.core_nums_test_data
+            data_conf["core_nums_train_data"] = self.core_nums_train_data
+            data_conf["core_nums_test_data"] = self.core_nums_test_data
 
             # Take the intersect of indices of datasize and core
             self.train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
@@ -623,7 +681,7 @@ class Splitting(DataPrepration):
         # data_conf["test_without_apriori"] = False
 
         #return train_features, train_labels, test_features, test_labels, features_names, self.scaler, data_conf
-        return train_features, train_labels, test_features, test_labels, features_names, self.scaler
+        return train_features, train_labels, test_features, test_labels, features_names, self.scaler, data_conf
 
 
 class FeatureSelection(DataPrepration):
@@ -633,11 +691,15 @@ class FeatureSelection(DataPrepration):
         self.conf = cp.ConfigParser()
         self.parameters = {}
         self.get_parameters()
-        self.select_features_vif = self.parameters['FS']['select_features_vif']
+        # self.select_features_vif = self.parameters['FS']['select_features_vif']
+        self.select_features_vif = False
+
         self.select_features_sfs = self.parameters['FS']['select_features_sfs']
         self.min_features = self.parameters['FS']['min_features']
         self.max_features = self.parameters['FS']['max_features']
-        self.is_floating = self.parameters['FS']['is_floating']
+        # self.is_floating = self.parameters['FS']['is_floating']
+        self.is_floating = False
+
         self.fold_num = self.parameters['FS']['fold_num']
         self.Confidence_level = self.parameters['FS']['Confidence_level']
         self.clipping_no = self.parameters['FS']['clipping_no']
@@ -650,11 +712,12 @@ class FeatureSelection(DataPrepration):
         self.conf.read('params.ini')
         self.parameters['FS'] = {}
 
-        self.parameters['FS']['select_features_vif'] = bool(self.conf['FS']['select_features_vif'])
+        # self.parameters['FS']['select_features_vif'] = bool(self.conf['FS']['select_features_vif'])
         self.parameters['FS']['select_features_sfs'] = bool(self.conf['FS']['select_features_sfs'])
         self.parameters['FS']['min_features'] = int(self.conf['FS']['min_features'])
         self.parameters['FS']['max_features'] = int(self.conf['FS']['max_features'])
-        self.parameters['FS']['is_floating'] = bool(self.conf['FS']['is_floating'])
+        # self.parameters['FS']['is_floating'] = bool(self.conf['FS']['is_floating'])
+        self.parameters['FS']['is_floating'] = False
         self.parameters['FS']['fold_num'] = int(self.conf['FS']['fold_num'])
         self.parameters['FS']['Confidence_level'] = self.conf['FS']['Confidence_level']
         self.parameters['FS']['clipping_no'] = int(self.conf['FS']['clipping_no'])
@@ -671,7 +734,7 @@ class FeatureSelection(DataPrepration):
             self.Ridge_SFS_GridSearch(train_features, train_labels, test_features, test_labels, k_features)
 
 
-        return cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test
+        return k_features, cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test
 
     def Ridge_SFS_GridSearch(self, train_features, train_labels, test_features, test_labels, k_features):
 
@@ -962,16 +1025,15 @@ class Results(Task):
     def __init__(self):
         Task.__init__(self)
 
-    def process(self, run_info):
-        best_run_idx, best_data_conf, best_cv_info, best_trained_model, best_Least_MSE_alpha, best_err_train, best_err_test = \
-                self.select_best_run(run_info)
-        # print(self.parameters)
+    def process(self, run_info, parameters, k_features):
+        best_run_idx, best_sel_idx,  best_data_conf, best_cv_info, best_trained_model, best_Least_MSE_alpha, best_err_train, best_err_test = \
+            self.select_best_run(run_info)
 
-        # result_name = self.get_result_name(degree, select_features_sfs, k_features, is_floating)
-        #
-        # result_path, results = save_results(best_err_train, best_err_test, result_name, result_path,
-        #                                     best_data_conf, best_cv_info, ridge_params, best_trained_model, degree,
-        #                                     best_Least_MSE_alpha)
+        result_name = self.get_result_name(parameters, k_features)
+
+        result_path, results = self.save_results(parameters, best_err_train, best_err_test, result_name, best_data_conf,
+                                            best_cv_info, best_trained_model, best_Least_MSE_alpha, best_sel_idx)
+
 
         return
 
@@ -981,6 +1043,7 @@ class Results(Task):
             Mape_list.append(run_info[i]['MAPE_test'])
 
         best_run_idx = Mape_list.index(min(Mape_list))
+        best_sel_idx = run_info[best_run_idx]['Sel_features']
         best_data_conf = run_info[best_run_idx]['data_conf']
         best_cv_info = run_info[best_run_idx]['cv_info']
         best_trained_model = run_info[best_run_idx]['best_model']
@@ -988,11 +1051,17 @@ class Results(Task):
         best_err_train = run_info[best_run_idx]['MAPE_train']
         best_err_test = run_info[best_run_idx]['MAPE_test']
 
-        return best_run_idx, best_data_conf, best_cv_info, best_trained_model, best_Least_MSE_alpha, best_err_train, best_err_test
+        return best_run_idx, best_sel_idx, best_data_conf, best_cv_info, best_trained_model, best_Least_MSE_alpha, best_err_train, best_err_test
 
 
-    def get_result_name(self, degree, select_features_sfs, k_features, is_floating):
+    def get_result_name(self, parameters, k_features):
 
+        degree = parameters['FeatureExtender']['degree']
+        select_features_sfs =parameters['FS']['select_features_sfs']
+        is_floating =parameters['FS']['is_floating']
+        run_num = parameters['General']['run_num']
+        image_nums_train_data = parameters['Splitting']['image_nums_train_data']
+        image_nums_test_data = parameters['Splitting']['image_nums_test_data']
         if degree == []:
             result_name = "d=0_"
         if degree != []:
@@ -1045,3 +1114,33 @@ class Results(Task):
         target.write(str(run_info))
         target.close()
 
+
+    def save_results(self, parameters, err_train, err_test, result_name, data_conf, cv_info, best_trained_model,
+                                    Least_MSE_alpha, best_sel_idx):
+        degree = parameters['FeatureExtender']['degree']
+        ridge_params = parameters['Ridge']['ridge_params']
+        result_path = parameters['DataPreparation']['result_path']
+        sel_idx = best_sel_idx
+        selected_feature_indices = list(sel_idx)
+        best_params = Least_MSE_alpha
+
+        results = data_conf
+        print(results)
+        results["regressor_name"] = 'lr'
+        results["n_terms"] = degree
+        results["selected_feature_names"] = cv_info['alpha = '+str(best_params)]['Selected_Features_Names']
+        results["err_train"] = err_train
+        results["err_test"] = err_test
+        results["param_grid"] = ridge_params
+        # results["best_estimator"] = gs.best_estimator_.steps
+        results["best_estimator"] = best_trained_model._estimator_type
+        # results["sfs_subsets"] = sfs.subsets_
+
+        # split_no = data_conf["split"]run_info[iter]['data_conf']
+        # case_no = data_conf["case"]
+
+        result_path = os.path.join(result_path, result_name)
+        if os.path.exists(result_path) == False:
+            os.mkdir(result_path)
+
+        return result_path, results
