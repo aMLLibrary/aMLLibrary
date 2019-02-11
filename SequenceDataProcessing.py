@@ -8,6 +8,11 @@ from sklearn.utils import shuffle
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, RidgeCV
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 import os
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 
 class SequenceDataProcessing(object):
@@ -26,8 +31,8 @@ class SequenceDataProcessing(object):
         self.normalization = Normalization()
         self.seed_v = self.parameters['Splitting']['seed_vector']
         # self.select_features_vif = self.parameters['FS']['select_features_vif']
-        self.select_features_vif = False
 
+        self.select_features_vif = False
         self.select_features_sfs = self.parameters['FS']['select_features_sfs']
         self.min_features = self.parameters['FS']['min_features']
         self.max_features = self.parameters['FS']['max_features']
@@ -102,8 +107,8 @@ class SequenceDataProcessing(object):
 
 
     def process(self):
-
-        # df = read_inputs()
+        """the main code"""
+        # performs reading data, drops irrelevant columns
         temp = self.preliminary_data_processing.process(None)
 
         # splitting_df = self.data_splitting.make_splitting_df(temp, self.data_splitting.criterion_col_list)
@@ -114,15 +119,12 @@ class SequenceDataProcessing(object):
         for iter in range(self.run_num):
             self.result_path = "./results/"
             this_run = 'run_' + str(iter)
+            print('==================================================================================================')
             print(this_run)
             self.run_info.append({})
 
-        #    Should be replaced with basic functions of splitting:
-        #    temp = self.data_splitting.process(temp, splitting_df, self.seed_v[iter])
-
             train_features, train_labels, test_features, test_labels, features_names, self.scaler, data_conf \
                 = self.data_splitting.process(temp, self.seed_v[iter])
-            print(self.seed_v[iter])
             self.run_info[iter]['ext_feature_names'] = features_names
             self.run_info[iter]['data_conf'] = data_conf
 
@@ -150,80 +152,10 @@ class SequenceDataProcessing(object):
             self.results.save_temporary_results(self.run_info)
 
 
-        self.results.process(self.run_info, self.parameters, self.k_features)
+        self.results.process(self.run_info, self.parameters, self.k_features, temp)
 
 
 
-
-
-        #run_info = []
-
-
-        #for iter in range(run_num):
-        #     result_path = "./results/"
-        #
-        #     this_run = 'run_' + str(iter)
-        #     print(this_run)
-        #
-        #     run_info.append({})
-        #
-        #     ext_df = add_all_comb(df, inversing_cols, 0, degree)
-        #
-        #     train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf = \
-        #         split_data(seed_v[iter], ext_df, image_nums_train_data, image_nums_test_data, core_nums_train_data,
-        #                    core_nums_test_data)
-        #
-        #     run_info[iter]['ext_feature_names'] = features_names
-        #     run_info[iter]['data_conf'] = data_conf
-        #
-        #     k_features = calc_k_features(min_features, max_features, features_names)
-        #
-        #     print('selecting features in range ', k_features, ':')
-        #
-        #     cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test = \
-        #         Ridge_SFS_GridSearch(ridge_params, train_features, train_labels, test_features, test_labels, k_features,
-        #                              fold_num)
-        #
-        #     run_info[iter]['cv_info'] = cv_info
-        #     run_info[iter]['Sel_features'] = list(sel_idx)
-        #     run_info[iter]['Sel_features_names'] = [features_names[i] for i in sel_idx]
-        #     run_info[iter]['best_param'] = Least_MSE_alpha
-        #     run_info[iter]['best_model'] = best_trained_model
-        #
-        #     err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores = \
-        #         mean_absolute_percentage_error(y_pred_test, y_pred_train, test_features, test_labels, train_features,
-        #                                        train_labels, scaler)
-        #
-        #     run_info[iter]['MAPE_train'] = err_train
-        #     run_info[iter]['MAPE_test'] = err_test
-        #     run_info[iter]['y_true_train'] = y_true_train
-        #     run_info[iter]['y_pred_train'] = y_pred_train
-        #     run_info[iter]['y_true_test'] = y_true_test
-        #     run_info[iter]['y_pred_test'] = y_pred_test
-        #
-        #     target = open(os.path.join('./results/', "temp_run_info"), 'a')
-        #     target.write(str(run_info))
-        #     target.close()
-        #
-        # best_run_idx, best_data_conf, best_cv_info, best_trained_model, best_Least_MSE_alpha, best_err_train, best_err_test = \
-        #     select_best_run(run_info)
-        #
-        # result_name = get_result_name(degree, select_features_sfs, k_features, is_floating)
-        #
-        # result_path, results = save_results(best_err_train, best_err_test, result_name, result_path,
-        #                                     best_data_conf, best_cv_info, ridge_params, best_trained_model, degree,
-        #                                     best_Least_MSE_alpha)
-        #
-        # plot_predicted_true(result_path, run_info, best_run_idx)
-        # plot_cores_runtime(result_path, run_info, best_run_idx, core_nums_train_data, core_nums_test_data)
-        # plot_histogram(result_path, run_info, degree)
-        # plot_MSE_Errors(result_path, run_info)
-        # plot_MAPE_Errors(result_path, run_info)
-        # plot_Model_Size(result_path, run_info)
-        #
-        # target = open(os.path.join(result_path, "run_info"), 'a')
-        # target.write(str(run_info))
-        # target.close()
 
 class Task(object):
     def __init__(self):
@@ -275,7 +207,7 @@ class Normalization(DataPrepration):
 
 
 class PreliminaryDataProcessing(DataPrepration):
-
+    """Perform preliminary prossing of data"""
     def __init__(self, input_file):
         DataPrepration.__init__(self)
         self.scale = StandardScaler()
@@ -283,7 +215,7 @@ class PreliminaryDataProcessing(DataPrepration):
         self.input_path = input_file
 
     def process(self, inputDF):
-        """Get the csv file and change it to data frame as output"""
+        """Get the csv file, drops the irrelevant columns and change it to data frame as output"""
         self.outputDF = pd.read_csv(self.input_path)
 
         # drop the run column
@@ -296,12 +228,10 @@ class PreliminaryDataProcessing(DataPrepration):
 
 
 class DataPreprocessing(DataPrepration):
-
+    """performs invesing of needed features and adds them to the dataframe, extends the dataframe to a degree"""
     def __init__(self):
         DataPrepration.__init__(self)
-
         self.conf = cp.ConfigParser()
-        # self.to_be_inv_List = ['nContainers']
         self.parameters = {}
         self.get_parameters()
         self.to_be_inv_List = self.parameters['Inverse']['to_be_inv_List']
@@ -310,6 +240,7 @@ class DataPreprocessing(DataPrepration):
 
 
     def process(self, inputDF):
+        """inversing and extension of features in the dataframe"""
         self.inputDF = inputDF
         self.outputDF, self.inversing_cols = self.add_inverse_features(self.inputDF, self.to_be_inv_List)
         self.outputDF = self.add_all_comb(self.outputDF, self.inversing_cols, 0, self.degree)
@@ -330,12 +261,14 @@ class DataPreprocessing(DataPrepration):
         """Given a dataframe and the name of columns that should be inversed, add the needed inversed columns and returns
         the resulting df and the indices of two reciprocals separately"""
 
+        # a dictionary of dataframe used for adding the inversed columns
         df_dict = dict(df)
         for c in to_be_inv_List:
             new_col = 1 / np.array(df[c])
             new_feature_name = 'inverse_' + c
             df_dict[new_feature_name] = new_col
 
+        # convert resulting dictionary to dataframe
         inv_df = pd.DataFrame.from_dict(df_dict)
 
         # returns the indices of the columns that should be inversed and their inversed in one tuple
@@ -352,6 +285,7 @@ class DataPreprocessing(DataPrepration):
         """Given a dataframe, returns an extended df containing all combinations of columns except the ones that are
         inversed"""
 
+        # obtain needed parameters for extending dataframe
         features_names = inv_df.columns.values
         df_dict = dict(inv_df)
         data_matrix = pd.DataFrame.as_matrix(inv_df)
@@ -360,7 +294,7 @@ class DataPreprocessing(DataPrepration):
         # compute all possible combinations with replacement
         for j in range(2, degree + 1):
             combs = list(itertools.combinations_with_replacement(indices, j))
-            # removes the combinations containing features and inversed of them
+            # finds the combinations containing features and inversed of them
             remove_list_idx = []
             for ii in combs:
                 for kk in inversed_cols_tr:
@@ -368,6 +302,7 @@ class DataPreprocessing(DataPrepration):
                         remove_list_idx.append(ii)
                 if output_column_idx in ii:
                     remove_list_idx.append(ii)
+            # removes the combinations containing features and inversed of them
             for r in range(0,len(remove_list_idx)):
                 combs.remove(remove_list_idx[r])
             # compute resulting column of the remaining combinations and add to the df
@@ -377,8 +312,10 @@ class DataPreprocessing(DataPrepration):
                 for i in range(len(cc)-1):
                     new_feature_name = new_feature_name+features_names[cc[i]]+'_'
                 new_feature_name = new_feature_name+features_names[cc[i+1]]
-                df_dict[new_feature_name] = new_col
 
+                # adding combinations each as a column to a dictionary
+                df_dict[new_feature_name] = new_col
+        # convert the dictionary to a dataframe
         ext_df = pd.DataFrame.from_dict(df_dict)
         return ext_df
 
@@ -393,10 +330,8 @@ class DataPreprocessing(DataPrepration):
 
 
 
-
-
 class Splitting(DataPrepration):
-
+    """performs splitting of the data based on the input parameters and scaling them """
     def __init__(self):
         DataPrepration.__init__(self)
         self.conf = cp.ConfigParser()
@@ -406,19 +341,11 @@ class Splitting(DataPrepration):
         self.split = self.parameters['DataPreparation']['split']
         self.training_indices = []
         self.test_indices = []
-        # self.data_size_indices = []
-        # self.core_num_indices = []
         self.input_name = self.parameters['DataPreparation']['input_name']
-
-        #self.data_size_train_indices = self.parameters['Splitting']['image_nums_train_data']
-        #self.data_size_test_indices = self.parameters['Splitting']['image_nums_test_data']
-
         self.core_nums_train_data = self.parameters['Splitting']['core_nums_train_data']
         self.core_nums_test_data = self.parameters['Splitting']['core_nums_test_data']
-
         self.image_nums_train_data = self.parameters['Splitting']['image_nums_train_data']
         self.image_nums_test_data = self.parameters['Splitting']['image_nums_test_data']
-
         self.criterion_col_list = self.parameters['Splitting']['criterion_col_list']
 
         self.train_features = None
@@ -431,7 +358,7 @@ class Splitting(DataPrepration):
 
 
     def process(self, inputDF, seed):
-
+        """performs scaling and splitting"""
         self.inputDF = inputDF
         self.train_features, self.train_labels, self.test_features, self.test_labels, self.features_names, self.scaler, data_conf = \
             self.split_data(seed, self.inputDF, )
@@ -439,18 +366,6 @@ class Splitting(DataPrepration):
 
         return self.train_features, self.train_labels, self.test_features, self.test_labels, self.features_names, self.scaler, data_conf
 
-
-        #print(self.splitting_df)
-        #print(self.outputDF)
-
-        # locate training and test indices
-        # self.training_indices, self.test_indices = self.getTRTEindices(self.outputDF)
-        # print(self.training_indices)
-        # print(self.test_indices)
-
-        #self.outputDF = self.split_data(seed, self.inputDF, self)
-
-        #train_features, train_labels, test_features, test_labels, features_names, scaler, data_conf
 
 
 
@@ -485,74 +400,63 @@ class Splitting(DataPrepration):
 
 
 
-    def make_splitting_df (self, df, criterion_col_list):
-        criterion_col_list = ['nContainers', 'dataSize']
-        splitting_df = pd.DataFrame(index=range(df.shape[0]))
-        splitting_df['original_index'] = df.index
-        for col in criterion_col_list:
-            splitting_df[col] = df[col]
-
-        return splitting_df
-
-
     def shuffleSamples(self, df, splitting_df, seed):
         df , splitting_df= shuffle(df, splitting_df, random_state = seed)
         return df, splitting_df
 
-    # def getTRTEindices(self, df):
-    #
-    #
-    #     if "dataSize" in df.columns:
-    #
-    #         data_size_indices = pd.DataFrame(
-    #             [[k, v.values] for k, v in df.groupby('dataSize').groups.items()], columns=['col', 'indices'])
-    #
-    #         data_size_train_indices = \
-    #             data_size_indices.loc[(data_size_indices['col'].isin(self.image_nums_train_data))]['indices']
-    #         data_size_test_indices = \
-    #             data_size_indices.loc[(data_size_indices['col'].isin(self.image_nums_test_data))]['indices']
-    #
-    #         data_size_train_indices = np.concatenate(list(data_size_train_indices), axis=0)
-    #         data_size_test_indices = np.concatenate(list(data_size_test_indices), axis=0)
-    #
-    #     # else:
-    #     #
-    #     #     data_size_train_indices = range(0, df.shape[0])
-    #     #     data_size_test_indices = range(0, df.shape[0])
-    #     #
-    #     # data_conf["image_nums_train_data"] = image_nums_train_data
-    #     # data_conf["image_nums_test_data"] = image_nums_test_data
-    #     #
-    #     # # if input_name in sparkdl_inputs:
-    #     # # core_num_indices = pd.DataFrame(
-    #     # # [[k, v.values] for k, v in df.groupby('nCores').groups.items()], columns=['col', 'indices'])
-    #
-    #     core_num_indices = pd.DataFrame(
-    #         [[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
-    #         columns=['col', 'indices'])
-    #
-    #     # For interpolation and extrapolation, put all the cores to the test set.
-    #     print('image_nums_train_data: ', self.image_nums_train_data)
-    #     print('image_nums_test_data: ', self.image_nums_test_data)
-    #     if set(self.image_nums_train_data) != set(self.image_nums_test_data):
-    #         self.core_nums_test_data = self.core_nums_test_data + self.core_nums_train_data
-    #
-    #     core_num_train_indices = \
-    #         core_num_indices.loc[(core_num_indices['col'].isin(self.core_nums_train_data))]['indices']
-    #     core_num_test_indices = \
-    #         core_num_indices.loc[(core_num_indices['col'].isin(self.core_nums_test_data))]['indices']
-    #
-    #     core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
-    #     core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
-    #
-    #     #data_conf["core_nums_train_data"] = core_nums_train_data
-    #     #data_conf["core_nums_test_data"] = core_nums_test_data
-    #
-    #     # Take the intersect of indices of datasize and core
-    #     train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
-    #     test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
-    #
-    #     return train_indices, test_indices
+    def getTRTEindices(self, df):
+        """find training and test indices in the data based on the datasize and core numbers"""
+        if "dataSize" in df.columns:
+
+            data_size_indices = pd.DataFrame(
+                [[k, v.values] for k, v in df.groupby('dataSize').groups.items()], columns=['col', 'indices'])
+
+            data_size_train_indices = \
+                data_size_indices.loc[(data_size_indices['col'].isin(self.image_nums_train_data))]['indices']
+            data_size_test_indices = \
+                data_size_indices.loc[(data_size_indices['col'].isin(self.image_nums_test_data))]['indices']
+
+            data_size_train_indices = np.concatenate(list(data_size_train_indices), axis=0)
+            data_size_test_indices = np.concatenate(list(data_size_test_indices), axis=0)
+
+        # else:
+        #
+        #     data_size_train_indices = range(0, df.shape[0])
+        #     data_size_test_indices = range(0, df.shape[0])
+        #
+        # data_conf["image_nums_train_data"] = image_nums_train_data
+        # data_conf["image_nums_test_data"] = image_nums_test_data
+        #
+        # # if input_name in sparkdl_inputs:
+        # # core_num_indices = pd.DataFrame(
+        # # [[k, v.values] for k, v in df.groupby('nCores').groups.items()], columns=['col', 'indices'])
+
+        core_num_indices = pd.DataFrame(
+            [[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
+            columns=['col', 'indices'])
+
+        # For interpolation and extrapolation, put all the cores to the test set.
+        print('image_nums_train_data: ', self.image_nums_train_data)
+        print('image_nums_test_data: ', self.image_nums_test_data)
+        if set(self.image_nums_train_data) != set(self.image_nums_test_data):
+            self.core_nums_test_data = self.core_nums_test_data + self.core_nums_train_data
+
+        core_num_train_indices = \
+            core_num_indices.loc[(core_num_indices['col'].isin(self.core_nums_train_data))]['indices']
+        core_num_test_indices = \
+            core_num_indices.loc[(core_num_indices['col'].isin(self.core_nums_test_data))]['indices']
+
+        core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
+        core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
+
+        #data_conf["core_nums_train_data"] = core_nums_train_data
+        #data_conf["core_nums_test_data"] = core_nums_test_data
+
+        # Take the intersect of indices of datasize and core
+        train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
+        test_indices = np.intersect1d(core_num_test_indices, data_size_test_indices)
+
+        return train_indices, test_indices
 
     def scale_data(self, df):
         """scale the dataframe"""
@@ -565,6 +469,7 @@ class Splitting(DataPrepration):
 
         """split the original dataframe into Training Input (train_features), Training Output(train_labels),
         Test Input(test_features) and Test Output(test_labels)"""
+        # variable for saving the specification of data
         data_conf = {}
         data_conf["case"] = self.parameters['DataPreparation']['case']
         data_conf["split"] = self.parameters['DataPreparation']['split']
@@ -580,11 +485,13 @@ class Splitting(DataPrepration):
                 data_size_indices = pd.DataFrame(
                     [[k, v.values] for k, v in df.groupby('dataSize').groups.items()], columns=['col', 'indices'])
 
+                # select the indices of samples having the datasize as should be in the training and test set
                 data_size_train_indices = \
                     data_size_indices.loc[(data_size_indices['col'].isin(self.image_nums_train_data))]['indices']
                 data_size_test_indices = \
                     data_size_indices.loc[(data_size_indices['col'].isin(self.image_nums_test_data))]['indices']
 
+                # lists the indices of samples having the datasize as should be in the training and test set
                 data_size_train_indices = np.concatenate(list(data_size_train_indices), axis=0)
                 data_size_test_indices = np.concatenate(list(data_size_test_indices), axis=0)
 
@@ -593,6 +500,7 @@ class Splitting(DataPrepration):
                 data_size_train_indices = range(0, df.shape[0])
                 data_size_test_indices = range(0, df.shape[0])
 
+            # save the datasize in the data dictionary
             data_conf["image_nums_train_data"] = self.image_nums_train_data
             data_conf["image_nums_test_data"] = self.image_nums_test_data
 
@@ -600,6 +508,7 @@ class Splitting(DataPrepration):
             # core_num_indices = pd.DataFrame(
             # [[k, v.values] for k, v in df.groupby('nCores').groups.items()], columns=['col', 'indices'])
 
+            # groups the samples according to the number of cores (nContainers)
             core_num_indices = pd.DataFrame(
                 [[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
                 columns=['col', 'indices'])
@@ -610,11 +519,13 @@ class Splitting(DataPrepration):
             # if set(self.image_nums_train_data) != set(self.image_nums_test_data):
             #     core_nums_test_data = core_nums_test_data + core_nums_train_data
 
+            # select the indices of samples having the core numbers as should be in the training and test set
             core_num_train_indices = \
                 core_num_indices.loc[(core_num_indices['col'].isin(self.core_nums_train_data))]['indices']
             core_num_test_indices = \
                 core_num_indices.loc[(core_num_indices['col'].isin(self.core_nums_test_data))]['indices']
 
+            # list the indices of samples having the core numbers as should be in the training and test set
             core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
             core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
 
@@ -676,11 +587,8 @@ class Splitting(DataPrepration):
         features_names = list(df.columns.values)[1:]
         # data_conf["train_features_org"] = train_features.as_matrix()
         # data_conf["test_features_org"] = test_features.as_matrix()
-        # # print(features_names)
-        #
         # data_conf["test_without_apriori"] = False
 
-        #return train_features, train_labels, test_features, test_labels, features_names, self.scaler, data_conf
         return train_features, train_labels, test_features, test_labels, features_names, self.scaler, data_conf
 
 
@@ -727,7 +635,8 @@ class FeatureSelection(DataPrepration):
 
 
     def process(self, train_features, train_labels, test_features, test_labels, features_names):
-
+        """calculate how many features are allowed to be selected, then using cross validation searches for the best
+        parameters, then trains the model using the best parametrs"""
         k_features = self.calc_k_features(features_names)
 
         cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test =\
@@ -737,7 +646,7 @@ class FeatureSelection(DataPrepration):
         return k_features, cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test
 
     def Ridge_SFS_GridSearch(self, train_features, train_labels, test_features, test_labels, k_features):
-
+        """select the best parameres using CV and sfs feature selection"""
         X = pd.DataFrame.as_matrix(train_features)
         Y = pd.DataFrame.as_matrix(train_labels)
         ext_feature_names = train_features.columns.values
@@ -871,7 +780,7 @@ class Regression(DataAnalysis):
 
 
     def process(self, y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, scaler, features_names):
-
+        """computes the MAPE error of the real predication by first scaling the predicted values"""
         err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores = \
             self.mean_absolute_percentage_error(y_pred_test, y_pred_train, test_features, test_labels, train_features,
                                                 train_labels, scaler, features_names)
@@ -879,7 +788,7 @@ class Regression(DataAnalysis):
         return err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores
 
     def mean_absolute_percentage_error(self, y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, scaler, features_names):
-
+        """computess MAPE error in real data by first scaling back the data (denormalize)"""
 
         train_features_org = train_features
         if "y_true_train" in train_features_org.columns.values:
@@ -894,6 +803,7 @@ class Regression(DataAnalysis):
             test_features_org.drop('y_pred_test', axis=1, inplace=True)
 
 
+        # add the scaled prediction data and real value to 2 different dataframe
         if y_pred_test != []:
             # Test error
             y_true_test = test_labels
@@ -908,7 +818,6 @@ class Regression(DataAnalysis):
 
             test_features_with_true.insert(0, "y_true_test", y_true_test)
             test_features_with_pred.insert(0, "y_pred_test", y_pred_test)
-
 
 
             test_features_with_true.drop('y_pred_test', axis = 1, inplace=True)
@@ -1025,7 +934,7 @@ class Results(Task):
     def __init__(self):
         Task.__init__(self)
 
-    def process(self, run_info, parameters, k_features):
+    def process(self, run_info, parameters, k_features, temp):
         best_run_idx, best_sel_idx,  best_data_conf, best_cv_info, best_trained_model, best_Least_MSE_alpha, best_err_train, best_err_test = \
             self.select_best_run(run_info)
 
@@ -1034,8 +943,16 @@ class Results(Task):
         result_path, results = self.save_results(parameters, best_err_train, best_err_test, result_name, best_data_conf,
                                             best_cv_info, best_trained_model, best_Least_MSE_alpha, best_sel_idx)
 
+        self.plot_predicted_true(result_path, run_info, best_run_idx)
+        self.plot_cores_runtime(results, result_path, run_info, best_run_idx, temp)
+        self.plot_histogram(result_path, run_info, parameters)
+        self.plot_MSE_Errors(result_path, run_info)
+        self.plot_MAPE_Errors(result_path, run_info)
+        self.plot_Model_Size(result_path, run_info)
 
-        return
+        target = open(os.path.join(result_path, "run_info"), 'a')
+        target.write(str(run_info))
+        target.close()
 
     def select_best_run(self, run_info):
         Mape_list = []
@@ -1055,7 +972,7 @@ class Results(Task):
 
 
     def get_result_name(self, parameters, k_features):
-
+        """makes a name for saving the results and plots based on the current input parameters"""
         degree = parameters['FeatureExtender']['degree']
         select_features_sfs =parameters['FS']['select_features_sfs']
         is_floating =parameters['FS']['is_floating']
@@ -1110,6 +1027,8 @@ class Results(Task):
         return result_name
 
     def save_temporary_results(self, run_info):
+        """save the temporary result at the end of each run"""
+
         target = open(os.path.join('./results/', "temp_run_info"), 'a')
         target.write(str(run_info))
         target.close()
@@ -1117,6 +1036,8 @@ class Results(Task):
 
     def save_results(self, parameters, err_train, err_test, result_name, data_conf, cv_info, best_trained_model,
                                     Least_MSE_alpha, best_sel_idx):
+
+        # save the results in the results dictionary and make the folder to save them and return the folder path
         degree = parameters['FeatureExtender']['degree']
         ridge_params = parameters['Ridge']['ridge_params']
         result_path = parameters['DataPreparation']['result_path']
@@ -1125,7 +1046,6 @@ class Results(Task):
         best_params = Least_MSE_alpha
 
         results = data_conf
-        print(results)
         results["regressor_name"] = 'lr'
         results["n_terms"] = degree
         results["selected_feature_names"] = cv_info['alpha = '+str(best_params)]['Selected_Features_Names']
@@ -1139,8 +1059,283 @@ class Results(Task):
         # split_no = data_conf["split"]run_info[iter]['data_conf']
         # case_no = data_conf["case"]
 
+
+        # make the directory to save the data and plots
         result_path = os.path.join(result_path, result_name)
         if os.path.exists(result_path) == False:
             os.mkdir(result_path)
 
         return result_path, results
+
+
+    def plot_predicted_true(self, result_path, run_info, best_run_idx):
+        """plot the prediction value versus the real value"""
+        data_conf = run_info[best_run_idx]['data_conf']
+
+        y_true_train = run_info[best_run_idx]['y_true_train']
+        y_pred_train = run_info[best_run_idx]['y_pred_train']
+        y_true_test = run_info[best_run_idx]['y_true_test']
+        y_pred_test = run_info[best_run_idx]['y_pred_test']
+
+        params_txt = 'best alpha: ' + str(run_info[best_run_idx]['best_param'])
+        font = {'family': 'normal', 'size': 15}
+        matplotlib.rc('font', **font)
+        plot_path = os.path.join(result_path, "True_Pred_Plot")
+        colors = cm.rainbow(np.linspace(0, 0.5, 3))
+        fig = plt.figure(figsize=(9, 6))
+        plt.scatter(y_pred_train, y_true_train, marker='o', s=300, facecolors='none', label="Train Set",
+                    color=colors[0])
+        plt.scatter(y_pred_test, y_true_test, marker='^', s=300, facecolors='none', label="Test Set",
+                    color=colors[1])
+        # if y_pred_test != []:
+        min_val = min(min(y_pred_train), min(y_true_train), min(y_pred_test), min(y_true_test))
+        max_val = max(max(y_pred_train), max(y_true_train), max(y_pred_test), max(y_true_test))
+        # if y_pred_test == []:
+        # min_val = min(min(y_pred_train), min(y_true_train))
+        # max_val = max(max(y_pred_train), max(y_true_train))
+        lines = plt.plot([min_val, max_val], [min_val, max_val], '-')
+        plt.setp(lines, linewidth=0.9, color=colors[2])
+        plt.title("Predicted vs True Values for " + 'lr' + "\n" + \
+                  data_conf["input_name"] + " " + str(data_conf["case"]) + " " + \
+                  str(data_conf["image_nums_train_data"]) + \
+                  str(data_conf["image_nums_test_data"]))
+        plt.xlabel("Predicted values of applicationCompletionTime (ms)")
+        plt.ylabel("True values of " + "\n" + "applicationCompletionTime (ms)")
+        fig.text(.5, .01, params_txt, ha='center')
+        plt.grid(True)
+        plt.tight_layout()
+        plt.legend(prop={'size': 20})
+        plt.savefig(plot_path + ".pdf")
+
+
+
+    def plot_cores_runtime(self, results, result_path, run_info, best_run_idx, df):
+        """plots the predicted value and true value in training and test set for different number of cores"""
+
+        data_conf = run_info[best_run_idx]['data_conf']
+
+        core_nums_train_data = results['core_nums_train_data']
+        core_nums_test_data = results['core_nums_test_data']
+
+        y_true_train = run_info[best_run_idx]['y_true_train']
+        y_pred_train = run_info[best_run_idx]['y_pred_train']
+        y_true_test = run_info[best_run_idx]['y_true_test']
+        y_pred_test = run_info[best_run_idx]['y_pred_test']
+
+
+        font = {'family': 'normal', 'size': 15}
+        matplotlib.rc('font', **font)
+        plot_path = os.path.join(result_path, "cores_runtime_plot")
+        colors = cm.rainbow(np.linspace(0, 0.5, 3))
+        fig = plt.figure(figsize=(9, 6))
+        #if self.data_conf["fixed_features"] == False:
+
+
+        params_txt = 'best alpha: ' + str(run_info[best_run_idx]['best_param'])
+        regressor_name = 'Logistic Regression'
+
+        core_num_indices = pd.DataFrame(
+            [[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
+            columns=['col', 'indices'])
+        # Training
+        legcount1 = 0
+        for Trcore in core_nums_train_data:
+
+            #plot_dict[str(Trcore)] ={}
+            # DF of samples having the core number equal to Trcore
+            y_idx = core_num_indices.loc[core_num_indices['col'] == Trcore]['indices']
+
+            # convert them to list
+            y_idx_list = y_idx.iloc[0].tolist() # no need to iterate
+            #y_tr_true = []
+            #y_tr_pred = []
+
+            for yi in y_idx_list:
+                if yi in y_true_train.index:
+                    legcount1 += 1
+                    if legcount1 <= 1:
+                        plt.scatter(Trcore, y_pred_train.loc[yi], marker='o', s=300, facecolors='none',
+                            label="Train Predicted Values", color=colors[1])
+                        plt.scatter(Trcore, y_true_train.loc[yi], marker='o', s=300, facecolors='none',
+                            label="Train True Values", color=colors[2])
+
+                    if legcount1 > 1:
+
+                        plt.scatter(Trcore, y_pred_train.loc[yi], marker='o', s=300, facecolors='none', color=colors[1])
+                        plt.scatter(Trcore, y_true_train.loc[yi], marker='o', s=300, facecolors='none', color=colors[2])
+
+        legcount2 = 0
+        for Tecore in core_nums_test_data:
+            # DF of samples having the core number equal to Tecore
+            y_idx_te = core_num_indices.loc[core_num_indices['col'] == Tecore]['indices']
+            # convert them to list
+            y_idx_te_list = y_idx_te.iloc[0].tolist() # no need to iterate
+
+
+            for yie in y_idx_te_list:
+                if yie in y_true_test.index:
+                    legcount2 += 1
+                    if legcount2 <= 1:
+                        plt.scatter(Tecore, y_pred_test.loc[yie], marker='^', s=300, facecolors='none',
+                            label="Test Predicted Values", color='C1')
+                        plt.scatter(Tecore, y_true_test.loc[yie], marker='^', s=300, facecolors='none',
+                            label="Test True Values", color='C3')
+
+                    if legcount2 > 1:
+                        plt.scatter(Tecore, y_pred_test.loc[yie], marker='^', s=300, facecolors='none', color='C1')
+                        plt.scatter(Tecore, y_true_test.loc[yie], marker='^', s=300, facecolors='none', color='C3')
+
+        #if self.data_conf["fixed_features"] == True:
+        #    plt.scatter(self.data_conf["train_cores"], self.y_pred_train, marker='o', s=300, facecolors='none',
+        #                label="Train Predicted Values", color=colors[1])
+        #    plt.scatter(self.data_conf["train_cores"], self.y_true_train, marker='o', s=300, facecolors='none',
+        #                label="Train True Values", color=colors[2])
+        #    if self.y_pred_test != []:
+        #        plt.scatter(self.data_conf["test_cores"], self.y_pred_test, marker='^', s=300, facecolors='none',
+        #                    label="Test Predicted Values", color='C1')
+        #        plt.scatter(self.data_conf["test_cores"], self.y_true_test, marker='^', s=300, facecolors='none',
+        #                    label="Test True Values", color='C3')
+
+        plt.title("Predicted and True Values for " + regressor_name + "\n" + \
+                  data_conf["input_name"] + " " + str(data_conf["case"]) + " " + \
+                  str(data_conf["image_nums_train_data"]) + \
+                  str(data_conf["image_nums_test_data"]))
+        plt.xlabel("Number of cores")
+        plt.ylabel("applicationCompletionTime (ms)")
+        fig.text(.5, .01, params_txt, ha='center')
+        plt.grid(True)
+        plt.tight_layout()
+        plt.legend(prop={'size': 20})
+        plt.savefig(plot_path + ".pdf")
+
+
+    def plot_histogram(self, result_path, run_info, parameters):
+        """plots the histogram of frequency of selected features"""
+        degree = parameters['FeatureExtender']['degree']
+
+        plot_path = os.path.join(result_path, "Features_Ferquency_Histogram_plot")
+
+        names_list = run_info[0]['ext_feature_names']
+        name_count = []
+        for i in range(len(names_list)):
+            name_count.append(0)
+        iternum = len(run_info)
+
+        for i in range(iternum):
+            for j in run_info[i]['Sel_features']:
+                name_count[j] += 1
+
+        if degree > 1:
+            zero_f_idx = []
+            for i in range(len(name_count)):
+                if name_count[i] == 0:
+                    zero_f_idx.append(i)
+
+
+            newname_list = []
+            newname_count = []
+            for i in range(len(name_count)):
+                if name_count[i] != 0:
+                    newname_list.append(names_list[i])
+                    newname_count.append(name_count[i])
+
+            names_list = newname_list
+            name_count = newname_count
+
+
+        font = {'family':'normal','size': 10}
+        matplotlib.rc('font', **font)
+        colors = cm.rainbow(np.linspace(0, 0.5, 3))
+        fig = plt.figure(figsize=(9,6))
+        plt.bar(range(len(names_list)), name_count)
+        plt.xticks(range(len(names_list)), names_list)
+        plt.xticks(rotation = 90)
+        plt.title('Histogram of features selection frequency in '+str(len(run_info))+' runs')
+        # plt.show()
+        plt.tight_layout()
+        fig.savefig(plot_path + ".pdf")
+
+    def plot_MSE_Errors(self, result_path, run_info):
+        """plots MSE error for unscaled values of prediction and true in different runs of the algorithm"""
+
+        plot_path = os.path.join(result_path, "MSE_Error_plot")
+        fs = FeatureSelection()
+        MSE_list_TR = []
+        MSE_list_TE = []
+        for i in range(len(run_info)):
+            y_true_train_val = run_info[i]['y_true_train']
+            y_pred_train_val = run_info[i]['y_pred_train']
+            fs = FeatureSelection()
+            msetr = fs.calcMSE(y_pred_train_val, y_true_train_val)
+
+            y_true_test_val = run_info[i]['y_true_test']
+            y_pred_test_val = run_info[i]['y_pred_test']
+            msete = fs.calcMSE(y_pred_test_val, y_true_test_val)
+
+            MSE_list_TR.append(msetr)
+            MSE_list_TE.append(msete)
+
+        font = {'family': 'normal', 'size': 15}
+        matplotlib.rc('font', **font)
+        colors = cm.rainbow(np.linspace(0, 0.5, 3))
+        fig1 = plt.figure(figsize=(9, 6))
+        plt.plot(range(1, len(run_info) + 1), MSE_list_TR, 'bs', range(1, len(run_info) + 1), MSE_list_TE, 'r^')
+        plt.xlabel('runs')
+        plt.ylabel('MSE Error')
+        plt.title('MSE Error in Training and Test Sets in ' + str(len(run_info)) + ' runs')
+        plt.xlim(1, len(MSE_list_TE))
+        # plt.show()
+        fig1.savefig(plot_path + ".pdf")
+
+    def plot_MAPE_Errors(self, result_path, run_info):
+        """plots MAPE error for unscaled values of prediction and true in different runs of the algorithm"""
+
+        plot_path = os.path.join(result_path, "MAPE_Error_plot")
+        MAPE_list_TR = []
+        MAPE_list_TE = []
+        for i in range(len(run_info)):
+            y_true_train_val = run_info[i]['y_true_train']
+            y_pred_train_val = run_info[i]['y_pred_train']
+            fs = FeatureSelection()
+            mapetr = fs.calcMAPE(y_pred_train_val, y_true_train_val)
+
+            y_true_test_val = run_info[i]['y_true_test']
+            y_pred_test_val = run_info[i]['y_pred_test']
+            mapete = fs.calcMAPE(y_pred_test_val, y_true_test_val)
+
+            MAPE_list_TR.append(mapetr)
+            MAPE_list_TE.append(mapete)
+
+
+        font = {'family':'normal','size': 15}
+        matplotlib.rc('font', **font)
+        colors = cm.rainbow(np.linspace(0, 0.5, 3))
+        fig2 = plt.figure(figsize=(9,6))
+        plt.plot(range(1, len(run_info) + 1), MAPE_list_TR, 'bs', range(1, len(run_info) + 1), MAPE_list_TE, 'r^')
+        plt.xlabel('runs')
+        plt.ylabel('MAPE Error')
+        plt.title('MAPE Error in Training and Test Sets in '+str(len(run_info))+' runs')
+        plt.xlim(1, len(MAPE_list_TE))
+        # plt.legend()
+        fig2.savefig(plot_path + ".pdf")
+
+    def plot_Model_Size(self, result_path, run_info):
+        """plots selected model size in different runs of the algorithm"""
+
+        plot_path = os.path.join(result_path, "Model_Size_Plot")
+        model_size_list = []
+        for i in range(len(run_info)):
+            len(run_info[i]['Sel_features'])
+            model_size_list.append(len(run_info[i]['Sel_features']))
+
+        font = {'family':'normal','size': 15}
+        matplotlib.rc('font', **font)
+        colors = cm.rainbow(np.linspace(0, 0.5, 3))
+        fig3 = plt.figure(figsize=(9,6))
+        plt.bar(range(1, len(run_info) + 1), model_size_list)
+        plt.xlabel('runs')
+        plt.ylabel('Model Size')
+        plt.title('Number of Selected Features in '+str(len(run_info))+' runs')
+        plt.xlim(1, len(model_size_list))
+        plt.ylim(1, max(model_size_list))
+        fig3.savefig(plot_path + ".pdf")
