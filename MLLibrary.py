@@ -803,82 +803,61 @@ class Results(Task):
     def process(self, ext_df, run_info, parameters):
 
         k_features = parameters['FS']['k_features']
-        best_run_idx, best_sel_idx, best_cv_info, best_trained_model, best_Least_MSE_alpha, best_err_train, best_err_test = \
-            self.select_best_run(run_info)
-
+        best_run = self.select_best_run(run_info)
+        print(best_run)
         result_name = self.get_result_name(parameters, k_features)
 
-        result_path, results = self.save_results(parameters, best_err_train, best_err_test, result_name,
-                                            best_cv_info, best_trained_model, best_Least_MSE_alpha, best_sel_idx)
+        result_path = self.save_results(parameters, best_run, result_name)
 
-        self.plot_predicted_true(result_path, run_info, parameters, best_run_idx)
-        self.plot_cores_runtime(results, result_path, run_info, parameters, best_run_idx, ext_df)
+        self.plot_predicted_true(result_path, best_run, parameters)
+        self.plot_cores_runtime(result_path, best_run, parameters, ext_df)
         self.plot_histogram(result_path, run_info, parameters)
         self.plot_MSE_Errors(result_path, run_info)
         self.plot_MAPE_Errors(result_path, run_info)
         self.plot_Model_Size(result_path, run_info)
 
-        target = open(os.path.join(result_path, "run_info"), 'a')
-        target.write(str(run_info))
+        target = open(os.path.join(result_path, "best_run"), 'a')
+        target.write(str(best_run))
         target.close()
 
     def select_best_run(self, run_info):
+        """selects the best run among independent runs of algorithm based on the minimum obtained MAPE error"""
         Mape_list = []
         for i in range(len(run_info)):
             Mape_list.append(run_info[i]['MAPE_test'])
 
         best_run_idx = Mape_list.index(min(Mape_list))
-        best_sel_idx = run_info[best_run_idx]['Sel_features']
-        best_cv_info = run_info[best_run_idx]['cv_info']
-        best_trained_model = run_info[best_run_idx]['best_model']
-        best_Least_MSE_alpha = run_info[best_run_idx]['best_param']
-        best_err_train = run_info[best_run_idx]['MAPE_train']
-        best_err_test = run_info[best_run_idx]['MAPE_test']
+        best_run = run_info[best_run_idx]
 
-        return best_run_idx, best_sel_idx, best_cv_info, best_trained_model, best_Least_MSE_alpha, best_err_train, best_err_test
+        return best_run
 
 
     def get_result_name(self, parameters, k_features):
         """makes a name for saving the results and plots based on the current input parameters"""
         degree = parameters['FS']['degree']
-        select_features_sfs =parameters['FS']['select_features_sfs']
-        is_floating =parameters['FS']['is_floating']
+        select_features_sfs = parameters['FS']['select_features_sfs']
+        select_features_vif = parameters['FS']['select_features_vif']
+        is_floating = parameters['FS']['is_floating']
         run_num = parameters['General']['run_num']
         image_nums_train_data = parameters['Splitting']['image_nums_train_data']
         image_nums_test_data = parameters['Splitting']['image_nums_test_data']
-        if degree == []:
-            result_name = "d=0_"
-        if degree != []:
-            # n_terms = list(map(lambda x: str(x), n_terms))
-            # n_terms = ','.join(n_terms)
-            degree = str(degree)
-            result_name = "d=" + degree + "_"
-        # if select_features_vif == True :
-        #    result_name += "vif_"
-        # if select_features_vif == False :
-        #    result_name += "no_vif_"
-        if select_features_sfs == False:
-            result_name += "baseline_results"
-        if select_features_sfs == True and is_floating == False:
+        degree = str(degree)
+
+        result_name = "d=" + degree + "_"
+
+        if select_features_vif:
+            result_name += "vif_"
+
+        if select_features_sfs and not is_floating:
             result_name += "sfs_"
             result_name += str(k_features[0]) + '_'
             result_name += str(k_features[1])
-            # if max_k_features == -1:
-            #    result_name += "all_features_results"
-            # if max_k_features != -1 :
-            #    result_name += str(self.max_k_features) + "_features_results"
-        if select_features_sfs == True and is_floating == True:
+
+        if select_features_sfs and is_floating:
             result_name += "sffs_"
             result_name += str(k_features[0]) + '_'
             result_name += str(k_features[1])
-            # if self.max_k_features == -1 :
-            #    self.result_name += "all_features_results"
-            # if self.max_k_features != -1 :
-            #   self.result_name += str(self.max_k_features) + "_features_results"
-        # if self.data_conf["test_without_apriori"] == True:
-        #    self.result_name += "_test_without_apriori"
-        # if self.data_conf["fixed_features"] == True:
-        #    self.result_name = "fixed_features"
+
         result_name = result_name + '_' + str(run_num) + '_runs'
 
         Tr_size = '_Tr'
@@ -901,43 +880,36 @@ class Results(Task):
         target.close()
 
 
-    def save_results(self, parameters, err_train, err_test, result_name, cv_info, best_trained_model,
-                                    Least_MSE_alpha, best_sel_idx):
+    def save_results(self, parameters, best_run, result_name):
+        """ save the extended results in the best_run dictionary and make the folder to save them and return the
+        folder path"""
 
-        # save the results in the results dictionary and make the folder to save them and return the folder path
         degree = parameters['FS']['degree']
         ridge_params = parameters['Ridge']['ridge_params']
         result_path = parameters['DataPreparation']['result_path']
-        sel_idx = best_sel_idx
-        selected_feature_indices = list(sel_idx)
-        best_params = Least_MSE_alpha
 
-        results = parameters
-        results["regressor_name"] = 'lr'
-        results["n_terms"] = degree
-        results["selected_feature_names"] = cv_info['alpha = '+str(best_params)]['Selected_Features_Names']
-        results["err_train"] = err_train
-        results["err_test"] = err_test
-        results["param_grid"] = ridge_params
-        results["best_estimator"] = best_trained_model._estimator_type
+        best_run["regressor_name"] = 'lr'
+        best_run['parameters'] = parameters
+        best_run["n_terms"] = degree
+        best_run["param_grid"] = ridge_params
+        best_run["best_estimator"] = best_run['best_model']._estimator_type
 
         # make the directory to save the data and plots
         result_path = os.path.join(result_path, result_name)
+
         if os.path.exists(result_path) == False:
             os.mkdir(result_path)
 
-        return result_path, results
+        return result_path
 
-    def plot_predicted_true(self, result_path, run_info, parameters, best_run_idx):
-        """plot the prediction value versus the real value"""
-        # data_conf = run_info[best_run_idx]['data_conf']
 
-        y_true_train = run_info[best_run_idx]['y_true_train']
-        y_pred_train = run_info[best_run_idx]['y_pred_train']
-        y_true_test = run_info[best_run_idx]['y_true_test']
-        y_pred_test = run_info[best_run_idx]['y_pred_test']
+    def plot_predicted_true(self, result_path, best_run, parameters):
+        y_true_train = best_run["y_true_train"]
+        y_pred_train = best_run["y_pred_train"]
+        y_true_test = best_run["y_true_test"]
+        y_pred_test = best_run["y_pred_test"]
 
-        params_txt = 'best alpha: ' + str(run_info[best_run_idx]['best_param'])
+        params_txt = 'best alpha: ' + str(best_run['best_param'])
         font = {'family': 'normal', 'size': 15}
         matplotlib.rc('font', **font)
         plot_path = os.path.join(result_path, "True_Pred_Plot")
@@ -968,17 +940,15 @@ class Results(Task):
         plt.savefig(plot_path + ".pdf")
 
 
-    def plot_cores_runtime(self, results, result_path, run_info, parameters, best_run_idx, df):
-        """plots the predicted value and true value in training and test set for different number of cores"""
+    def plot_cores_runtime(self, result_path, best_run, parameters, df):
 
         core_nums_train_data = parameters['Splitting']['core_nums_train_data']
         core_nums_test_data = parameters['Splitting']['core_nums_test_data']
 
-        y_true_train = run_info[best_run_idx]['y_true_train']
-        y_pred_train = run_info[best_run_idx]['y_pred_train']
-        y_true_test = run_info[best_run_idx]['y_true_test']
-        y_pred_test = run_info[best_run_idx]['y_pred_test']
-
+        y_true_train = best_run['y_true_train']
+        y_pred_train = best_run['y_pred_train']
+        y_true_test = best_run['y_true_test']
+        y_pred_test = best_run['y_pred_test']
 
         font = {'family': 'normal', 'size': 15}
         matplotlib.rc('font', **font)
@@ -987,7 +957,7 @@ class Results(Task):
         fig = plt.figure(figsize=(9, 6))
         #if self.data_conf["fixed_features"] == False:
 
-        params_txt = 'best alpha: ' + str(run_info[best_run_idx]['best_param'])
+        params_txt = 'best alpha: ' + str(best_run['best_param'])
         regressor_name = parameters['Regression']['regressor_name']
 
         core_num_indices = pd.DataFrame(
