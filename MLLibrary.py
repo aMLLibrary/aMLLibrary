@@ -284,7 +284,6 @@ class DataPreprocessing(DataPrepration):
 
         to_be_inv_List = parameters['Inverse']['to_be_inv_List']
         target_column = parameters['DataPreparation']['target_column']
-        print('target_column = ', target_column)
         degree = parameters['FS']['degree']
 
         self.outputDF, inversing_cols = self.add_inverse_features(self.inputDF, to_be_inv_List)
@@ -804,7 +803,6 @@ class Results(Task):
 
         k_features = parameters['FS']['k_features']
         best_run = self.select_best_run(run_info)
-        print(best_run)
         result_name = self.get_result_name(parameters, k_features)
 
         result_path = self.save_results(parameters, best_run, result_name)
