@@ -26,14 +26,8 @@ class SequenceDataProcessing(object):
         self.parameters = {}
         self.get_parameters()
 
-        # seed for shuffling the samples
-        self.seed_v = []
-
         # data dictionary storing independent runs information
         self.run_info = []
-
-        # data dictionary storing algorithm needed info
-        self.data_config = {}
 
         # number of independent runs
         self.run_num = self.parameters['General']['run_num']
@@ -41,60 +35,20 @@ class SequenceDataProcessing(object):
         # main folder for saving the results
         self.result_path = self.parameters['DataPreparation']['result_path']
 
-        # making objects from different classes to perform their processes
+        # number of folds in sfs cross validation
+        self.fold_num = self.parameters['FS']['fold_num']
+
+        # input name
+        self.input_name = self.parameters['DataPreparation']['input_name']
+
+        # creating object of classes
+        self.feature_selection = FeatureSelection()
+        self.regression = Regression()
+        self.results = Results()
         self.preliminary_data_processing = PreliminaryDataProcessing("P8_kmeans.csv")
         self.data_preprocessing = DataPreprocessing()
         self.data_splitting = Splitting()
         self.normalization = Normalization()
-
-        # obtating parameters from parameters variable
-        self.seed_v = self.parameters['Splitting']['seed_vector']
-        # self.select_features_vif = self.parameters['FS']['select_features_vif']
-
-        # whether vif FS should be done or not
-        self.select_features_vif = self.parameters['FS']['select_features_vif']
-
-        # whether sfs FS should be done or not
-        self.select_features_sfs = self.parameters['FS']['select_features_sfs']
-
-        # in case sfs is performed, the minimum number of features it should select
-        self.min_features = self.parameters['FS']['min_features']
-
-        # in case sfs is performed, the maximum number of features it should select
-        self.max_features = self.parameters['FS']['max_features']
-
-        self.is_floating = self.parameters['FS']['is_floating']
-
-        # number of folds in sfs cross validation
-        self.fold_num = self.parameters['FS']['fold_num']
-
-        # the level of confidence in dCorr to reject the relevance of features
-        self.Confidence_level = self.parameters['FS']['Confidence_level']
-
-        # number of features selected by dCorr
-        self.clipping_no = self.parameters['FS']['clipping_no']
-
-        # ridge params checked in grid search
-        self.ridge_params = self.parameters['Ridge']['ridge_params']
-
-        self.case = self.parameters['DataPreparation']['case']
-        self.split = self.parameters['DataPreparation']['split']
-        self.training_indices = []
-        self.test_indices = []
-        self.input_name = self.parameters['DataPreparation']['input_name']
-        self.core_nums_train_data = self.parameters['Splitting']['core_nums_train_data']
-        self.core_nums_test_data = self.parameters['Splitting']['core_nums_test_data']
-        self.image_nums_train_data = self.parameters['Splitting']['image_nums_train_data']
-        self.image_nums_test_data = self.parameters['Splitting']['image_nums_test_data']
-        self.criterion_col_list = self.parameters['Splitting']['criterion_col_list']
-        self.feature_selection = FeatureSelection()
-        self.regression = Regression()
-        self.results = Results()
-        self.to_be_inv_List = self.parameters['Inverse']['to_be_inv_List']
-        self.inversing_cols = None
-        self.degree = self.parameters['FS']['degree']
-        self.k_features = None
-        self.result_path = self.parameters['DataPreparation']['result_path']
 
 
     def get_parameters(self):
@@ -235,9 +189,11 @@ class Normalization(DataPrepration):
         DataPrepration.__init__(self)
 
     def process(self, inputDF):
-         self.inputDF = inputDF
-         self.outputDF, scaler = self.scale_data(self.inputDF)
-         return self.outputDF, scaler
+        """Normalizes the data using StandardScaler module"""
+
+        self.inputDF = inputDF
+        self.outputDF, scaler = self.scale_data(self.inputDF)
+        return self.outputDF, scaler
 
     def scale_data(self, df):
         """scale the dataframe"""
@@ -264,8 +220,8 @@ class PreliminaryDataProcessing(DataPrepration):
         """Get the csv file, drops the irrelevant columns and change it to data frame as output"""
         input_path = parameters['DataPreparation']['input_path']
         self.outputDF = pd.read_csv(input_path)
-        #
-        # # drop the run column
+
+        # drop the run column
         dropping_col = parameters['DataPreparation']['irrelevant_column_name']
         self.outputDF = self.outputDF.drop(dropping_col, axis=1)
 
@@ -308,30 +264,30 @@ class DataPreprocessing(DataPrepration):
         """Given a dataframe and the name of columns that should be inversed, add the needed inversed columns and
         returns the resulting df and the indices of two reciprocals separately"""
 
-        # a dictionary of dataframe used for adding the inversed columns
+        # a dictionary of DataFrame used for adding the inverted columns
         df_dict = dict(df)
         for c in to_be_inv_list:
             new_col = 1 / np.array(df[c])
             new_feature_name = 'inverse_' + c
             df_dict[new_feature_name] = new_col
 
-        # convert resulting dictionary to dataframe
+        # convert resulting dictionary to DataFrame
         inv_df = pd.DataFrame.from_dict(df_dict)
 
-        # returns the indices of the columns that should be inversed and their inversed in one tuple
-        inversing_cols = []
+        # returns the indices of the columns that should be inverted and their inverted in one tuple
+        inverting_cols = []
         for c in to_be_inv_list:
             cidx = inv_df.columns.get_loc(c)
             cinvidx = inv_df.columns.get_loc('inverse_' + c)
             inv_idxs = (cidx, cinvidx)
-            inversing_cols.append(inv_idxs)
-        return inv_df, inversing_cols
+            inverting_cols.append(inv_idxs)
+        return inv_df, inverting_cols
 
     def add_all_comb(self, inv_df, inversed_cols_tr, output_column_idx, degree):
         """Given a dataframe, returns an extended df containing all combinations of columns except the ones that are
         inversed"""
 
-        # obtain needed parameters for extending dataframe
+        # obtain needed parameters for extending DataFrame
         features_names = inv_df.columns.values
         df_dict = dict(inv_df)
         data_matrix = pd.DataFrame.as_matrix(inv_df)
@@ -340,7 +296,7 @@ class DataPreprocessing(DataPrepration):
         # compute all possible combinations with replacement
         for j in range(2, degree + 1):
             combs = list(itertools.combinations_with_replacement(indices, j))
-            # finds the combinations containing features and inversed of them
+            # finds the combinations containing features and inverted of them
             remove_list_idx = []
             for ii in combs:
                 for kk in inversed_cols_tr:
@@ -348,7 +304,7 @@ class DataPreprocessing(DataPrepration):
                         remove_list_idx.append(ii)
                 if output_column_idx in ii:
                     remove_list_idx.append(ii)
-            # removes the combinations containing features and inversed of them
+            # removes the combinations containing features and inverted of them
             for r in range(0,len(remove_list_idx)):
                 combs.remove(remove_list_idx[r])
             # compute resulting column of the remaining combinations and add to the df
@@ -386,16 +342,21 @@ class Splitting(DataPrepration):
 
         self.inputDF = inputDF
 
+        # retrieve the seed and shuffle
         seed = parameters['Splitting']['seed_vector'][len(run_info)-1]
         self.inputDF = shuffle(self.inputDF, random_state=seed)
 
+        # find the samples in training and test set
         train_indices, test_indices = self.getTRTEindices(self.inputDF, parameters)
 
+        # populate the run_info variable
         run_info[-1]['train_indices'] = train_indices
         run_info[-1]['test_indices'] = test_indices
 
+        # scale the data
         scaled_inputDF, scaler = self.normalization.process(self.inputDF)
 
+        # split the data
         train_df = scaled_inputDF.ix[train_indices]
         test_df = scaled_inputDF.ix[test_indices]
         train_labels = train_df.iloc[:, 0]
@@ -404,6 +365,7 @@ class Splitting(DataPrepration):
         test_labels = test_df.iloc[:, 0]
         test_features = test_df.iloc[:, 1:]
 
+        # populate the necessary variables in run_info for later use
         run_info[-1]['scaler'] = scaler
         run_info[-1]['train_features'] = train_features
         run_info[-1]['train_labels'] = train_labels
@@ -415,36 +377,30 @@ class Splitting(DataPrepration):
     def getTRTEindices(self, df, parameters):
         """find training and test indices in the data based on the datasize and core numbers"""
 
+        # retrieve needed parameters
         image_nums_train_data = parameters['Splitting']['image_nums_train_data']
         image_nums_test_data = parameters['Splitting']['image_nums_test_data']
         core_nums_train_data = parameters['Splitting']['core_nums_train_data']
         core_nums_test_data = parameters['Splitting']['core_nums_test_data']
 
-        if "dataSize" in df.columns:
+        # group the samples according to the dataSize column of dataset since this column is one the features that tell
+        # with samples are in training set and which are in the test set
+        data_size_indices = pd.DataFrame(
+            [[k, v.values] for k, v in df.groupby('dataSize').groups.items()], columns=['col', 'indices'])
 
-            data_size_indices = pd.DataFrame(
-                [[k, v.values] for k, v in df.groupby('dataSize').groups.items()], columns=['col', 'indices'])
+        # save the samples that can be possible in the training(test) set because their dataSize column value
+        # correspond to the predefined value from the input parameters
+        data_size_train_indices = \
+            data_size_indices.loc[(data_size_indices['col'].isin(image_nums_train_data))]['indices']
+        data_size_test_indices = \
+            data_size_indices.loc[(data_size_indices['col'].isin(image_nums_test_data))]['indices']
 
-            data_size_train_indices = \
-                data_size_indices.loc[(data_size_indices['col'].isin(image_nums_train_data))]['indices']
-            data_size_test_indices = \
-                data_size_indices.loc[(data_size_indices['col'].isin(image_nums_test_data))]['indices']
+        # gather all the candidate samples from above into a list for training(test) set
+        data_size_train_indices = np.concatenate(list(data_size_train_indices), axis=0)
+        data_size_test_indices = np.concatenate(list(data_size_test_indices), axis=0)
 
-            data_size_train_indices = np.concatenate(list(data_size_train_indices), axis=0)
-            data_size_test_indices = np.concatenate(list(data_size_test_indices), axis=0)
-
-        # else:
-        #
-        #     data_size_train_indices = range(0, df.shape[0])
-        #     data_size_test_indices = range(0, df.shape[0])
-        #
-        # data_conf["image_nums_train_data"] = image_nums_train_data
-        # data_conf["image_nums_test_data"] = image_nums_test_data
-        #
-        # # if input_name in sparkdl_inputs:
-        # # core_num_indices = pd.DataFrame(
-        # # [[k, v.values] for k, v in df.groupby('nCores').groups.items()], columns=['col', 'indices'])
-
+        # group the samples according to the nContainers column of dataset since this column is one the features that
+        # tell with samples are in training set and which are in the test set
         core_num_indices = pd.DataFrame(
             [[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
             columns=['col', 'indices'])
@@ -455,11 +411,14 @@ class Splitting(DataPrepration):
         if set(image_nums_train_data) != set(image_nums_test_data):
             core_nums_test_data = core_nums_test_data + core_nums_train_data
 
+        # save the samples that can be possible in the training(test) set because their core number column value
+        # correspond to the predefined value from the input parameters
         core_num_train_indices = \
             core_num_indices.loc[(core_num_indices['col'].isin(core_nums_train_data))]['indices']
         core_num_test_indices = \
             core_num_indices.loc[(core_num_indices['col'].isin(core_nums_test_data))]['indices']
 
+        # gather all the candidate samples from above into a list for training(test) set
         core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
         core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
 
@@ -474,7 +433,7 @@ class Splitting(DataPrepration):
 
 
 class FeatureSelection(DataPrepration):
-
+    """This class performs feature selection as the last step of the data preparation"""
     def __init__(self):
         DataPrepration.__init__(self)
 
@@ -482,15 +441,18 @@ class FeatureSelection(DataPrepration):
         """calculate how many features are allowed to be selected, then using cross validation searches for the best
         parameters, then trains the model using the best parametrs"""
 
+        # retrieve necessary information from parameters variable
         features_names = parameters['Features']['Extended_feature_names']
         min_features = parameters['FS']['min_features']
         max_features = parameters['FS']['max_features']
         k_features = self.calc_k_features(min_features, max_features, features_names)
         parameters['FS']['k_features'] = k_features
 
+        # perform grid search
         cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test =\
             self.Ridge_SFS_GridSearch(train_features, train_labels, test_features, test_labels, k_features, parameters)
 
+        # populate obtained values in the run_info variable
         run_info[-1]['cv_info'] = cv_info
         run_info[-1]['Sel_features'] = list(sel_idx)
         run_info[-1]['Sel_features_names'] = [features_names[i] for i in sel_idx]
@@ -504,12 +466,15 @@ class FeatureSelection(DataPrepration):
     def Ridge_SFS_GridSearch(self, train_features, train_labels, test_features, test_labels, k_features, parameters):
         """select the best parameres using CV and sfs feature selection"""
 
+        # obtain the matrix of training data for doing grid search
         X = pd.DataFrame.as_matrix(train_features)
         Y = pd.DataFrame.as_matrix(train_labels)
         ext_feature_names = train_features.columns.values
 
+        # vector containing parameters to be search in
         alpha_v = parameters['Ridge']['ridge_params']
 
+        # the number of folds in the cross validation of SFS
         fold_num = parameters['FS']['fold_num']
 
         # list of MSE error for different alpha values:
@@ -581,7 +546,6 @@ class FeatureSelection(DataPrepration):
         sel_idx = sel_F[MSE_index]
 
         # Since the data for classsifier selection is too small, we only calculate the train error
-
         X_train = pd.DataFrame.as_matrix(train_features)
         Y_train = pd.DataFrame.as_matrix(train_labels)
         X_test = pd.DataFrame.as_matrix(test_features)
@@ -635,14 +599,18 @@ class Regression(DataAnalysis):
     def process(self, y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, parameters, run_info):
         """computes the MAPE error of the real predication by first scaling the predicted values"""
 
+        # retrieve the same scaler used for normalization to perform inverse transform
         scaler = run_info[-1]['scaler']
+
+        # retrieve all the feature names
         features_names = parameters['Features']['Extended_feature_names']
 
-        # compute MAPE error
+        # compute MAPE error for not scaled data
         err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores = \
             self.mean_absolute_percentage_error(y_pred_test, y_pred_train, test_features, test_labels, train_features,
                                                 train_labels, scaler, features_names)
 
+        # populate run_info with results
         run_info[-1]['MAPE_test'] = err_test
         run_info[-1]['MAPE_train'] = err_train
         run_info[-1]['y_true_train'] = y_true_train
@@ -659,6 +627,8 @@ class Regression(DataAnalysis):
     def mean_absolute_percentage_error(self, y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, scaler, features_names):
         """computess MAPE error in real data by first scaling back the data (denormalize)"""
 
+        # create the Data the same size and concatenate once real scaled output and once predicted output to make
+        # data ready for inverse transform
         train_features_org = train_features
         if "y_true_train" in train_features_org.columns.values:
             train_features_org.drop("y_true_train", axis=1, inplace=True)
@@ -674,31 +644,39 @@ class Regression(DataAnalysis):
 
         # add the scaled prediction data and real value to 2 different dataframe
         if y_pred_test != []:
+
             # Test error
             y_true_test = test_labels
             test_features_with_true = pd.DataFrame(test_features_org)
             test_features_with_pred = pd.DataFrame(test_features_org)
 
+            # make the DataFrame out of array
             y_true_test = pd.DataFrame(y_true_test)
             y_pred_test = pd.DataFrame(y_pred_test)
 
+            # make the index of test data alligned with training set
             y_pred_test.index = y_true_test.index
 
+            # concatenate output columns
             test_features_with_true.insert(0, "y_true_test", y_true_test)
             test_features_with_pred.insert(0, "y_pred_test", y_pred_test)
 
+            # make sure that each data has only predicted OR true value
             test_features_with_true.drop('y_pred_test', axis = 1, inplace=True)
             test_features_with_pred.drop('y_true_test', axis = 1, inplace=True)
 
+            # do the inverse transform
             test_data_with_true = pd.DataFrame(scaler.inverse_transform(test_features_with_true.values))
             test_data_with_pred = pd.DataFrame(scaler.inverse_transform(test_features_with_pred.values))
 
+            # label the columns names as it was before and add true and predicted value as column name
             test_data_with_true_cols = ['y_true_test']
             test_data_with_pred_cols = ['y_pred_test']
             for elem in features_names:
                 test_data_with_true_cols.append(elem)
                 test_data_with_pred_cols.append(elem)
 
+            # make the indexing correct as it was before
             test_data_with_true.columns = test_data_with_true_cols
             test_data_with_pred.columns = test_data_with_pred_cols
             test_data_with_true.index = y_true_test.index
@@ -725,6 +703,7 @@ class Regression(DataAnalysis):
                 # if set(cores) == set(data_conf["core_nums_test_data"]):
                     # y_pred_test_cores = test_data_with_pred[col].tolist()
 
+            # select just the output to compute MAPE
             y_true_test = test_data_with_true.iloc[:, 0]
             y_pred_test = test_data_with_pred.iloc[:, 0]
 
@@ -734,28 +713,36 @@ class Regression(DataAnalysis):
 
         # Train error
         y_true_train = train_labels
+
+        # make the DataFrame out of matrix of training input
         train_features_with_true = pd.DataFrame(train_features_org)
         train_features_with_pred = pd.DataFrame(train_features_org)
 
+        # make the DataFrame out of matrix of training output
         y_true_train = pd.DataFrame(y_true_train)
         y_pred_train = pd.DataFrame(y_pred_train)
         y_pred_train.index = y_true_train.index
 
+        # concatenate output columns
         train_features_with_true.insert(0, "y_true_train", y_true_train)
         train_features_with_pred.insert(0, "y_pred_train", y_pred_train)
 
+        # make sure DataFrame has only true OR predicted value
         train_features_with_true.drop('y_pred_train', axis=1, inplace=True)
         train_features_with_pred.drop('y_true_train', axis=1, inplace=True)
 
+        # do the inverse transform
         train_data_with_true = pd.DataFrame(scaler.inverse_transform(train_features_with_true.values))
         train_data_with_pred = pd.DataFrame(scaler.inverse_transform(train_features_with_pred.values))
 
+        # label the columns names as it was before and add true and predicted value as column name
         train_data_with_true_cols = ['y_true_train']
         train_data_with_pred_cols = ['y_pred_train']
         for elem in features_names:
             train_data_with_true_cols.append(elem)
             train_data_with_pred_cols.append(elem)
 
+        # adjust the columns and indices names to be aligned
         train_data_with_true.columns = train_data_with_true_cols
         train_data_with_pred.columns = train_data_with_pred_cols
         train_data_with_true.index = y_true_train.index
@@ -783,6 +770,7 @@ class Regression(DataAnalysis):
             # if set(cores) == set(data_conf["core_nums_train_data"]):
                 #y_pred_train_cores = train_data_with_pred[col].tolist()
 
+        # select just the output to compute MAPE
         y_true_train = train_data_with_true.iloc[:, 0]
         y_pred_train = train_data_with_pred.iloc[:, 0]
 
@@ -799,12 +787,19 @@ class Results(Task):
 
     def process(self, ext_df, run_info, parameters):
 
+        # retrieve needed variables
         k_features = parameters['FS']['k_features']
+
+        # find the best run among elements of run_info according to the minimum MAPE error
         best_run = self.select_best_run(run_info)
+
+        # create the result name based on desired input parameters
         result_name = self.get_result_name(parameters, k_features)
 
+        # create the path for saving the results
         result_path = self.save_results(parameters, best_run, result_name)
 
+        # save the necessary plots in the made result folder
         self.plot_predicted_true(result_path, best_run, parameters)
         self.plot_cores_runtime(result_path, best_run, parameters, ext_df)
         self.plot_histogram(result_path, run_info, parameters)
@@ -812,6 +807,7 @@ class Results(Task):
         self.plot_MAPE_Errors(result_path, run_info)
         self.plot_Model_Size(result_path, run_info)
 
+        # save the best_run variable as string
         target = open(os.path.join(result_path, "best_run"), 'a')
         target.write(str(best_run))
         target.close()
@@ -823,11 +819,15 @@ class Results(Task):
             Mape_list.append(run_info[i]['MAPE_test'])
 
         best_run_idx = Mape_list.index(min(Mape_list))
+
+        # transfer just the best run element of run_info list to a dictionary variable: best_run
         best_run = run_info[best_run_idx]
         return best_run
 
     def get_result_name(self, parameters, k_features):
         """makes a name for saving the results and plots based on the current input parameters"""
+
+        # retrieve necessary information to built the name of result folder
         degree = parameters['FS']['degree']
         select_features_sfs = parameters['FS']['select_features_sfs']
         select_features_vif = parameters['FS']['select_features_vif']
@@ -837,6 +837,7 @@ class Results(Task):
         image_nums_test_data = parameters['Splitting']['image_nums_test_data']
         degree = str(degree)
 
+        # concatenate parameters in a meaningful way
         result_name = "d=" + degree + "_"
 
         if select_features_vif:
@@ -854,6 +855,7 @@ class Results(Task):
 
         result_name = result_name + '_' + str(run_num) + '_runs'
 
+        # add dataSize in training and test samples in the name
         Tr_size = '_Tr'
         for sz in image_nums_train_data:
             Tr_size = Tr_size + '_' + str(sz)
@@ -868,6 +870,7 @@ class Results(Task):
     def save_temporary_results(self, run_info):
         """save the temporary result at the end of each run"""
 
+        # save the whole run_info so at each run the elements of dump variable changes
         target = open(os.path.join('./results/', "temp_run_info"), 'a')
         target.write(str(run_info))
         target.close()
@@ -876,10 +879,12 @@ class Results(Task):
         """ save the extended results in the best_run dictionary and make the folder to save them and return the
         folder path"""
 
+        # retrieve needed parameters
         degree = parameters['FS']['degree']
         ridge_params = parameters['Ridge']['ridge_params']
         result_path = parameters['DataPreparation']['result_path']
 
+        # add excess information in the best run dictionary
         best_run["regressor_name"] = 'lr'
         best_run['parameters'] = parameters
         best_run["n_terms"] = degree
@@ -889,23 +894,30 @@ class Results(Task):
         # make the directory to save the data and plots
         result_path = os.path.join(result_path, result_name)
 
+        # create the folder
         if os.path.exists(result_path) == False:
             os.mkdir(result_path)
 
         return result_path
 
     def plot_predicted_true(self, result_path, best_run, parameters):
+        """plot the true values of application completion time versus the predicted ones"""
+
+        # retrieve necessary information from the best_run variable
         y_true_train = best_run["y_true_train"]
         y_pred_train = best_run["y_pred_train"]
         y_true_test = best_run["y_true_test"]
         y_pred_test = best_run["y_pred_test"]
 
+        # adjust parameters of the plot
         params_txt = 'best alpha: ' + str(best_run['best_param'])
         font = {'family': 'normal', 'size': 15}
         matplotlib.rc('font', **font)
         plot_path = os.path.join(result_path, "True_Pred_Plot")
         colors = cm.rainbow(np.linspace(0, 0.5, 3))
         fig = plt.figure(figsize=(9, 6))
+
+        # scatter values
         plt.scatter(y_pred_train, y_true_train, marker='o', s=300, facecolors='none', label="Train Set",
                     color=colors[0])
         plt.scatter(y_pred_test, y_true_test, marker='^', s=300, facecolors='none', label="Test Set",
@@ -918,6 +930,8 @@ class Results(Task):
         # max_val = max(max(y_pred_train), max(y_true_train))
         lines = plt.plot([min_val, max_val], [min_val, max_val], '-')
         plt.setp(lines, linewidth=0.9, color=colors[2])
+
+        # title and labels
         plt.title("Predicted vs True Values for " + 'lr' + "\n" + \
                   parameters['DataPreparation']['input_name'] + " " + str(parameters['DataPreparation']['case']) + " " + \
                   str(parameters['Splitting']["image_nums_train_data"]) + \
@@ -931,7 +945,9 @@ class Results(Task):
         plt.savefig(plot_path + ".pdf")
 
     def plot_cores_runtime(self, result_path, best_run, parameters, df):
+        """plots the true and predicted values of training and test set according to their core numbers feature"""
 
+        # retrieve the necessary information
         core_nums_train_data = parameters['Splitting']['core_nums_train_data']
         core_nums_test_data = parameters['Splitting']['core_nums_test_data']
 
@@ -940,19 +956,22 @@ class Results(Task):
         y_true_test = best_run['y_true_test']
         y_pred_test = best_run['y_pred_test']
 
+        # make the plot ready
         font = {'family': 'normal', 'size': 15}
         matplotlib.rc('font', **font)
         plot_path = os.path.join(result_path, "cores_runtime_plot")
         colors = cm.rainbow(np.linspace(0, 0.5, 3))
         fig = plt.figure(figsize=(9, 6))
-        #if self.data_conf["fixed_features"] == False:
 
         params_txt = 'best alpha: ' + str(best_run['best_param'])
         regressor_name = parameters['Regression']['regressor_name']
 
+        # group the indices corresponding to number of cores
         core_num_indices = pd.DataFrame(
             [[k, v.values] for k, v in df.groupby('nContainers').groups.items()],
             columns=['col', 'indices'])
+
+        # scatter each point using its core number
         # Training
         legcount1 = 0
         for Trcore in core_nums_train_data:
@@ -1015,12 +1034,13 @@ class Results(Task):
 
     def plot_histogram(self, result_path, run_info, parameters):
         """plots the histogram of frequency of selected features"""
+
+        # retrieve necessary information
         degree = parameters['FS']['degree']
-
         plot_path = os.path.join(result_path, "Features_Ferquency_Histogram_plot")
-
         names_list = parameters['Features']['Extended_feature_names']
 
+        # count the selected features in all runs
         name_count = []
         for i in range(len(names_list)):
             name_count.append(0)
@@ -1030,6 +1050,7 @@ class Results(Task):
             for j in run_info[i]['Sel_features']:
                 name_count[j] += 1
 
+        # for degrees more than just add the selected features in the target plot to increase readability
         if degree > 1:
             zero_f_idx = []
             for i in range(len(name_count)):
@@ -1046,6 +1067,7 @@ class Results(Task):
             names_list = newname_list
             name_count = newname_count
 
+        # make the plot parameters ready
         font = {'family':'normal','size': 10}
         matplotlib.rc('font', **font)
         colors = cm.rainbow(np.linspace(0, 0.5, 3))
@@ -1054,7 +1076,6 @@ class Results(Task):
         plt.xticks(range(len(names_list)), names_list)
         plt.xticks(rotation = 90)
         plt.title('Histogram of features selection frequency in '+str(len(run_info))+' runs')
-        # plt.show()
         plt.tight_layout()
         fig.savefig(plot_path + ".pdf")
 
@@ -1062,8 +1083,11 @@ class Results(Task):
         """plots MSE error for unscaled values of prediction and true in different runs of the algorithm"""
 
         plot_path = os.path.join(result_path, "MSE_Error_plot")
+
+        # make an object from FeatureSelection class to use functions
         fs = FeatureSelection()
 
+        # gather all the MSE errors in training and test set in 2 lists
         MSE_list_TR = []
         MSE_list_TE = []
 
@@ -1078,6 +1102,7 @@ class Results(Task):
             MSE_list_TR.append(msetr)
             MSE_list_TE.append(msete)
 
+        # make the plot parameters
         font = {'family': 'normal', 'size': 15}
         matplotlib.rc('font', **font)
         colors = cm.rainbow(np.linspace(0, 0.5, 3))
@@ -1093,12 +1118,16 @@ class Results(Task):
         """plots MAPE error for unscaled values of prediction and true in different runs of the algorithm"""
 
         plot_path = os.path.join(result_path, "MAPE_Error_plot")
+
+        # make an object from FeatureSelection class to use functions
+        fs = FeatureSelection()
+
+        # gather all the MAPE errors in training and test set in 2 lists
         MAPE_list_TR = []
         MAPE_list_TE = []
         for i in range(len(run_info)):
             y_true_train_val = run_info[i]['y_true_train']
             y_pred_train_val = run_info[i]['y_pred_train']
-            fs = FeatureSelection()
             mapetr = fs.calcMAPE(y_pred_train_val, y_true_train_val)
 
             y_true_test_val = run_info[i]['y_true_test']
@@ -1108,6 +1137,7 @@ class Results(Task):
             MAPE_list_TR.append(mapetr)
             MAPE_list_TE.append(mapete)
 
+        # make the plot parameters
         font = {'family':'normal','size': 15}
         matplotlib.rc('font', **font)
         colors = cm.rainbow(np.linspace(0, 0.5, 3))
@@ -1123,11 +1153,14 @@ class Results(Task):
         """plots selected model size in different runs of the algorithm"""
 
         plot_path = os.path.join(result_path, "Model_Size_Plot")
+
+        # list containing model size (number of selected features) in different runs
         model_size_list = []
         for i in range(len(run_info)):
             len(run_info[i]['Sel_features'])
             model_size_list.append(len(run_info[i]['Sel_features']))
 
+        # make the plot parameters
         font = {'family':'normal','size': 15}
         matplotlib.rc('font', **font)
         colors = cm.rainbow(np.linspace(0, 0.5, 3))
