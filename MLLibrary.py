@@ -87,9 +87,6 @@ class SequenceDataProcessing(object):
         self.image_nums_train_data = self.parameters['Splitting']['image_nums_train_data']
         self.image_nums_test_data = self.parameters['Splitting']['image_nums_test_data']
         self.criterion_col_list = self.parameters['Splitting']['criterion_col_list']
-
-        self.inputscaler = None
-        self.outputscaler = None
         self.feature_selection = FeatureSelection()
         self.regression = Regression()
         self.results = Results()
@@ -172,21 +169,29 @@ class SequenceDataProcessing(object):
     def process(self):
         """the main code"""
 
-    # performs reading data, drops irrelevant columns
+        # performs reading data, drops irrelevant columns
         df = self.preliminary_data_processing.process(self.parameters)
-    #
-    #     # splitting_df = self.data_splitting.make_splitting_df(temp, self.data_splitting.criterion_col_list)
+
+        # performs inverting of the columns and adds combinatorial terms to the df
         ext_df = self.data_preprocessing.process(df, self.parameters)
 
+        # performs the algorithm multiple time and each time changes the seed to shuffle
         for iter in range(self.run_num):
+
             this_run = 'run_' + str(iter)
             print('==================================================================================================')
             print(this_run)
+
+            # the list containing all the information about runs of algorithm, for each run a dictionary is added
+            # to the list
             self.run_info.append({})
 
+            # performs data splitting and returns splitted data
             train_features, train_labels, test_features, test_labels  = \
                     self.data_splitting.process(ext_df, self.parameters, self.run_info)
 
+            # does the feature selection using training data and finds the best parameters in a grid search, then
+            # predicts the output of test data
             y_pred_train, y_pred_test = self.feature_selection.process(train_features,
                                                                        train_labels,
                                                                        test_features,
@@ -194,6 +199,8 @@ class SequenceDataProcessing(object):
                                                                        self.parameters,
                                                                        self.run_info)
 
+            # computes the mean absolute percentage error for training and test set, also returns prediction and true
+            # values of application completion time for future computations
             err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test = \
                                         self.regression.process(y_pred_test, y_pred_train,
                                                                 test_features, test_labels,
@@ -202,8 +209,10 @@ class SequenceDataProcessing(object):
                                                                 self.parameters,
                                                                 self.run_info)
 
+            # save the run_info variable as string in a temporary file in the result folder
             self.results.save_temporary_results(self.run_info)
 
+        # saves the best run results and necessary plots in the defined folder in result directory
         self.results.process(ext_df, self.run_info, self.parameters)
 
 
@@ -228,30 +237,28 @@ class Normalization(DataPrepration):
     def process(self, inputDF):
          self.inputDF = inputDF
          self.outputDF, scaler = self.scale_data(self.inputDF)
-
          return self.outputDF, scaler
 
     def scale_data(self, df):
         """scale the dataframe"""
+
         scaler = StandardScaler()
         scaled_array = scaler.fit_transform(df.values)
         scaled_df = pd.DataFrame(scaled_array, index=df.index, columns=df.columns)
         return scaled_df, scaler
-
 
     def denormalize_data(self, scaled_df, scaler):
         """descale the dataframe"""
 
         array = scaler.inverse_transform(scaled_df)
         df = pd.DataFrame(array, index=scaled_df.index, columns=scaled_df.columns)
-
         return df
+
 
 class PreliminaryDataProcessing(DataPrepration):
     """Perform preliminary prossing of data"""
     def __init__(self, input_file):
         DataPrepration.__init__(self)
-
 
     def process(self, parameters):
         """Get the csv file, drops the irrelevant columns and change it to data frame as output"""
@@ -260,14 +267,14 @@ class PreliminaryDataProcessing(DataPrepration):
         #
         # # drop the run column
         dropping_col = parameters['DataPreparation']['irrelevant_column_name']
-
         self.outputDF = self.outputDF.drop(dropping_col, axis=1)
 
+        # manually decrease the number of target column since we dropped the first columns, this maybe changed in
+        # different input files
         parameters['DataPreparation']['target_column'] -= 1
 
         # drop constant columns
         self.outputDF = self.outputDF.loc[:, (self.outputDF != self.outputDF.iloc[0]).any()]
-        #
         return self.outputDF
 
 
@@ -276,35 +283,34 @@ class DataPreprocessing(DataPrepration):
     def __init__(self):
         DataPrepration.__init__(self)
 
-
-
     def process(self, inputDF, parameters):
         """inversing and extension of features in the dataframe"""
         self.inputDF = inputDF
 
-        to_be_inv_List = parameters['Inverse']['to_be_inv_List']
+        to_be_inv_list = parameters['Inverse']['to_be_inv_List']
         target_column = parameters['DataPreparation']['target_column']
         degree = parameters['FS']['degree']
 
-        self.outputDF, inversing_cols = self.add_inverse_features(self.inputDF, to_be_inv_List)
+        # add the inverted column(s)
+        self.outputDF, inversing_cols = self.add_inverse_features(self.inputDF, to_be_inv_list)
         parameters['Inverse']['inversing_cols'] = inversing_cols
+
+        # add combinatorial terms
         self.outputDF = self.add_all_comb(self.outputDF, inversing_cols, target_column, degree)
 
+        # populate parameter variable with newly computed variables
         parameters['Features'] = {}
         parameters['Features']['Extended_feature_names'] = self.outputDF.columns.values[1:]
         parameters['Features']['Original_feature_names'] = self.inputDF.columns.values[1:]
-
         return self.outputDF
 
-
-
-    def add_inverse_features(self, df, to_be_inv_List):
-        """Given a dataframe and the name of columns that should be inversed, add the needed inversed columns and returns
-        the resulting df and the indices of two reciprocals separately"""
+    def add_inverse_features(self, df, to_be_inv_list):
+        """Given a dataframe and the name of columns that should be inversed, add the needed inversed columns and
+        returns the resulting df and the indices of two reciprocals separately"""
 
         # a dictionary of dataframe used for adding the inversed columns
         df_dict = dict(df)
-        for c in to_be_inv_List:
+        for c in to_be_inv_list:
             new_col = 1 / np.array(df[c])
             new_feature_name = 'inverse_' + c
             df_dict[new_feature_name] = new_col
@@ -314,13 +320,12 @@ class DataPreprocessing(DataPrepration):
 
         # returns the indices of the columns that should be inversed and their inversed in one tuple
         inversing_cols = []
-        for c in to_be_inv_List:
+        for c in to_be_inv_list:
             cidx = inv_df.columns.get_loc(c)
             cinvidx = inv_df.columns.get_loc('inverse_' + c)
             inv_idxs = (cidx, cinvidx)
             inversing_cols.append(inv_idxs)
         return inv_df, inversing_cols
-
 
     def add_all_comb(self, inv_df, inversed_cols_tr, output_column_idx, degree):
         """Given a dataframe, returns an extended df containing all combinations of columns except the ones that are
@@ -370,13 +375,11 @@ class DataPreprocessing(DataPrepration):
         return new_col
 
 
-
 class Splitting(DataPrepration):
     """performs splitting of the data based on the input parameters and scaling them """
     def __init__(self):
         DataPrepration.__init__(self)
         self.normalization = Normalization()
-
 
     def process(self, inputDF, parameters, run_info):
         """performs scaling and splitting"""
@@ -401,16 +404,13 @@ class Splitting(DataPrepration):
         test_labels = test_df.iloc[:, 0]
         test_features = test_df.iloc[:, 1:]
 
-
         run_info[-1]['scaler'] = scaler
-
         run_info[-1]['train_features'] = train_features
         run_info[-1]['train_labels'] = train_labels
         run_info[-1]['test_features'] = test_features
         run_info[-1]['test_labels'] = test_labels
 
         return train_features, train_labels, test_features, test_labels
-
 
     def getTRTEindices(self, df, parameters):
         """find training and test indices in the data based on the datasize and core numbers"""
@@ -419,7 +419,6 @@ class Splitting(DataPrepration):
         image_nums_test_data = parameters['Splitting']['image_nums_test_data']
         core_nums_train_data = parameters['Splitting']['core_nums_train_data']
         core_nums_test_data = parameters['Splitting']['core_nums_test_data']
-
 
         if "dataSize" in df.columns:
 
@@ -464,8 +463,8 @@ class Splitting(DataPrepration):
         core_num_train_indices = np.concatenate(list(core_num_train_indices), axis=0)
         core_num_test_indices = np.concatenate(list(core_num_test_indices), axis=0)
 
-        #data_conf["core_nums_train_data"] = core_nums_train_data
-        #data_conf["core_nums_test_data"] = core_nums_test_data
+        # data_conf["core_nums_train_data"] = core_nums_train_data
+        # data_conf["core_nums_test_data"] = core_nums_test_data
 
         # Take the intersect of indices of datasize and core
         train_indices = np.intersect1d(core_num_train_indices, data_size_train_indices)
@@ -478,8 +477,6 @@ class FeatureSelection(DataPrepration):
 
     def __init__(self):
         DataPrepration.__init__(self)
-
-
 
     def process(self, train_features, train_labels, test_features, test_labels, parameters, run_info):
         """calculate how many features are allowed to be selected, then using cross validation searches for the best
@@ -506,7 +503,6 @@ class FeatureSelection(DataPrepration):
 
     def Ridge_SFS_GridSearch(self, train_features, train_labels, test_features, test_labels, k_features, parameters):
         """select the best parameres using CV and sfs feature selection"""
-
 
         X = pd.DataFrame.as_matrix(train_features)
         Y = pd.DataFrame.as_matrix(train_labels)
@@ -584,7 +580,7 @@ class FeatureSelection(DataPrepration):
         best_trained_model.fit(X[:, sel_F[MSE_index]], Y)
         sel_idx = sel_F[MSE_index]
 
-        # Since the data for classsifierselection is too small, we only calculate the train error
+        # Since the data for classsifier selection is too small, we only calculate the train error
 
         X_train = pd.DataFrame.as_matrix(train_features)
         Y_train = pd.DataFrame.as_matrix(train_labels)
@@ -597,7 +593,6 @@ class FeatureSelection(DataPrepration):
         #     y_pred_test = best_trained_model.predict(X_test[:, sel_idx])
 
         y_pred_test = best_trained_model.predict(X_test[:, sel_idx])
-
         y_pred_train = best_trained_model.predict(X_train[:, sel_idx])
 
         return cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test
@@ -622,6 +617,7 @@ class FeatureSelection(DataPrepration):
         Mapeerr = np.mean(np.abs((Y - Y_hat) / Y)) * 100
         return Mapeerr
 
+
 class DataAnalysis(Task):
     """This is class defining machine learning task"""
 
@@ -642,6 +638,7 @@ class Regression(DataAnalysis):
         scaler = run_info[-1]['scaler']
         features_names = parameters['Features']['Extended_feature_names']
 
+        # compute MAPE error
         err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores = \
             self.mean_absolute_percentage_error(y_pred_test, y_pred_train, test_features, test_labels, train_features,
                                                 train_labels, scaler, features_names)
@@ -658,7 +655,6 @@ class Regression(DataAnalysis):
         run_info[-1]['y_pred_test_cores'] = y_pred_test_cores
 
         return err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test
-
 
     def mean_absolute_percentage_error(self, y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, scaler, features_names):
         """computess MAPE error in real data by first scaling back the data (denormalize)"""
@@ -794,11 +790,13 @@ class Regression(DataAnalysis):
 
         return err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores
 
+
 class Results(Task):
     """This is class defining machine learning task"""
 
     def __init__(self):
         Task.__init__(self)
+
     def process(self, ext_df, run_info, parameters):
 
         k_features = parameters['FS']['k_features']
@@ -826,9 +824,7 @@ class Results(Task):
 
         best_run_idx = Mape_list.index(min(Mape_list))
         best_run = run_info[best_run_idx]
-
         return best_run
-
 
     def get_result_name(self, parameters, k_features):
         """makes a name for saving the results and plots based on the current input parameters"""
@@ -867,7 +863,6 @@ class Results(Task):
             Te_size = Te_size + '_' + str(sz)
 
         result_name = result_name + Tr_size + Te_size
-
         return result_name
 
     def save_temporary_results(self, run_info):
@@ -876,7 +871,6 @@ class Results(Task):
         target = open(os.path.join('./results/', "temp_run_info"), 'a')
         target.write(str(run_info))
         target.close()
-
 
     def save_results(self, parameters, best_run, result_name):
         """ save the extended results in the best_run dictionary and make the folder to save them and return the
@@ -899,7 +893,6 @@ class Results(Task):
             os.mkdir(result_path)
 
         return result_path
-
 
     def plot_predicted_true(self, result_path, best_run, parameters):
         y_true_train = best_run["y_true_train"]
@@ -937,7 +930,6 @@ class Results(Task):
         plt.legend(prop={'size': 20})
         plt.savefig(plot_path + ".pdf")
 
-
     def plot_cores_runtime(self, result_path, best_run, parameters, df):
 
         core_nums_train_data = parameters['Splitting']['core_nums_train_data']
@@ -965,14 +957,12 @@ class Results(Task):
         legcount1 = 0
         for Trcore in core_nums_train_data:
 
-            #plot_dict[str(Trcore)] ={}
+            # plot_dict[str(Trcore)] ={}
             # DF of samples having the core number equal to Trcore
             y_idx = core_num_indices.loc[core_num_indices['col'] == Trcore]['indices']
 
             # convert them to list
             y_idx_list = y_idx.iloc[0].tolist() # no need to iterate
-            #y_tr_true = []
-            #y_tr_pred = []
 
             for yi in y_idx_list:
                 if yi in y_true_train.index:
@@ -990,8 +980,10 @@ class Results(Task):
 
         legcount2 = 0
         for Tecore in core_nums_test_data:
+
             # DF of samples having the core number equal to Tecore
             y_idx_te = core_num_indices.loc[core_num_indices['col'] == Tecore]['indices']
+
             # convert them to list
             y_idx_te_list = y_idx_te.iloc[0].tolist() # no need to iterate
 
@@ -1008,21 +1000,10 @@ class Results(Task):
                         plt.scatter(Tecore, y_pred_test.loc[yie], marker='^', s=300, facecolors='none', color='C1')
                         plt.scatter(Tecore, y_true_test.loc[yie], marker='^', s=300, facecolors='none', color='C3')
 
-        #if self.data_conf["fixed_features"] == True:
-        #    plt.scatter(self.data_conf["train_cores"], self.y_pred_train, marker='o', s=300, facecolors='none',
-        #                label="Train Predicted Values", color=colors[1])
-        #    plt.scatter(self.data_conf["train_cores"], self.y_true_train, marker='o', s=300, facecolors='none',
-        #                label="Train True Values", color=colors[2])
-        #    if self.y_pred_test != []:
-        #        plt.scatter(self.data_conf["test_cores"], self.y_pred_test, marker='^', s=300, facecolors='none',
-        #                    label="Test Predicted Values", color='C1')
-        #        plt.scatter(self.data_conf["test_cores"], self.y_true_test, marker='^', s=300, facecolors='none',
-        #                    label="Test True Values", color='C3')
-
         plt.title("Predicted and True Values for " + regressor_name + "\n" + \
-                  parameters['DataPreparation']['input_name'] + " " + str(parameters['DataPreparation']['case']) + " " + \
-                  str(parameters['Splitting']["image_nums_train_data"]) + \
-                  str(parameters['Splitting']["image_nums_test_data"]))
+                  parameters['DataPreparation']['input_name'] + " " + str(parameters['DataPreparation']['case']) + " "
+                  + str(parameters['Splitting']["image_nums_train_data"])
+                  + str(parameters['Splitting']["image_nums_test_data"]))
         plt.xlabel("Number of cores")
         plt.ylabel("applicationCompletionTime (ms)")
         fig.text(.5, .01, params_txt, ha='center')
@@ -1082,18 +1063,18 @@ class Results(Task):
 
         plot_path = os.path.join(result_path, "MSE_Error_plot")
         fs = FeatureSelection()
+
         MSE_list_TR = []
         MSE_list_TE = []
+
         for i in range(len(run_info)):
             y_true_train_val = run_info[i]['y_true_train']
             y_pred_train_val = run_info[i]['y_pred_train']
-            fs = FeatureSelection()
             msetr = fs.calcMSE(y_pred_train_val, y_true_train_val)
 
             y_true_test_val = run_info[i]['y_true_test']
             y_pred_test_val = run_info[i]['y_pred_test']
             msete = fs.calcMSE(y_pred_test_val, y_true_test_val)
-
             MSE_list_TR.append(msetr)
             MSE_list_TE.append(msete)
 
@@ -1106,7 +1087,6 @@ class Results(Task):
         plt.ylabel('MSE Error')
         plt.title('MSE Error in Training and Test Sets in ' + str(len(run_info)) + ' runs')
         plt.xlim(1, len(MSE_list_TE))
-        # plt.show()
         fig1.savefig(plot_path + ".pdf")
 
     def plot_MAPE_Errors(self, result_path, run_info):
@@ -1137,7 +1117,6 @@ class Results(Task):
         plt.ylabel('MAPE Error')
         plt.title('MAPE Error in Training and Test Sets in '+str(len(run_info))+' runs')
         plt.xlim(1, len(MAPE_list_TE))
-        # plt.legend()
         fig2.savefig(plot_path + ".pdf")
 
     def plot_Model_Size(self, result_path, run_info):
