@@ -18,6 +18,8 @@ import matplotlib.cm as cm
 #                    level=logging.DEBUG)
 
 
+
+
 class SequenceDataProcessing(object):
     """ main class """
     def __init__(self):
@@ -25,6 +27,10 @@ class SequenceDataProcessing(object):
         self.conf = cp.ConfigParser()
         self.parameters = {}
         self.get_parameters()
+
+        self.debug = self.parameters['DebugLevel']['debug']
+        self.logger = logging.getLogger(__name__)
+
 
         # data dictionary storing independent runs information
         self.run_info = []
@@ -50,11 +56,17 @@ class SequenceDataProcessing(object):
         self.data_splitting = Splitting()
         self.normalization = Normalization()
 
+        logging.basicConfig(level=logging.DEBUG) if self.debug else logging.basicConfig(level=logging.INFO)
+        self.logger.info('bbb')
+
 
     def get_parameters(self):
         """Gets the parameters from the config file named parameters.ini and put them into a dictionary
         named parameters"""
         self.conf.read('params.ini')
+
+        self.parameters['DebugLevel'] = {}
+        self.parameters['DebugLevel']['debug'] = ast.literal_eval(self.conf['DebugLevel']['debug'])
 
         self.parameters['General'] = {}
         self.parameters['General']['run_num'] = int(self.conf['General']['run_num'])
@@ -118,7 +130,6 @@ class SequenceDataProcessing(object):
         self.parameters['dt']['max_depth_dt'] = str(self.conf['dt']['max_depth_dt'])
         self.parameters['dt']['min_samples_leaf_dt'] = str(self.conf['dt']['min_samples_leaf_dt'])
         self.parameters['dt']['min_samples_split_dt'] = str(self.conf['dt']['min_samples_split_dt'])
-
 
     def process(self):
         """the main code"""
