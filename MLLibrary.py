@@ -29,8 +29,8 @@ class SequenceDataProcessing(object):
         self.get_parameters()
 
         self.debug = self.parameters['DebugLevel']['debug']
+        logging.basicConfig(level=logging.DEBUG) if self.debug else logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
-
 
         # data dictionary storing independent runs information
         self.run_info = []
@@ -56,8 +56,7 @@ class SequenceDataProcessing(object):
         self.data_splitting = Splitting()
         self.normalization = Normalization()
 
-        logging.basicConfig(level=logging.DEBUG) if self.debug else logging.basicConfig(level=logging.INFO)
-        self.logger.info('bbb')
+
 
 
     def get_parameters(self):
@@ -134,6 +133,9 @@ class SequenceDataProcessing(object):
     def process(self):
         """the main code"""
 
+
+
+        self.logger.info("Start of the algorithm")
         # performs reading data, drops irrelevant columns
         df = self.preliminary_data_processing.process(self.parameters)
 
@@ -198,10 +200,11 @@ class Normalization(DataPrepration):
 
     def __init__(self):
         DataPrepration.__init__(self)
+        self.logger = logging.getLogger(__name__)
 
     def process(self, inputDF):
         """Normalizes the data using StandardScaler module"""
-
+        self.logger.info("Scaling: ")
         self.inputDF = inputDF
         self.outputDF, scaler = self.scale_data(self.inputDF)
         return self.outputDF, scaler
@@ -226,10 +229,12 @@ class PreliminaryDataProcessing(DataPrepration):
     """Perform preliminary prossing of data"""
     def __init__(self, input_file):
         DataPrepration.__init__(self)
+        self.logger = logging.getLogger(__name__)
 
     def process(self, parameters):
         """Get the csv file, drops the irrelevant columns and change it to data frame as output"""
         input_path = parameters['DataPreparation']['input_path']
+        self.logger.info("Input reading: " + input_path)
         self.outputDF = pd.read_csv(input_path)
 
         # drop the run column
@@ -249,6 +254,7 @@ class DataPreprocessing(DataPrepration):
     """performs invesing of needed features and adds them to the dataframe, extends the dataframe to a degree"""
     def __init__(self):
         DataPrepration.__init__(self)
+        self.logger = logging.getLogger(__name__)
 
     def process(self, inputDF, parameters):
         """inversing and extension of features in the dataframe"""
@@ -258,10 +264,12 @@ class DataPreprocessing(DataPrepration):
         target_column = parameters['DataPreparation']['target_column']
         degree = parameters['FS']['degree']
 
+        self.logger.info("Inverting relevant features: ")
         # add the inverted column(s)
         self.outputDF, inversing_cols = self.add_inverse_features(self.inputDF, to_be_inv_list)
         parameters['Inverse']['inversing_cols'] = inversing_cols
 
+        self.logger.info("Extending features: ")
         # add combinatorial terms
         self.outputDF = self.add_all_comb(self.outputDF, inversing_cols, target_column, degree)
 
@@ -347,10 +355,12 @@ class Splitting(DataPrepration):
     def __init__(self):
         DataPrepration.__init__(self)
         self.normalization = Normalization()
+        self.logger = logging.getLogger(__name__)
 
     def process(self, inputDF, parameters, run_info):
         """performs scaling and splitting"""
 
+        self.logger.info("Splitting dataset: ")
         self.inputDF = inputDF
 
         # retrieve the seed and shuffle
@@ -447,6 +457,7 @@ class FeatureSelection(DataPrepration):
     """This class performs feature selection as the last step of the data preparation"""
     def __init__(self):
         DataPrepration.__init__(self)
+        self.logger = logging.getLogger(__name__)
 
     def process(self, train_features, train_labels, test_features, test_labels, parameters, run_info):
         """calculate how many features are allowed to be selected, then using cross validation searches for the best
@@ -459,6 +470,7 @@ class FeatureSelection(DataPrepration):
         k_features = self.calc_k_features(min_features, max_features, features_names)
         parameters['FS']['k_features'] = k_features
 
+        self.logger.info("Grid Search: ")
         # perform grid search
         cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test =\
             self.Ridge_SFS_GridSearch(train_features, train_labels, test_features, test_labels, k_features, parameters)
@@ -606,6 +618,7 @@ class Regression(DataAnalysis):
     def __init__(self):
         DataAnalysis.__init__(self)
         self.conf = cp.ConfigParser()
+        self.logger = logging.getLogger(__name__)
 
     def process(self, y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, parameters, run_info):
         """computes the MAPE error of the real predication by first scaling the predicted values"""
@@ -616,6 +629,7 @@ class Regression(DataAnalysis):
         # retrieve all the feature names
         features_names = parameters['Features']['Extended_feature_names']
 
+        self.logger.info("Computing MAPE: ")
         # compute MAPE error for not scaled data
         err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores = \
             self.mean_absolute_percentage_error(y_pred_test, y_pred_train, test_features, test_labels, train_features,
@@ -795,9 +809,11 @@ class Results(Task):
 
     def __init__(self):
         Task.__init__(self)
+        self.logger = logging.getLogger(__name__)
 
     def process(self, ext_df, run_info, parameters):
 
+        self.logger.info("Preparing results and plots: ")
         # retrieve needed variables
         k_features = parameters['FS']['k_features']
 
