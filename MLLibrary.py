@@ -77,6 +77,10 @@ class SequenceDataProcessing(object):
         self.parameters['FS'] = {}
         self.parameters['FS']['select_features_vif'] = bool(ast.literal_eval(self.conf.get('FS', 'select_features_vif')))
         self.parameters['FS']['select_features_sfs'] = bool(ast.literal_eval(self.conf.get('FS', 'select_features_sfs')))
+        print(self.parameters['FS']['select_features_sfs'])
+        self.parameters['FS']['XGBoost'] = bool(ast.literal_eval(self.conf.get('FS', 'XGBoost')))
+        print(self.parameters['FS']['XGBoost'])
+
         self.parameters['FS']['min_features'] = int(self.conf['FS']['min_features'])
         self.parameters['FS']['max_features'] = int(self.conf['FS']['max_features'])
         self.parameters['FS']['is_floating'] = bool(ast.literal_eval(self.conf.get('FS', 'is_floating')))
@@ -89,32 +93,26 @@ class SequenceDataProcessing(object):
         self.parameters['XGBoost'] = {}
         self.parameters['XGBoost']['learning_rate_v'] = self.conf['XGBoost']['learning_rate_v']
         self.parameters['XGBoost']['learning_rate_v'] = [i for i in ast.literal_eval(self.parameters['XGBoost']['learning_rate_v'])]
-        print(self.parameters['XGBoost']['learning_rate_v'])
 
         self.parameters['XGBoost']['reg_lambda_v'] = self.conf['XGBoost']['reg_lambda_v']
         self.parameters['XGBoost']['reg_lambda_v'] = [int(i) for i in ast.literal_eval(self.parameters['XGBoost']['reg_lambda_v'])]
-        print(self.parameters['XGBoost']['reg_lambda_v'])
 
 
         self.parameters['XGBoost']['n_estimators_v'] = self.conf['XGBoost']['n_estimators_v']
         self.parameters['XGBoost']['n_estimators_v'] = [int(i) for i in ast.literal_eval(self.parameters['XGBoost']['n_estimators_v'])]
-        print(self.parameters['XGBoost']['n_estimators_v'])
 
 
         self.parameters['XGBoost']['min_child_weight_v'] = self.conf['XGBoost']['min_child_weight_v']
         self.parameters['XGBoost']['min_child_weight_v'] = [int(i) for i in ast.literal_eval(self.parameters['XGBoost']['min_child_weight_v'])]
-        print(self.parameters['XGBoost']['min_child_weight_v'])
 
 
         self.parameters['XGBoost']['max_depth_v'] = self.conf['XGBoost']['max_depth_v']
         self.parameters['XGBoost']['max_depth_v'] = [int(i) for i in ast.literal_eval(self.parameters['XGBoost']['max_depth_v'])]
-        print(self.parameters['XGBoost']['max_depth_v'])
 
 
         self.parameters['XGBoost']['grid_elements'] = self.conf['XGBoost']['grid_elements']
         self.parameters['XGBoost']['grid_elements'] = self.conf.get('XGBoost', 'grid_elements')
         self.parameters['XGBoost']['grid_elements'] = [i for i in ast.literal_eval(self.parameters['XGBoost']['grid_elements'])]
-        print(self.parameters['XGBoost']['grid_elements'])
 
 
         self.parameters['Ridge'] = {}
@@ -495,24 +493,24 @@ class FeatureSelection(DataPrepration):
         parameters['FS']['k_features'] = k_features
 
         self.logger.info("Grid Search: ")
+
         # perform grid search
-        cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test =\
-            self.Ridge_SFS_GridSearch(train_features, train_labels, test_features, test_labels, k_features, parameters)
+        if parameters['FS']['select_features_sfs']:
+            print('SFS is running: ')
+            y_pred_train, y_pred_test, run_info = self.Ridge_SFS_GridSearch(train_features, train_labels,
+                                                                                test_features, test_labels,
+                                                                                k_features, parameters, run_info)
 
-        self.XGBoost_Gridsearch(train_features, train_labels, test_features, test_labels, parameters)
+        if parameters['FS']['XGBoost']:
+            print('XGBoost is running: ')
+            y_pred_train, y_pred_test, run_info = self.XGBoost_Gridsearch(train_features, train_labels,
+                                                                          test_features, test_labels,
+                                                                          parameters, run_info)
 
-        # populate obtained values in the run_info variable
-        run_info[-1]['cv_info'] = cv_info
-        run_info[-1]['Sel_features'] = list(sel_idx)
-        run_info[-1]['Sel_features_names'] = [features_names[i] for i in sel_idx]
-        run_info[-1]['best_param'] = Least_MSE_alpha
-        run_info[-1]['best_model'] = best_trained_model
-        run_info[-1]['scaled_y_pred_train'] = y_pred_train
-        run_info[-1]['scaled_y_pred_test'] = y_pred_test
-
+        print('Grid search finished')
         return y_pred_train, y_pred_test
 
-    def XGBoost_Gridsearch(self, train_features, train_labels, test_features, test_labels, parameters):
+    def XGBoost_Gridsearch(self, train_features, train_labels, test_features, test_labels, parameters, run_info):
 
         # obtain the matrix of training data for doing grid search
         X = pd.DataFrame.as_matrix(train_features)
@@ -533,7 +531,8 @@ class FeatureSelection(DataPrepration):
         param_overal_MSE = []
 
         param_grid = pd.DataFrame(0, index=range(len(learning_rate_v) * len(reg_lambda_v) * len(min_child_weight_v) *len(max_depth_v)),
-                                  columns=grid_elements)
+                                         columns=grid_elements)
+        cv_info =  {}
         row = 0
         for l in learning_rate_v:
             for rl in reg_lambda_v:
@@ -542,26 +541,30 @@ class FeatureSelection(DataPrepration):
 
                         param_grid.iloc[row, :] = [l, rl, mw, md]
                         xgboost_params = {"learning_rate": l, 'reg_lambda': rl, 'min_child_weight': mw , 'max_depth': md}
+                        cv_info[str(row)] = {}
+
                         cv_results = xgb.cv(dtrain=train_data_dmatrix, params=xgboost_params, nfold=5,
-                                            num_boost_round=100, early_stopping_rounds=10, metrics="rmse", as_pandas=True,
-                                            seed=123)
+                                            num_boost_round=100, early_stopping_rounds=10, metrics="rmse",
+                                            verbose_eval=None, as_pandas=True, seed=123)
                         param_overal_MSE.append(cv_results["test-rmse-mean"].iloc[-1])
+                        cv_info[str(row)]['MSE'] = cv_results["test-rmse-mean"].iloc[-1]
                         row += 1
 
         MSE_best = param_overal_MSE.index(min(param_overal_MSE))
+
         learning_rate, reg_lambda, min_child_weight, max_depth = param_grid.iloc[MSE_best, :]
         best_params = {"learning_rate": learning_rate, 'reg_lambda': int(reg_lambda), 'min_child_weight': int(min_child_weight), 'max_depth': int(max_depth)}
 
-        xg_reg = xgb.XGBRegressor(objective='reg:linear', colsample_bytree=0.3, params=best_params)
+        xg_reg = xgb.XGBRegressor(objective='reg:linear', colsample_bytree=0.3, params=best_params, verbosity = 0)
         xg_reg.fit(train_features, train_labels)
 
-        y_train_pred = xg_reg.predict(train_features)
-        train_rmse = np.sqrt(mean_squared_error(train_labels, y_train_pred))
-        train_mse = mean_squared_error(train_labels, y_train_pred)
+        y_pred_train = xg_reg.predict(train_features)
+        train_rmse = np.sqrt(mean_squared_error(train_labels, y_pred_train))
+        train_mse = mean_squared_error(train_labels, y_pred_train)
 
-        y_test_pred = xg_reg.predict(test_features)
-        test_rmse = np.sqrt(mean_squared_error(test_labels, y_test_pred))
-        test_mse = mean_squared_error(test_labels, y_test_pred)
+        y_pred_test = xg_reg.predict(test_features)
+        test_rmse = np.sqrt(mean_squared_error(test_labels, y_pred_test))
+        test_mse = mean_squared_error(test_labels, y_pred_test)
 
         print('--------RMSE--------')
         print('train_rmse: ', train_rmse)
@@ -571,26 +574,32 @@ class FeatureSelection(DataPrepration):
         print('train_mse: ', train_mse)
         print('test_mse: ', test_mse)
 
-        fscore = xg_reg.feature_importances_
-        fig = xgb.plot_importance(xg_reg)
 
-        names_list = train_features.columns.values
-        fig = plt.figure(figsize=(10, 14))
-        plt.bar(range(len(names_list)), fscore)
-        plt.xticks(range(len(names_list)), names_list)
-        plt.xticks(rotation=90)
-        plt.title('XGBoost Feature importance')
-        plt.savefig('XGBoostF.pdf')
+        run_info[-1]['cv_info'] = cv_info
+        # run_info[-1]['Sel_features'] = list(sel_idx)
+        # run_info[-1]['Sel_features_names'] = [features_names[i] for i in sel_idx]
+        run_info[-1]['best_param'] = best_params
+        run_info[-1]['best_model'] = xg_reg
+        run_info[-1]['scaled_y_pred_train'] = y_pred_train
+        run_info[-1]['scaled_y_pred_test'] = y_pred_test
+        run_info[-1]['names_list'] = train_features.columns.values
+        run_info[-1]['fscore'] = xg_reg.feature_importances_
 
 
 
-    def Ridge_SFS_GridSearch(self, train_features, train_labels, test_features, test_labels, k_features, parameters):
+
+
+        return y_pred_train, y_pred_test, run_info
+
+
+    def Ridge_SFS_GridSearch(self, train_features, train_labels, test_features, test_labels, k_features, parameters, run_info):
         """select the best parameres using CV and sfs feature selection"""
 
         # obtain the matrix of training data for doing grid search
         X = pd.DataFrame.as_matrix(train_features)
         Y = pd.DataFrame.as_matrix(train_labels)
         ext_feature_names = train_features.columns.values
+        features_names = parameters['Features']['Extended_feature_names']
 
         # vector containing parameters to be search in
         alpha_v = parameters['Ridge']['ridge_params']
@@ -680,7 +689,16 @@ class FeatureSelection(DataPrepration):
         y_pred_test = best_trained_model.predict(X_test[:, sel_idx])
         y_pred_train = best_trained_model.predict(X_train[:, sel_idx])
 
-        return cv_info, Least_MSE_alpha, sel_idx, best_trained_model, y_pred_train, y_pred_test
+        # populate obtained values in the run_info variable
+        run_info[-1]['cv_info'] = cv_info
+        run_info[-1]['Sel_features'] = list(sel_idx)
+        run_info[-1]['Sel_features_names'] = [features_names[i] for i in sel_idx]
+        run_info[-1]['best_param'] = Least_MSE_alpha
+        run_info[-1]['best_model'] = best_trained_model
+        run_info[-1]['scaled_y_pred_train'] = y_pred_train
+        run_info[-1]['scaled_y_pred_test'] = y_pred_test
+
+        return y_pred_train, y_pred_test, run_info
 
     def calc_k_features(self, min_features, max_features, features_names):
         """calculate the range of number of features that sfs is allowed to select"""
@@ -927,10 +945,18 @@ class Results(Task):
         # save the necessary plots in the made result folder
         self.plot_predicted_true(result_path, best_run, parameters)
         self.plot_cores_runtime(result_path, best_run, parameters, ext_df)
-        self.plot_histogram(result_path, run_info, parameters)
         self.plot_MSE_Errors(result_path, run_info)
         self.plot_MAPE_Errors(result_path, run_info)
-        self.plot_Model_Size(result_path, run_info)
+
+        if parameters['FS']['select_features_sfs']:
+            self.plot_histogram(result_path, run_info, parameters)
+            self.plot_Model_Size(result_path, run_info)
+
+        if parameters['FS']['XGBoost']:
+            self.plot_xgboost_features_importance(result_path, best_run)
+
+
+
 
         # save the best_run variable as string
         target = open(os.path.join(result_path, "best_run"), 'a')
@@ -1297,3 +1323,19 @@ class Results(Task):
         plt.xlim(1, len(model_size_list))
         plt.ylim(1, max(model_size_list))
         fig3.savefig(plot_path + ".pdf")
+
+    def plot_xgboost_features_importance(self, result_path, best_run):
+
+        plot_path = os.path.join(result_path, "XGBoost_Feature_importance ")
+        font = {'family':'normal', 'size': 15}
+        matplotlib.rc('font', **font)
+        colors = cm.rainbow(np.linspace(0, 0.5, 3))
+
+        names_list = best_run['names_list']
+        fscore = best_run['fscore']
+        fig = plt.figure(figsize=(10, 14))
+        plt.bar(range(len(names_list)), fscore)
+        plt.xticks(range(len(names_list)), names_list)
+        plt.xticks(rotation=90)
+        plt.title('XGBoost Feature Importance')
+        plt.savefig(plot_path + ".pdf")
