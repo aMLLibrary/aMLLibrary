@@ -492,22 +492,20 @@ class FeatureSelection(DataPrepration):
         k_features = self.calc_k_features(min_features, max_features, features_names)
         parameters['FS']['k_features'] = k_features
 
-        self.logger.info("Grid Search: ")
 
         # perform grid search
         if parameters['FS']['select_features_sfs']:
-            print('SFS is running: ')
+            self.logger.info("Grid Search: SFS and Ridge")
             y_pred_train, y_pred_test, run_info = self.Ridge_SFS_GridSearch(train_features, train_labels,
                                                                                 test_features, test_labels,
                                                                                 k_features, parameters, run_info)
 
         if parameters['FS']['XGBoost']:
-            print('XGBoost is running: ')
+            self.logger.info("Grid Search: XGBoost")
             y_pred_train, y_pred_test, run_info = self.XGBoost_Gridsearch(train_features, train_labels,
                                                                           test_features, test_labels,
                                                                           parameters, run_info)
 
-        print('Grid search finished')
         return y_pred_train, y_pred_test
 
     def XGBoost_Gridsearch(self, train_features, train_labels, test_features, test_labels, parameters, run_info):
@@ -528,11 +526,14 @@ class FeatureSelection(DataPrepration):
         grid_elements = ['learning_rate_v', 'reg_lambda_v', 'min_child_weight_v', 'max_depth_v']
 
 
+        fold_num = parameters['FS']['fold_num']
+
         param_overal_MSE = []
 
         param_grid = pd.DataFrame(0, index=range(len(learning_rate_v) * len(reg_lambda_v) * len(min_child_weight_v) *len(max_depth_v)),
+
                                          columns=grid_elements)
-        cv_info =  {}
+        cv_info = {}
         row = 0
         for l in learning_rate_v:
             for rl in reg_lambda_v:
@@ -540,12 +541,14 @@ class FeatureSelection(DataPrepration):
                     for md in max_depth_v:
 
                         param_grid.iloc[row, :] = [l, rl, mw, md]
-                        xgboost_params = {"learning_rate": l, 'reg_lambda': rl, 'min_child_weight': mw , 'max_depth': md}
+                        xgboost_params = {"silent" : 1, "learning_rate": l, 'reg_lambda': rl, 'min_child_weight': mw ,
+                                          'max_depth': md}
                         cv_info[str(row)] = {}
 
-                        cv_results = xgb.cv(dtrain=train_data_dmatrix, params=xgboost_params, nfold=5,
+                        cv_results = xgb.cv(params = xgboost_params, dtrain=train_data_dmatrix, nfold=fold_num,
                                             num_boost_round=100, early_stopping_rounds=10, metrics="rmse",
                                             verbose_eval=None, as_pandas=True, seed=123)
+
                         param_overal_MSE.append(cv_results["test-rmse-mean"].iloc[-1])
                         cv_info[str(row)]['MSE'] = cv_results["test-rmse-mean"].iloc[-1]
                         row += 1
@@ -553,7 +556,8 @@ class FeatureSelection(DataPrepration):
         MSE_best = param_overal_MSE.index(min(param_overal_MSE))
 
         learning_rate, reg_lambda, min_child_weight, max_depth = param_grid.iloc[MSE_best, :]
-        best_params = {"learning_rate": learning_rate, 'reg_lambda': int(reg_lambda), 'min_child_weight': int(min_child_weight), 'max_depth': int(max_depth)}
+        best_params = {"learning_rate": learning_rate, 'reg_lambda': int(reg_lambda), 'min_child_weight':
+                                                        int(min_child_weight), 'max_depth': int(max_depth)}
 
         xg_reg = xgb.XGBRegressor(objective='reg:linear', colsample_bytree=0.3, params=best_params, verbosity = 0)
         xg_reg.fit(train_features, train_labels)
@@ -566,15 +570,6 @@ class FeatureSelection(DataPrepration):
         test_rmse = np.sqrt(mean_squared_error(test_labels, y_pred_test))
         test_mse = mean_squared_error(test_labels, y_pred_test)
 
-        print('--------RMSE--------')
-        print('train_rmse: ', train_rmse)
-        print('test_rmse: ', test_rmse)
-
-        print('--------MSE--------')
-        print('train_mse: ', train_mse)
-        print('test_mse: ', test_mse)
-
-
         run_info[-1]['cv_info'] = cv_info
         # run_info[-1]['Sel_features'] = list(sel_idx)
         # run_info[-1]['Sel_features_names'] = [features_names[i] for i in sel_idx]
@@ -585,12 +580,7 @@ class FeatureSelection(DataPrepration):
         run_info[-1]['names_list'] = train_features.columns.values
         run_info[-1]['fscore'] = xg_reg.feature_importances_
 
-
-
-
-
         return y_pred_train, y_pred_test, run_info
-
 
     def Ridge_SFS_GridSearch(self, train_features, train_labels, test_features, test_labels, k_features, parameters, run_info):
         """select the best parameres using CV and sfs feature selection"""
@@ -1339,3 +1329,4 @@ class Results(Task):
         plt.xticks(rotation=90)
         plt.title('XGBoost Feature Importance')
         plt.savefig(plot_path + ".pdf")
+
