@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from sklearn.metrics import mean_squared_error
 import xgboost as xgb
-
+import time
 
 class SequenceDataProcessing(object):
     """ main class """
@@ -77,9 +77,7 @@ class SequenceDataProcessing(object):
         self.parameters['FS'] = {}
         self.parameters['FS']['select_features_vif'] = bool(ast.literal_eval(self.conf.get('FS', 'select_features_vif')))
         self.parameters['FS']['select_features_sfs'] = bool(ast.literal_eval(self.conf.get('FS', 'select_features_sfs')))
-        print(self.parameters['FS']['select_features_sfs'])
         self.parameters['FS']['XGBoost'] = bool(ast.literal_eval(self.conf.get('FS', 'XGBoost')))
-        print(self.parameters['FS']['XGBoost'])
 
         self.parameters['FS']['min_features'] = int(self.conf['FS']['min_features'])
         self.parameters['FS']['max_features'] = int(self.conf['FS']['max_features'])
@@ -155,7 +153,9 @@ class SequenceDataProcessing(object):
         self.parameters['dt']['min_samples_split_dt'] = str(self.conf['dt']['min_samples_split_dt'])
 
     def process(self):
+
         """the main code"""
+        start = time.time()
 
         self.logger.info("Start of the algorithm")
         # performs reading data, drops irrelevant columns
@@ -203,7 +203,9 @@ class SequenceDataProcessing(object):
 
         # saves the best run results and necessary plots in the defined folder in result directory
         self.results.process(ext_df, self.run_info, self.parameters)
-
+        end = time.time()
+        execution_time = str(end-start)
+        print("Execution Time : " + execution_time)
 
 class Task(object):
     def __init__(self):
@@ -505,10 +507,7 @@ class FeatureSelection(DataPrepration):
             y_pred_train, y_pred_test, run_info = self.XGBoost_Gridsearch(train_features, train_labels,
                                                                           test_features, test_labels,
                                                                           parameters, run_info)
-
         return y_pred_train, y_pred_test
-
-
 
     def XGBoost_Gridsearch(self, train_features, train_labels, test_features, test_labels, parameters, run_info):
 
@@ -974,6 +973,8 @@ class Results(Task):
         degree = parameters['FS']['degree']
         select_features_sfs = parameters['FS']['select_features_sfs']
         select_features_vif = parameters['FS']['select_features_vif']
+        XGBoost = parameters['FS']['XGBoost']
+
         is_floating = parameters['FS']['is_floating']
         run_num = parameters['General']['run_num']
         image_nums_train_data = parameters['Splitting']['image_nums_train_data']
@@ -996,6 +997,8 @@ class Results(Task):
             result_name += str(k_features[0]) + '_'
             result_name += str(k_features[1])
 
+        if XGBoost:
+            result_name += "XGB_"
         result_name = result_name + '_' + str(run_num) + '_runs'
 
         # add dataSize in training and test samples in the name
