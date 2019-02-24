@@ -16,6 +16,8 @@ import matplotlib.cm as cm
 from sklearn.metrics import mean_squared_error
 import xgboost as xgb
 import time
+from sklearn.model_selection import KFold
+from sklearn.metrics import mean_squared_error
 
 class SequenceDataProcessing(object):
     """ main class """
@@ -86,7 +88,9 @@ class SequenceDataProcessing(object):
         self.parameters['FS']['Confidence_level'] = self.conf['FS']['Confidence_level']
         self.parameters['FS']['clipping_no'] = int(self.conf['FS']['clipping_no'])
         self.parameters['FS']['degree'] = int(self.conf['FS']['degree'])
-
+        self.parameters['FS']['SFS_Ridge_param_list'] = self.conf.get('FS', 'SFS_Ridge_param_list')
+        self.parameters['FS']['SFS_Ridge_param_list'] = [i for i in ast.literal_eval(self.parameters['FS']['SFS_Ridge_param_list'])]
+        print('mmanam ',self.parameters['FS']['SFS_Ridge_param_list'])
 
         self.parameters['XGBoost'] = {}
         self.parameters['XGBoost']['learning_rate_v'] = self.conf['XGBoost']['learning_rate_v']
@@ -111,7 +115,7 @@ class SequenceDataProcessing(object):
         self.parameters['XGBoost']['grid_elements'] = self.conf['XGBoost']['grid_elements']
         self.parameters['XGBoost']['grid_elements'] = self.conf.get('XGBoost', 'grid_elements')
         self.parameters['XGBoost']['grid_elements'] = [i for i in ast.literal_eval(self.parameters['XGBoost']['grid_elements'])]
-
+        print(self.parameters['XGBoost']['grid_elements'])
 
         self.parameters['Ridge'] = {}
         self.parameters['Ridge']['ridge_params'] = self.conf['Ridge']['ridge_params']
@@ -487,20 +491,16 @@ class FeatureSelection(DataPrepration):
         """calculate how many features are allowed to be selected, then using cross validation searches for the best
         parameters, then trains the model using the best parametrs"""
 
-        # retrieve necessary information from parameters variable
-        features_names = parameters['Features']['Extended_feature_names']
-        min_features = parameters['FS']['min_features']
-        max_features = parameters['FS']['max_features']
-        k_features = self.calc_k_features(min_features, max_features, features_names)
-        parameters['FS']['k_features'] = k_features
-
-
         # perform grid search
         if parameters['FS']['select_features_sfs']:
             self.logger.info("Grid Search: SFS and Ridge")
-            y_pred_train, y_pred_test, run_info = self.Ridge_SFS_GridSearch(train_features, train_labels,
-                                                                                test_features, test_labels,
-                                                                                k_features, parameters, run_info)
+
+            y_pred_train, y_pred_test, run_info = self.gridSearch(train_features, train_labels, test_features, test_labels,
+                                                        parameters, run_info)
+
+            # y_pred_train, y_pred_test, run_info = self.Ridge_SFS_GridSearch(train_features, train_labels,
+            #                                                                    test_features, test_labels,
+            #                                                                    k_features, parameters, run_info)
 
         if parameters['FS']['XGBoost']:
             self.logger.info("Grid Search: XGBoost")
@@ -508,6 +508,175 @@ class FeatureSelection(DataPrepration):
                                                                           test_features, test_labels,
                                                                           parameters, run_info)
         return y_pred_train, y_pred_test
+
+    def prepareGridInOut(self, train_features, train_labels):
+
+        # obtain the matrix of training data for doing grid search
+        X = pd.DataFrame.as_matrix(train_features)
+        Y = pd.DataFrame.as_matrix(train_labels)
+
+        return X, Y
+
+    def getFSParams_SFS_Ridge(self, parameters):
+
+        # vector containing parameters to be search in
+        alpha_v = parameters['Ridge']['ridge_params']
+        param_list = parameters['FS']['SFS_Ridge_param_list']
+
+        # the number of folds in the cross validation of SFS
+        fold_num = parameters['FS']['fold_num']
+        is_floating = parameters['FS']['is_floating']
+        features_names = parameters['Features']['Extended_feature_names']
+        min_features = parameters['FS']['min_features']
+        max_features = parameters['FS']['max_features']
+
+        # calculate range of features for SFS
+        k_features = self.calc_k_features(min_features, max_features, features_names)
+
+        # save k_features:
+        parameters['FS']['k_features'] = k_features
+
+        return param_list, alpha_v, k_features, is_floating, fold_num, features_names
+
+    def gridParamRidge_SFS(self, alpha_v):
+
+        param_df = pd.DataFrame(data = alpha_v, index = range(len(alpha_v)), columns = ['alpha'])
+
+        return param_df
+
+    def gridCV(self, X, Y, param_df, k_features, is_floating, fold_num, features_names, run_info):
+        cv_info = {}
+        cv_info['MSE_overal'] = []
+        cv_info['Sel_F_idx'] = []
+        cv_info['Sel_F_names'] = []
+
+        # If FS method is SFS_Ridge
+        k_fold = KFold(n_splits=fold_num, shuffle=True, random_state=None)
+
+        for i in range(param_df.shape[0]):
+
+            node = float(param_df.iloc[i, :].values)
+            nodeMSE = []
+
+            sel_f_set = set()
+
+            # building the sfs
+            for k, (train, val) in enumerate(k_fold.split(X, Y)):
+
+                # for feature selection
+                model = Ridge(node)
+
+                # for evaluation
+                ridge = Ridge(node)
+
+                # building the sfs
+                sfs = SFS(clone_estimator=True,
+                          estimator=model,
+                          k_features=k_features,
+                          forward=True,
+                          floating=is_floating,
+                          scoring='neg_mean_squared_error',
+                          cv=0,
+                          n_jobs=16)
+
+                # fit the sfs on training part and evaluate the score on test part of this fold
+                sfs = sfs.fit(X[train, :], Y[train])
+                sel_F_idx = sfs.k_feature_idx_
+                # fit the ridge model on training part and evaluate the ridge score on test part of this fold
+                # Rows and columns selection should be done in different steps:
+                xTRtemp = X[:, sfs.k_feature_idx_]
+                ridge.fit(xTRtemp[train, :], Y[train])
+
+                # evaluate the RSE error on test part of this fold
+                xVALtemp = X[:, sfs.k_feature_idx_]
+                Y_hat = ridge.predict(xVALtemp[val, :])
+
+                nodeMSE.append(mean_squared_error(Y[val], Y_hat))
+                sel_f_set = sel_f_set.union(sel_F_idx)
+
+
+            cv_info['MSE_overal'].append(np.mean(nodeMSE))
+            cv_info['Sel_F_idx'].append(sorted(list(sel_f_set)))
+            cv_info['Sel_F_names'].append(features_names[sorted(list(sel_f_set))])
+
+            print('parameter: ', node, ' ------- sel_F: ', features_names[sorted(list(sel_f_set))], '------- MSE: ', np.mean(nodeMSE))
+
+        best_param_idx = cv_info['MSE_overal'].index(min(cv_info['MSE_overal']))
+        run_info[-1]['cv_info'] = cv_info
+        return best_param_idx, cv_info
+
+    def get_best_param(self, best_param_idx, param_df, param_list, run_info):
+
+        best_param_node = param_df.iloc[best_param_idx]
+        best_param = {}
+        for i in range(len(param_list)):
+            best_param[param_df.columns.values[i]] = best_param_node[i]
+        run_info[-1]['best_param'] = best_param
+        return best_param
+
+    def get_selected_features(self, cv_info, best_param_idx, run_info):
+
+        selected_features_idx = cv_info['Sel_F_idx'][best_param_idx]
+        selected_features_names = cv_info['Sel_F_names'][best_param_idx]
+        run_info[-1]['Sel_features'] = selected_features_idx
+        run_info[-1]['Sel_features_names'] = selected_features_names
+        return selected_features_idx, selected_features_names
+
+    def predict_ridge(self, best_param, selected_features_idx, train_features, train_labels, test_features,
+                      test_labels, run_info):
+
+        # Since the data for classsifier selection is too small, we only calculate the train error
+        X_train = pd.DataFrame.as_matrix(train_features)
+        Y_train = pd.DataFrame.as_matrix(train_labels)
+        X_test = pd.DataFrame.as_matrix(test_features)
+        Y_test = pd.DataFrame.as_matrix(test_labels)
+
+        param_list = list(best_param.keys())
+
+        best_alpha = best_param[param_list[0]]
+
+        best_trained_model = Ridge(best_alpha)
+        best_trained_model.fit(X_train[:, selected_features_idx], Y_train)
+        y_pred_train = best_trained_model.predict(X_train[:, selected_features_idx])
+        y_pred_test = best_trained_model.predict(X_test[:, selected_features_idx])
+        run_info[-1]['best_model'] = best_trained_model
+        run_info[-1]['scaled_y_pred_train'] = y_pred_train
+        run_info[-1]['scaled_y_pred_test'] = y_pred_test
+
+        return y_pred_train, y_pred_test
+
+
+    def gridSearch(self, train_features, train_labels, test_features, test_labels, parameters, run_info):
+
+        # prepare Input and output
+        X, Y = self.prepareGridInOut(train_features, train_labels)
+
+        # get FS parameters:
+        # if FS method is SFS_Ridge
+        param_list, alpha_v, k_features, is_floating, fold_num, features_names = self.getFSParams_SFS_Ridge(parameters)
+        # print('param_list:', param_list)
+
+        # Prepare Gridsearch parameters according to the type of feature selection:
+        # if FS method is SFS_Ridge
+        param_df = self.gridParamRidge_SFS(alpha_v)
+        # print('param_df:', param_df)
+
+        # If FS method is SFS_Ridge??? we should put it in grid search? yes
+        best_param_idx, cv_info = self.gridCV(X, Y, param_df, k_features, is_floating, fold_num, features_names, run_info)
+
+        # find the best parameters
+        best_param = self.get_best_param(best_param_idx, param_df, param_list, run_info)
+        # print('best_param:', best_param)
+
+        # find the selected features
+        selected_features_idx, selected_features_names = self.get_selected_features(cv_info, best_param_idx, run_info)
+
+        # predict using best params:
+        y_pred_train, y_pred_test = self.predict_ridge(best_param, selected_features_idx, train_features, train_labels,
+                                                        test_features, test_labels, run_info)
+
+        return y_pred_train, y_pred_test, run_info
+
 
     def XGBoost_Gridsearch(self, train_features, train_labels, test_features, test_labels, parameters, run_info):
 
@@ -526,14 +695,13 @@ class FeatureSelection(DataPrepration):
         max_depth_v = parameters['XGBoost']['max_depth_v']
         grid_elements = ['learning_rate_v', 'reg_lambda_v', 'min_child_weight_v', 'max_depth_v']
 
-
         fold_num = parameters['FS']['fold_num']
 
         param_overal_MSE = []
 
-        param_grid = pd.DataFrame(0, index=range(len(learning_rate_v) * len(reg_lambda_v) * len(min_child_weight_v) *len(max_depth_v)),
+        param_grid = pd.DataFrame(0, index=range(len(learning_rate_v) * len(reg_lambda_v) * len(min_child_weight_v) *
+                                                 len(max_depth_v)), columns=grid_elements)
 
-                                         columns=grid_elements)
         cv_info = {}
         row = 0
         for l in learning_rate_v:
@@ -546,7 +714,7 @@ class FeatureSelection(DataPrepration):
                                           'max_depth': md}
                         cv_info[str(row)] = {}
 
-                        cv_results = xgb.cv(params = xgboost_params, dtrain=train_data_dmatrix, nfold=fold_num,
+                        cv_results = xgb.cv(params=xgboost_params, dtrain=train_data_dmatrix, nfold=fold_num,
                                             num_boost_round=100, early_stopping_rounds=10, metrics="rmse",
                                             verbose_eval=None, as_pandas=True, seed=123)
 
@@ -555,6 +723,7 @@ class FeatureSelection(DataPrepration):
                         row += 1
 
         MSE_best = param_overal_MSE.index(min(param_overal_MSE))
+        print(MSE_best)
 
         learning_rate, reg_lambda, min_child_weight, max_depth = param_grid.iloc[MSE_best, :]
         best_params = {"learning_rate": learning_rate, 'reg_lambda': int(reg_lambda), 'min_child_weight':
@@ -567,9 +736,11 @@ class FeatureSelection(DataPrepration):
         train_rmse = np.sqrt(mean_squared_error(train_labels, y_pred_train))
         train_mse = mean_squared_error(train_labels, y_pred_train)
 
+
         y_pred_test = xg_reg.predict(test_features)
         test_rmse = np.sqrt(mean_squared_error(test_labels, y_pred_test))
         test_mse = mean_squared_error(test_labels, y_pred_test)
+
 
         run_info[-1]['cv_info'] = cv_info
         # run_info[-1]['Sel_features'] = list(sel_idx)
@@ -582,6 +753,7 @@ class FeatureSelection(DataPrepration):
         run_info[-1]['fscore'] = xg_reg.feature_importances_
 
         return y_pred_train, y_pred_test, run_info
+
 
     def Ridge_SFS_GridSearch(self, train_features, train_labels, test_features, test_labels, k_features, parameters, run_info):
         """select the best parameres using CV and sfs feature selection"""
@@ -691,6 +863,7 @@ class FeatureSelection(DataPrepration):
 
         return y_pred_train, y_pred_test, run_info
 
+
     def calc_k_features(self, min_features, max_features, features_names):
         """calculate the range of number of features that sfs is allowed to select"""
 
@@ -741,6 +914,18 @@ class Regression(DataAnalysis):
         err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores = \
             self.mean_absolute_percentage_error(y_pred_test, y_pred_train, test_features, test_labels, train_features,
                                                 train_labels, scaler, features_names)
+
+        test_var = pd.DataFrame(data = 0, index = range(len(y_true_train)) ,columns=['y_true_train','y_pred_train', 'y_true_test', 'y_pred_test'])
+
+        test_var['y_true_train'] = y_true_train
+        test_var['y_pred_train'] = y_pred_train
+        test_var['y_true_test'] = y_true_test
+        test_var['y_pred_test'] = y_pred_test
+
+        print('err_train:', err_train)
+        print('err_test:', err_test)
+
+        test_var.to_csv(index=False)
 
         # populate run_info with results
         run_info[-1]['MAPE_test'] = err_test
@@ -855,6 +1040,7 @@ class Regression(DataAnalysis):
         y_pred_train = pd.DataFrame(y_pred_train)
         y_pred_train.index = y_true_train.index
 
+
         # concatenate output columns
         train_features_with_true.insert(0, "y_true_train", y_true_train)
         train_features_with_pred.insert(0, "y_pred_train", y_pred_train)
@@ -906,6 +1092,11 @@ class Regression(DataAnalysis):
         y_true_train = train_data_with_true.iloc[:, 0]
         y_pred_train = train_data_with_pred.iloc[:, 0]
 
+        # print('y_true_train:', y_true_train)
+        # print('y_pred_train:', y_pred_train)
+        # print('y_true_test:', y_true_test)
+        # print('y_pred_test:', y_pred_test)
+
         err_train = np.mean(np.abs((y_true_train - y_pred_train) / y_true_train)) * 100
 
         return err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores
@@ -922,13 +1113,14 @@ class Results(Task):
 
         self.logger.info("Preparing results and plots: ")
         # retrieve needed variables
-        k_features = parameters['FS']['k_features']
+        if parameters['FS']['select_features_sfs']:
+            k_features = parameters['FS']['k_features']
 
         # find the best run among elements of run_info according to the minimum MAPE error
         best_run = self.select_best_run(run_info)
 
         # create the result name based on desired input parameters
-        result_name = self.get_result_name(parameters, k_features)
+        result_name = self.get_result_name(parameters)
 
         # create the path for saving the results
         result_path = self.save_results(parameters, best_run, result_name)
@@ -966,7 +1158,7 @@ class Results(Task):
         best_run = run_info[best_run_idx]
         return best_run
 
-    def get_result_name(self, parameters, k_features):
+    def get_result_name(self, parameters):
         """makes a name for saving the results and plots based on the current input parameters"""
 
         # retrieve necessary information to built the name of result folder
@@ -987,18 +1179,22 @@ class Results(Task):
         if select_features_vif:
             result_name += "vif_"
 
-        if select_features_sfs and not is_floating:
-            result_name += "sfs_"
-            result_name += str(k_features[0]) + '_'
-            result_name += str(k_features[1])
+        if select_features_sfs:
+            k_features = parameters['FS']['k_features']
 
-        if select_features_sfs and is_floating:
-            result_name += "sffs_"
-            result_name += str(k_features[0]) + '_'
-            result_name += str(k_features[1])
+            if not is_floating:
+                result_name += "sfs_"
+                result_name += str(k_features[0]) + '_'
+                result_name += str(k_features[1])
+
+            if is_floating:
+                result_name += "sffs_"
+                result_name += str(k_features[0]) + '_'
+                result_name += str(k_features[1])
 
         if XGBoost:
             result_name += "XGB_"
+
         result_name = result_name + '_' + str(run_num) + '_runs'
 
         # add dataSize in training and test samples in the name
@@ -1321,7 +1517,7 @@ class Results(Task):
 
     def plot_xgboost_features_importance(self, result_path, best_run):
 
-        plot_path = os.path.join(result_path, "XGBoost_Feature_importance ")
+        plot_path = os.path.join(result_path, "XGBoost_Feature_importance")
         font = {'family':'normal', 'size': 15}
         matplotlib.rc('font', **font)
         colors = cm.rainbow(np.linspace(0, 0.5, 3))
