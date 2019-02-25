@@ -98,18 +98,14 @@ class SequenceDataProcessing(object):
         self.parameters['XGBoost']['reg_lambda_v'] = self.conf['XGBoost']['reg_lambda_v']
         self.parameters['XGBoost']['reg_lambda_v'] = [int(i) for i in ast.literal_eval(self.parameters['XGBoost']['reg_lambda_v'])]
 
-
         self.parameters['XGBoost']['n_estimators_v'] = self.conf['XGBoost']['n_estimators_v']
         self.parameters['XGBoost']['n_estimators_v'] = [int(i) for i in ast.literal_eval(self.parameters['XGBoost']['n_estimators_v'])]
-
 
         self.parameters['XGBoost']['min_child_weight_v'] = self.conf['XGBoost']['min_child_weight_v']
         self.parameters['XGBoost']['min_child_weight_v'] = [int(i) for i in ast.literal_eval(self.parameters['XGBoost']['min_child_weight_v'])]
 
-
         self.parameters['XGBoost']['max_depth_v'] = self.conf['XGBoost']['max_depth_v']
         self.parameters['XGBoost']['max_depth_v'] = [int(i) for i in ast.literal_eval(self.parameters['XGBoost']['max_depth_v'])]
-
 
         self.parameters['XGBoost']['grid_elements'] = self.conf['XGBoost']['grid_elements']
         self.parameters['XGBoost']['grid_elements'] = self.conf.get('XGBoost', 'grid_elements')
@@ -202,12 +198,12 @@ class SequenceDataProcessing(object):
                                                                 self.parameters,
                                                                 self.run_info)
 
-            print('err_train:', err_train)
-            print('err_test:', err_test)
-            matlab_var['iter_'+str(iter)+'_y_true_train'] = list(y_true_train)
-            matlab_var['iter_'+str(iter)+'_y_pred_train'] = list(y_pred_train)
-            matlab_var['iter_'+str(iter)+'_y_true_test'] = list(y_true_test)
-            matlab_var['iter_'+str(iter)+'_y_pred_test'] = list(y_pred_test)
+            # print('err_train:', err_train)
+            # print('err_test:', err_test)
+            # matlab_var['iter_'+str(iter)+'_y_true_train'] = list(y_true_train)
+            # matlab_var['iter_'+str(iter)+'_y_pred_train'] = list(y_pred_train)
+            # matlab_var['iter_'+str(iter)+'_y_true_test'] = list(y_true_test)
+            # matlab_var['iter_'+str(iter)+'_y_pred_test'] = list(y_pred_test)
 
             # save the run_info variable as string in a temporary file in the result folder
             self.results.save_temporary_results(self.run_info)
@@ -215,8 +211,8 @@ class SequenceDataProcessing(object):
         # saves the best run results and necessary plots in the defined folder in result directory
         self.results.process(ext_df, self.run_info, self.parameters)
 
-        matlab_var = matlab_var.drop(['test'], axis=1)
-        matlab_var.to_csv('matlab_var.csv', sep='\t')
+        # matlab_var = matlab_var.drop(['test'], axis=1)
+        # matlab_var.to_csv('matlab_var.csv', sep='\t')
 
         end = time.time()
         execution_time = str(end-start)
