@@ -90,7 +90,6 @@ class SequenceDataProcessing(object):
         self.parameters['FS']['degree'] = int(self.conf['FS']['degree'])
         self.parameters['FS']['SFS_Ridge_param_list'] = self.conf.get('FS', 'SFS_Ridge_param_list')
         self.parameters['FS']['SFS_Ridge_param_list'] = [i for i in ast.literal_eval(self.parameters['FS']['SFS_Ridge_param_list'])]
-        print('mmanam ',self.parameters['FS']['SFS_Ridge_param_list'])
 
         self.parameters['XGBoost'] = {}
         self.parameters['XGBoost']['learning_rate_v'] = self.conf['XGBoost']['learning_rate_v']
@@ -115,7 +114,6 @@ class SequenceDataProcessing(object):
         self.parameters['XGBoost']['grid_elements'] = self.conf['XGBoost']['grid_elements']
         self.parameters['XGBoost']['grid_elements'] = self.conf.get('XGBoost', 'grid_elements')
         self.parameters['XGBoost']['grid_elements'] = [i for i in ast.literal_eval(self.parameters['XGBoost']['grid_elements'])]
-        print(self.parameters['XGBoost']['grid_elements'])
 
         self.parameters['Ridge'] = {}
         self.parameters['Ridge']['ridge_params'] = self.conf['Ridge']['ridge_params']
@@ -168,6 +166,8 @@ class SequenceDataProcessing(object):
         # performs inverting of the columns and adds combinatorial terms to the df
         ext_df = self.data_preprocessing.process(df, self.parameters)
 
+        matlab_var = pd.DataFrame(data = 0, index = range(66), columns= ['test'])
+
         # performs the algorithm multiple time and each time changes the seed to shuffle
         for iter in range(self.run_num):
 
@@ -180,7 +180,7 @@ class SequenceDataProcessing(object):
             self.run_info.append({})
 
             # performs data splitting and returns splitted data
-            train_features, train_labels, test_features, test_labels  = \
+            train_features, train_labels, test_features, test_labels = \
                     self.data_splitting.process(ext_df, self.parameters, self.run_info)
 
             # does the feature selection using training data and finds the best parameters in a grid search, then
@@ -202,18 +202,30 @@ class SequenceDataProcessing(object):
                                                                 self.parameters,
                                                                 self.run_info)
 
+            print('err_train:', err_train)
+            print('err_test:', err_test)
+            matlab_var['iter_'+str(iter)+'_y_true_train'] = list(y_true_train)
+            matlab_var['iter_'+str(iter)+'_y_pred_train'] = list(y_pred_train)
+            matlab_var['iter_'+str(iter)+'_y_true_test'] = list(y_true_test)
+            matlab_var['iter_'+str(iter)+'_y_pred_test'] = list(y_pred_test)
+
             # save the run_info variable as string in a temporary file in the result folder
             self.results.save_temporary_results(self.run_info)
 
         # saves the best run results and necessary plots in the defined folder in result directory
         self.results.process(ext_df, self.run_info, self.parameters)
+
+        matlab_var = matlab_var.drop(['test'], axis=1)
+        matlab_var.to_csv('matlab_var.csv', sep='\t')
+
         end = time.time()
         execution_time = str(end-start)
         print("Execution Time : " + execution_time)
 
+
 class Task(object):
     def __init__(self):
-        self.inputDF = None  # Check with Marco this is a DF, I would create an empy DF
+        self.inputDF = None  # Check with Marco this is a DF, I would create an empty DF
         self.outputDF = None
 
 
