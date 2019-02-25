@@ -504,7 +504,10 @@ class FeatureSelection(DataPrepration):
 
         if parameters['FS']['XGBoost']:
             self.logger.info("Grid Search: XGBoost")
-            y_pred_train, y_pred_test, run_info = self.XGBoost_Gridsearch(train_features, train_labels,
+            print('train_features shape: ', train_features.shape)
+            print('test_features shape:  ',test_features.shape )
+
+            y_pred_train, y_pred_test, run_info = self.XGBoost_Gridsearch2(train_features, train_labels,
                                                                           test_features, test_labels,
                                                                           parameters, run_info)
         return y_pred_train, y_pred_test
@@ -674,6 +677,89 @@ class FeatureSelection(DataPrepration):
         # predict using best params:
         y_pred_train, y_pred_test = self.predict_ridge(best_param, selected_features_idx, train_features, train_labels,
                                                         test_features, test_labels, run_info)
+
+        return y_pred_train, y_pred_test, run_info
+
+    def getFSParams_XGBoost(self, parameters):
+        features_names = parameters['Features']['Extended_feature_names']
+        param_list = parameters['XGBoost']['grid_elements']
+        learning_rate_v = parameters['XGBoost']['learning_rate_v']
+        n_estimators_v = parameters['XGBoost']['n_estimators_v']
+        reg_lambda_v = parameters['XGBoost']['reg_lambda_v']
+        min_child_weight_v = parameters['XGBoost']['min_child_weight_v']
+        max_depth_v = parameters['XGBoost']['max_depth_v']
+        fold_num = parameters['FS']['fold_num']
+
+        return param_list, learning_rate_v, reg_lambda_v, min_child_weight_v, max_depth_v, fold_num, features_names
+
+    def gridParamXGBoost(self, param_list, learning_rate_v, reg_lambda_v, min_child_weight_v, max_depth_v):
+        param_df = pd.DataFrame(0, index=range(len(learning_rate_v) * len(reg_lambda_v) * len(min_child_weight_v) *
+                                               len(max_depth_v)), columns=param_list)
+        row = 0
+        for l in learning_rate_v:
+            for rl in reg_lambda_v:
+                for mw in min_child_weight_v:
+                    for md in max_depth_v:
+                        param_df.iloc[row, :] = [l, rl, mw, md]
+                        row += 1
+        return param_df
+
+    def gridCVXGBoost(self, X, Y, train_data_dmatrix, param_df, fold_num, run_info):
+
+        cv_info = {}
+        cv_info['MSE_overal'] = []
+
+        for node in range(param_df.shape[0]):
+            node_param = param_df.iloc[node, :]
+            [l, rl, mw, md] = param_df.iloc[node, :]
+
+            xgboost_params = {"silent" : 1, "learning_rate": l, 'reg_lambda': rl, 'min_child_weight': mw ,
+                              'max_depth': int(md)}
+
+            cv_results = xgb.cv(params=xgboost_params, dtrain=train_data_dmatrix, nfold=fold_num,
+                                num_boost_round=100, early_stopping_rounds=10, metrics="rmse",
+                                verbose_eval=None, as_pandas=True, seed=123)
+
+            cv_info['MSE_overal'].append((cv_results["test-rmse-mean"].iloc[-1])**2)
+
+        best_param_idx = cv_info['MSE_overal'].index(min(cv_info['MSE_overal']))
+        run_info[-1]['cv_info'] = cv_info
+        return best_param_idx, cv_info
+
+    def predict_XGBoost(self, best_param, train_features, train_labels, test_features, test_labels, run_info):
+        xg_reg = xgb.XGBRegressor(objective='reg:linear', colsample_bytree=0.3, params=best_param, verbosity=0)
+        xg_reg.fit(train_features, train_labels)
+
+        y_pred_train = xg_reg.predict(train_features)
+
+        y_pred_test = xg_reg.predict(test_features)
+
+        run_info[-1]['best_model'] = xg_reg
+        run_info[-1]['scaled_y_pred_train'] = y_pred_train
+        run_info[-1]['scaled_y_pred_test'] = y_pred_test
+        run_info[-1]['fscore'] = xg_reg.feature_importances_
+        run_info[-1]['names_list'] = train_features.columns.values
+
+        return y_pred_train, y_pred_test
+
+    def XGBoost_Gridsearch2(self, train_features, train_labels, test_features, test_labels, parameters, run_info):
+
+        # obtain the matrix of training data for doing grid search
+        X, Y = self.prepareGridInOut(train_features, train_labels)
+
+        train_data_dmatrix = xgb.DMatrix(data=train_features, label=train_labels)
+
+        param_list, learning_rate_v, reg_lambda_v, min_child_weight_v, max_depth_v, fold_num, features_names =\
+            self.getFSParams_XGBoost(parameters)
+
+        param_df = self.gridParamXGBoost(param_list, learning_rate_v, reg_lambda_v, min_child_weight_v, max_depth_v)
+
+        best_param_idx, cv_info = self.gridCVXGBoost(X, Y, train_data_dmatrix, param_df, fold_num, run_info)
+
+        best_param = self.get_best_param(best_param_idx, param_df, param_list, run_info)
+
+        y_pred_train, y_pred_test = self.predict_XGBoost(best_param, train_features, train_labels,
+                                                                    test_features, test_labels, run_info)
 
         return y_pred_train, y_pred_test, run_info
 
