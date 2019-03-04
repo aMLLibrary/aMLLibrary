@@ -170,6 +170,16 @@ class SequenceDataProcessing(object):
 
         matlab_var = pd.DataFrame(data = 0, index = range(66), columns= ['test'])
 
+        factory = GeneratorsFactory('parameters.ini', 123)
+        gen = factory.build()
+        expconf = gen.generate_experiment_configurations()
+        for exp in expconf:
+            exp.train()
+            exp.evaluate()
+
+
+
+
         # performs the algorithm multiple time and each time changes the seed to shuffle
         for iter in range(self.run_num):
 
