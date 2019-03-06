@@ -30,12 +30,14 @@ class Regression(DataAnalysis):
 
         # retrieve all the feature names
         features_names = parameters['Features']['Extended_feature_names']
+        input_name = parameters['DataPreparation']['input_name']
 
         self.logger.info("Computing MAPE: ")
         # compute MAPE error for not scaled data
+
         err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores = \
             self.mean_absolute_percentage_error(y_pred_test, y_pred_train, test_features, test_labels, train_features,
-                                                train_labels, scaler, features_names)
+                                                    train_labels, scaler, features_names, input_name)
 
 
         # populate run_info with results
@@ -52,7 +54,7 @@ class Regression(DataAnalysis):
 
         return err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test
 
-    def mean_absolute_percentage_error(self, y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, scaler, features_names):
+    def mean_absolute_percentage_error(self, y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, scaler, features_names, input_name):
         """computess MAPE error in real data by first scaling back the data (denormalize)"""
 
         # create the Data the same size and concatenate once real scaled output and once predicted output to make
@@ -110,15 +112,20 @@ class Regression(DataAnalysis):
             test_data_with_true.index = y_true_test.index
             test_data_with_pred.index = y_true_test.index
 
-            cores = test_data_with_true['nContainers'].unique().tolist()
-            cores = list(map(lambda x: int(x), cores))
-            # if set(cores) == set(self.data_conf["core_nums_test_data"]):
-            y_true_test_cores = cores
+            if input_name == 'kmeans':
+                cores = test_data_with_true['nContainers'].unique().tolist()
+                cores = list(map(lambda x: int(x), cores))
+                # if set(cores) == set(self.data_conf["core_nums_test_data"]):
+                y_true_test_cores = cores
 
-            cores = test_data_with_pred['nContainers'].unique().tolist()
-            cores = list(map(lambda x: int(x), cores))
-            # if set(cores) == set(self.data_conf["core_nums_test_data"]):
-            y_pred_test_cores = cores
+                cores = test_data_with_pred['nContainers'].unique().tolist()
+                cores = list(map(lambda x: int(x), cores))
+                # if set(cores) == set(self.data_conf["core_nums_test_data"]):
+                y_pred_test_cores = cores
+
+            elif input_name == 'tf_deepspeech':
+                y_true_test_cores = None
+                y_pred_test_cores = None
 
             #for col in test_data_with_true:
                 #cores = test_data_with_true[col].unique().tolist()
@@ -177,16 +184,19 @@ class Regression(DataAnalysis):
         train_data_with_true.index = y_true_train.index
         train_data_with_pred.index = y_true_train.index
 
-        cores = train_data_with_true['nContainers'].unique().tolist()
-        cores = list(map(lambda x: int(x), cores))
-        # if set(cores) == set(self.data_conf["core_nums_train_data"]):
-        y_true_train_cores = cores
+        if input_name == 'kmeans':
+            cores = train_data_with_true['nContainers'].unique().tolist()
+            cores = list(map(lambda x: int(x), cores))
+            # if set(cores) == set(self.data_conf["core_nums_train_data"]):
+            y_true_train_cores = cores
 
-        cores = train_data_with_pred['nContainers'].unique().tolist()
-        cores = list(map(lambda x: int(x), cores))
-        # if set(cores) == set(self.data_conf["core_nums_train_data"]):
-        y_pred_train_cores = cores
-
+            cores = train_data_with_pred['nContainers'].unique().tolist()
+            cores = list(map(lambda x: int(x), cores))
+            # if set(cores) == set(self.data_conf["core_nums_train_data"]):
+            y_pred_train_cores = cores
+        elif input_name == 'tf_deepspeech':
+            y_true_train_cores = None
+            y_pred_train_cores = None
 
         # for col in train_data_with_true:
             # cores = train_data_with_true[col].unique().tolist()
@@ -211,4 +221,6 @@ class Regression(DataAnalysis):
         err_train = np.mean(np.abs((y_true_train - y_pred_train) / y_true_train)) * 100
 
         return err_test, err_train, y_true_train, y_pred_train, y_true_test, y_pred_test, y_true_train_cores, y_pred_train_cores, y_true_test_cores, y_pred_test_cores
+
+
 

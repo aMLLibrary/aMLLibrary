@@ -24,11 +24,13 @@ class DataPreprocessing(DataPrepration):
         self.inputDF = inputDF
 
         to_be_inv_list = parameters['Inverse']['to_be_inv_List']
+
         target_column = parameters['DataPreparation']['target_column']
         degree = parameters['FS']['degree']
 
         self.logger.info("Inverting relevant features: ")
         # add the inverted column(s)
+
         self.outputDF, inversing_cols = self.add_inverse_features(self.inputDF, to_be_inv_list)
         parameters['Inverse']['inversing_cols'] = inversing_cols
 

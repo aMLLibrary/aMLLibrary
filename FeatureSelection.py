@@ -30,8 +30,9 @@ class FeatureSelection(DataPrepration):
         if parameters['FS']['select_features_sfs']:
             self.logger.info("Grid Search: SFS and Ridge")
 
-            y_pred_train, y_pred_test, run_info = self.gridSearch(train_features, train_labels, test_features, test_labels,
-                                                        parameters, run_info)
+            y_pred_train, y_pred_test, run_info = self.gridSearch(train_features, train_labels,
+                                                                    test_features, test_labels,
+                                                                    parameters, run_info)
 
             # y_pred_train, y_pred_test, run_info = self.Ridge_SFS_GridSearch(train_features, train_labels,
             #                                                                    test_features, test_labels,
@@ -39,7 +40,6 @@ class FeatureSelection(DataPrepration):
 
         if parameters['FS']['XGBoost']:
             self.logger.info("Grid Search: XGBoost")
-
 
             y_pred_train, y_pred_test, run_info = self.XGBoost_Gridsearch2(train_features, train_labels,
                                                                           test_features, test_labels,

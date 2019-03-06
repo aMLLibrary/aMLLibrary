@@ -51,7 +51,7 @@ class SequenceDataProcessing(object):
 
         # input name
         self.input_name = self.parameters['DataPreparation']['input_name']
-
+        self.input_path = self.parameters['DataPreparation']['input_path']
         # creating object of classes
         self.feature_selection = FeatureSelection.FeatureSelection()
         self.regression = Regression.Regression()
@@ -81,6 +81,7 @@ class SequenceDataProcessing(object):
         self.parameters['DataPreparation']['case'] = self.conf.get('DataPreparation', 'case')
         self.parameters['DataPreparation']['use_spark_info'] = self.conf.get('DataPreparation', 'use_spark_info')
         self.parameters['DataPreparation']['irrelevant_column_name'] = self.conf.get('DataPreparation', 'irrelevant_column_name')
+        self.parameters['DataPreparation']['irrelevant_column_name'] = [i for i in ast.literal_eval(self.parameters['DataPreparation']['irrelevant_column_name'])]
 
         self.parameters['FS'] = {}
         self.parameters['FS']['select_features_vif'] = bool(ast.literal_eval(self.conf.get('FS', 'select_features_vif')))
@@ -144,8 +145,27 @@ class SequenceDataProcessing(object):
         self.parameters['Splitting']['criterion_col_list'] = self.conf.get('Splitting', 'criterion_col_list')
         self.parameters['Splitting']['criterion_col_list'] = [i for i in ast.literal_eval(self.parameters['Splitting']['criterion_col_list'])]
 
+        self.parameters['Splitting']['extrapolate'] = bool(ast.literal_eval(self.conf.get('Splitting', 'extrapolate')))
+        self.parameters['Splitting']['test_size'] = float(self.conf['Splitting']['test_size'])
+
+        self.parameters['Splitting']['feature_extrapolate'] = self.conf.get('Splitting', 'feature_extrapolate')
+        self.parameters['Splitting']['feature_extrapolate'] = [i for i in ast.literal_eval(self.parameters['Splitting']['feature_extrapolate'])]
+
+        self.parameters['Splitting']['batch size(13)'] = self.conf.get('Splitting', 'batch size(13)')
+        self.parameters['Splitting']['batch size(13)'] = [i for i in ast.literal_eval(self.parameters['Splitting']['batch size(13)'])]
+
+        self.parameters['Splitting']['Real Iterations Number(15)'] = self.conf.get('Splitting', 'Real Iterations Number(15)')
+        self.parameters['Splitting']['Real Iterations Number(15)'] = [i for i in ast.literal_eval(self.parameters['Splitting']['Real Iterations Number(15)'])]
+
+        self.parameters['Splitting']['Network depth(11)'] = self.conf.get('Splitting', 'Network depth(11)')
+        self.parameters['Splitting']['Network depth(11)'] = [i for i in ast.literal_eval(self.parameters['Splitting']['Network depth(11)'])]
+
+
+
+
         self.parameters['Inverse'] = {}
-        self.parameters['Inverse']['to_be_inv_List'] = [str(self.conf['Inverse']['to_be_inv_List'])]
+        self.parameters['Inverse']['to_be_inv_List'] = self.conf.get('Inverse', 'to_be_inv_List')
+        self.parameters['Inverse']['to_be_inv_List'] = [i for i in ast.literal_eval(self.parameters['Inverse']['to_be_inv_List'])]
 
         self.parameters['Regression'] = {}
         self.parameters['Regression']['regressor_name'] = str(self.conf['Regression']['regressor_name'])
@@ -168,7 +188,8 @@ class SequenceDataProcessing(object):
         # performs inverting of the columns and adds combinatorial terms to the df
         ext_df = self.data_preprocessing.process(df, self.parameters)
 
-        matlab_var = pd.DataFrame(data = 0, index = range(66), columns= ['test'])
+        matlab_var_train = pd.DataFrame(data = 0, index = range(137), columns= ['test'])
+        matlab_var_test = pd.DataFrame(data = 0, index = range(35), columns= ['test'])
 
         # performs the algorithm multiple time and each time changes the seed to shuffle
         for iter in range(self.run_num):
@@ -207,10 +228,15 @@ class SequenceDataProcessing(object):
 
             print('err_train:', err_train)
             print('err_test:', err_test)
-            # matlab_var['iter_'+str(iter)+'_y_true_train'] = list(y_true_train)
-            # matlab_var['iter_'+str(iter)+'_y_pred_train'] = list(y_pred_train)
-            # matlab_var['iter_'+str(iter)+'_y_true_test'] = list(y_true_test)
-            # matlab_var['iter_'+str(iter)+'_y_pred_test'] = list(y_pred_test)
+
+            print('list(y_true_train)', len(list(y_true_train)))
+            print('list(y_true_test)', len(list(y_true_test)))
+
+
+            matlab_var_train['iter_'+str(iter)+'_y_true_train'] = list(y_true_train)
+            matlab_var_train['iter_'+str(iter)+'_y_pred_train'] = list(y_pred_train)
+            matlab_var_test['iter_'+str(iter)+'_y_true_test'] = list(y_true_test)
+            matlab_var_test['iter_'+str(iter)+'_y_pred_test'] = list(y_pred_test)
 
             # save the run_info variable as string in a temporary file in the result folder
             self.results.save_temporary_results(self.run_info)
@@ -218,8 +244,11 @@ class SequenceDataProcessing(object):
         # saves the best run results and necessary plots in the defined folder in result directory
         self.results.process(ext_df, self.run_info, self.parameters)
 
-        # matlab_var = matlab_var.drop(['test'], axis=1)
-        # matlab_var.to_csv('matlab_var.csv', sep='\t')
+        matlab_var_train = matlab_var_train.drop(['test'], axis=1)
+        matlab_var_train.to_csv('matlab_var_train.csv', sep='\t')
+
+        matlab_var_test = matlab_var_test.drop(['test'], axis=1)
+        matlab_var_test.to_csv('matlab_var_test.csv', sep='\t')
 
         end = time.time()
         execution_time = str(end-start)
@@ -272,9 +301,11 @@ class Results(Task):
 
         # save the necessary plots in the made result folder
         self.plot_predicted_true(result_path, best_run, parameters)
-        self.plot_cores_runtime(result_path, best_run, parameters, ext_df)
         self.plot_MSE_Errors(result_path, run_info)
         self.plot_MAPE_Errors(result_path, run_info)
+
+        if parameters['DataPreparation']['input_name'] == 'kmeans':
+            self.plot_cores_runtime(result_path, best_run, parameters, ext_df)
 
         if parameters['FS']['select_features_sfs']:
             self.plot_histogram(result_path, run_info, parameters)
@@ -340,15 +371,22 @@ class Results(Task):
         result_name = result_name + '_' + str(run_num) + '_runs'
 
         # add dataSize in training and test samples in the name
-        Tr_size = '_Tr'
-        for sz in image_nums_train_data:
-            Tr_size = Tr_size + '_' + str(sz)
+        if parameters['DataPreparation']['input_name'] == 'kmeans':
+            Tr_size = '_Tr'
+            for sz in image_nums_train_data:
+                Tr_size = Tr_size + '_' + str(sz)
 
-        Te_size = '_Te'
-        for sz in image_nums_test_data:
-            Te_size = Te_size + '_' + str(sz)
+            Te_size = '_Te'
+            for sz in image_nums_test_data:
+                Te_size = Te_size + '_' + str(sz)
 
-        result_name = result_name + Tr_size + Te_size
+            result_name = result_name + Tr_size + Te_size
+
+        elif parameters['DataPreparation']['input_name'] == 'tf_deepspeech':
+            if not parameters['Splitting']['extrapolate']:
+                result_name = result_name + '_' + 'TS_' + str(parameters['Splitting']['test_size'])
+            result_name = result_name + '_' + parameters['DataPreparation']['input_name']
+
         return result_name
 
     def save_temporary_results(self, run_info):
