@@ -17,7 +17,11 @@ limitations under the License.
 
 #TODO: Define feature selector enum
 
-class FSExpConfsGenerator(ExpConfsGenerator):
+import abc
+
+import model_building.design_space as mb
+
+class FSExpConfsGenerator(mb.ExpConfsGenerator):
     """
     Abstract superclass for feature selector methods which exploits regressors
 
@@ -34,11 +38,11 @@ class FSExpConfsGenerator(ExpConfsGenerator):
 
     _wrapped_generator = None
 
-    def __init__(self, generator, campaign_configuration, seed):
+    def __init__(self, wrapped_generator, campaign_configuration, seed):
         """
         Parameters
         ----------
-        generator: ExpConfsGenerator
+        wrapped_generator: ExpConfsGenerator
             The ExpConfsGenerator to be used coupled with the feature selector
 
         campaign_configuration: #TODO: add type
@@ -51,6 +55,7 @@ class FSExpConfsGenerator(ExpConfsGenerator):
         super().__init__(campaign_configuration, seed)
         self._wrapped_generator = wrapped_generator
 
+    @abc.abstractmethod
     def generate_experiment_configurations(self):
         """
         Generates the set of experiment configurations to be evaluated
@@ -60,4 +65,3 @@ class FSExpConfsGenerator(ExpConfsGenerator):
         list
             a list of the experiment configurations
         """
-        pass

@@ -15,32 +15,40 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-class LRRidgeExperimentConfiguration(ExperimentConfiguration):
+import sklearn.linear_model as lr
+import model_building.experiment_configuration as ec
+
+class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
     """
     Class representing a single experiment configuration for linear regression
+
+    Attributes
+    ----------
+    _linear_regression : LinearRegression
+        The actual scikt object which performs the linear regression
+
+    Methods
+    -------
+    train()
+        Performs the actual building of the linear model
+
     """
+    _linear_regression = lr.Ridge()
 
-    def __init__(self, hyperparameters, data, training_idx, xs, y):
+    def compute_signature(self):
         """
-        hyperparameters: dictionary
-            The set of hyperparameters of this experiment configuration
-
-        data: dataframe
-            The whole dataframe
-
-        training_idx: list of integers
-            The indices of the rows of the data frame to be used to train the model
-
-        xs: list of strings
-            The labels of the columns of the data frame to be used to train the model
-
-        y: string
-            The label of the y column
+        Compute the signature associated with this experiment configuration
         """
+        return "LRRidge_alpha_" + str(self._hyperparameters['alpha'])
 
     def train(self):
         """
         Build the model with the experiment configuration represented by this object
         """
-        #TODO: implement linear regression here
-
+        self._logger.debug("Building model for %s", self.compute_signature)
+        self._linear_regression = lr.Ridge(alpha=self._hyperparameters['alpha'])
+        xdata, ydata = self._prepare_data()
+        self._linear_regression.fit(xdata, ydata)
+        self._logger.debug("Model built")
+        for idx, col_name in enumerate(self._regression_inputs.x_columns):
+            self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])

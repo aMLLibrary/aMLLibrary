@@ -17,8 +17,14 @@ limitations under the License.
 
 from enum import Enum
 
+import abc
 import itertools
+import logging
+import pprint
+import random
 import sys
+
+import model_building.lr_ridge_experiment_configuration
 
 class Technique(Enum):
     """
@@ -28,20 +34,28 @@ class Technique(Enum):
     LR_RIDGE = 1
     #TODO: add extra techniques such as XGBoost, SVR, etc.
 
-enum_to_configuration_label = {[Technique.LR_RIDGE, 'Ridge']}
-enum_to_param_fields = {[Technique.LR_RIDGE, 'ridge_params']}
+enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge'}
 
-class ExpConfsGenerator:
+class ExpConfsGenerator(abc.ABC):
     """
     Abstract class representing a generators of experiment configurations
 
     Attributes
     ----------
-    campaign_configuration: #TODO add type
+    _campaign_configuration: dict of dict
         The set of options specified by the user though command line and campaign configuration files
 
-    data: dataframe
-        The whole set of input data
+    _regression_inputs: RegressionInputs
+        The input data of the regression problem
+
+    _random_generator: RandomGenerator
+        The random generator used to generate random numbers
+
+    _experiment_configurations: list of ExperimentConfiguration
+        The list of ExperimentConfiguration created
+
+    _logger: Logger
+        The logger associated with this class and its descendents
 
     Methods
     ------
@@ -49,37 +63,38 @@ class ExpConfsGenerator:
         Generates the set of expriment configurations to be evaluated
     """
 
-    _campaign_configuration = None
+    _campaign_configuration = {}
 
-    _data = None
+    _regression_inputs = None
 
-    _training_idx = []
-
-    _xs = []
-
-    _y = ""
-
-    _seed = 0
+    _random_generator = random.Random(0)
 
     _experiment_configurations = []
 
-    def __init__(self, campaign_configuration, seed):
+    _logger = None
+
+    def __init__(self, campaign_configuration, regression_inputs, seed):
         """
         Parameters
         ----------
-        campaign_configuration: #TODO: add type
+        campaign_configuration: dict of dict
             The set of options specified by the user though command line and campaign configuration files
 
+        regression_inputs: RegressionInputs
+            The input of the regression problem
+
         seed: integer
-            The seed to be used in random based activities
+            The seed to be used to initialize the random generator
         """
 
         #TODO: modify this constructor and all the other constructors which use it to pass the added attributes
 
         self._campaign_configuration = campaign_configuration
+        self._regression_inputs = regression_inputs
+        self._random_generator = random.Random(seed)
+        self._logger = logging.getLogger(__name__)
 
-        self._seed = seed
-
+    @abc.abstractmethod
     def generate_experiment_configurations(self):
         """
         Generates the set of experiment configurations to be evaluated
@@ -89,13 +104,11 @@ class ExpConfsGenerator:
         list
             a list of the experiment configurations
         """
-        pass
 
     def collect_data(self):
         """
         Return the results obtained with the different experiment configurations
         """
-        pass
 
 class MultiExpConfsGenerator(ExpConfsGenerator):
     """
@@ -112,23 +125,27 @@ class MultiExpConfsGenerator(ExpConfsGenerator):
         Generates the set of expriment configurations to be evaluated
     """
 
-    generators = None
+    _generators = []
 
-    def __init__(self, generators, campaign_configuration, seed):
+    def __init__(self, campaign_configuration, regression_inputs, seed, generators):
         """
         Parameters
         ----------
-        generators: dict
-            The ExpConfsGenerator to be used
-
         campaign_configuration: #TODO: add type
             The set of options specified by the user though command line and campaign configuration files
 
+        regression_inputs: RegressionInputs
+            The input of the regression problem
+
         seed: integer
             The seed to be used in random based activities
+
+        generators: dict
+            The ExpConfsGenerator to be used
         """
 
-        super().__init__(campaign_configuration, seed)
+        super().__init__(campaign_configuration, regression_inputs, seed)
+        self._generators = generators
 
 
     def generate_experiment_configurations(self):
@@ -141,36 +158,25 @@ class MultiExpConfsGenerator(ExpConfsGenerator):
             a list of the experiment configurations to be evaluated
         """
 
+        self._logger.debug("Calling generate_experiment_configurations in %s", self.__class__.__name__)
         return_list = []
-        for key,generator in generators:
-            return_list = return_list.extend(generator.generate_experiment_configurations())
+        assert self._generators
+        for generator in self._generators:
+            return_list.extend(generator.generate_experiment_configurations())
+        assert return_list
         return return_list
 
 class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
     """
     Specialization of MultiExpConfsGenerator representing a set of experiment configurations related to multiple techniques
 
-    This class wraps the single SingleTechniqueExpConfsGenerator instances which refer to the single techinique
+    This class wraps the single TechniqueExpConfsGenerator instances which refer to the single techinique
 
     Methods
     ------
     generate_experiment_configurations()
         Generates the set of expriment configurations to be evaluated
     """
-
-    def __init__(self, technique_generators, campaign_configuration, seed):
-        """
-        Parameters
-        ----------
-        technique_igeneratros: dict
-            The ExpConfsGenerator to be used for each technique
-
-        campaign_configuration: #TODO: add type
-            The set of options specified by the user though command line and campaign configuration files
-        """
-
-        super().__init__(technique_generators, campaign_configuration, seed)
-
 
 class TechniqueExpConfsGenerator(ExpConfsGenerator):
     """
@@ -186,18 +192,21 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
 
     _technique = Technique.NONE
 
-    def __init__(self, campaign_configuration, technique, seed):
+    def __init__(self, campaign_configuration, regression_inputs, seed, technique):
         """
         Parameters
         ----------
         campaign_configuration: #TODO: add type
             The set of options specified by the user though command line and campaign configuration files
 
+        regression_inputs: RegressionInputs
+            The input of the regression problem
+
         seed: integer
             the seed to be used in the generation (ignored in this class)
         """
 
-        super().__init__(campaign_configuration, seed)
+        super().__init__(campaign_configuration, regression_inputs, seed)
         self._technique = technique
 
     def generate_experiment_configurations(self):
@@ -211,18 +220,22 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         """
 
         first_key = ""
-        second_key = ""
-        #We expect that hyperparameters for a technique are stored in campaign_configuration[first_key][second_key] as a dictionary from string to list of values
+        #We expect that hyperparameters for a technique are stored in campaign_configuration[first_key] as a dictionary from string to list of values
         #TODO: build the grid search on the basis of the configuration and return the set of built points
         if self._technique == Technique.NONE:
-            logging.error("Not supported regression technique")
+            self._logger.error("Not supported regression technique")
             sys.exit(-1)
 
         first_key = enum_to_configuration_label[self._technique]
-        second_key = enum_to_param_fields[self._technique]
-        hyperparams = campaign_configuration[first_key][second_key]
+        hyperparams = self._campaign_configuration[first_key]
+        self._logger.debug("Hyperparams are %s", pprint.pformat(hyperparams, width=1))
         hyperparams_names = []
         hyperparams_values = []
+        #Adding dummy hyperparameter to have at least two hyperparameters
+        hyperparams_names.append('dummy')
+        hyperparams_values.append([0])
+
+        logging.debug("Computing set of hyperparameters combinations")
         for hyperparam in hyperparams:
             hyperparams_names.append(hyperparam)
             hyperparams_values.append(hyperparams[hyperparam])
@@ -230,15 +243,17 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         #Cartesian product of parameters
         for combination in itertools.product(*hyperparams_values):
             hyperparams_point_values = {}
-            for hyperparams_name, hyperparams_value in hyperparams_names, combination:
+            for hyperparams_name, hyperparams_value in zip(hyperparams_names, combination):
                 hyperparams_point_values[hyperparams_name] = hyperparams_value
             if self._technique == Technique.LR_RIDGE:
-                point = lr_ridge_experiment_configuration.LRRidgeExperimentConfiguration(hyperparams_point_values, self._data, self._training_idx, self._xs, self._y)
+                point = model_building.lr_ridge_experiment_configuration.LRRidgeExperimentConfiguration(self._campaign_configuration, hyperparams_point_values, self._regression_inputs)
             else:
-                logging.error("Not supported regression technique")
+                self._logger.error("Not supported regression technique")
                 point = None
                 sys.exit(-1)
             self._experiment_configurations.append(point)
+
+        assert self._experiment_configurations
 
         return self._experiment_configurations
 
@@ -249,11 +264,8 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
 
     Attributes
     ----------
-    n: integer
+    _repetitions_number: integer
         The number of different seeds to be used
-
-    wrapped_generator: ExpConfsGenerator
-        The wrapped generator to be invoked
 
     Methods
     ------
@@ -262,11 +274,9 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
     Generates the set of points to be evaluated
     """
 
-    n = 0
+    _repetitions_number = 0
 
-    n_generators = None
-
-    def __init__(self, n, wrapped_generator, campaign_configuration):
+    def __init__(self, repetitions_number, wrapped_generator, campaign_configuration):
         """
         Parameters
         ----------
@@ -279,10 +289,13 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
         campaign_configuration: #TODO: add type
             The set of options specified by the user though command line and campaign configuration files
         """
-        super().__init__(self, n_generators, campaign_configuration, seed)
 
-        self.n = n
+        self._repetitions_number = repetitions_number
         #TODO generate the n generators passing different seeds
+
+        wrapped_generators = []
+
+        super().__init__(self, wrapped_generators, campaign_configuration, self._random_generator.random())
 
 class KFoldExpConfsGenerator(MultiExpConfsGenerator):
     """
@@ -293,9 +306,6 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
     k: integer
         The number of different folds to be used
 
-    wrapped_generators: ExpConfsGenerator
-        The wrapped generators to be invoked
-
     Methods
     ------
     generate_experiment_configurations()
@@ -305,9 +315,7 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
 
     k = 0
 
-    kfold_generators = None
-
-    def __init__(self, k, wrapped_generator, campaign_configuration):
+    def __init__(self, k, wrapped_generator, campaign_configuration, seed):
         """
         Parameters
         ----------
@@ -319,11 +327,16 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
 
         campaign_configuration: #TODO: add type
             The set of options specified by the user though command line and campaign configuration files
+
+        seed: integer
+            The seed to be used in random based activities
         """
+
+        #TODO generate the k generators with different training set
+        kfold_generators = []
         super().__init__(self, kfold_generators, campaign_configuration, seed)
 
         self.k = k
-        #TODO generate the k generators with different training set
 
 class RandomExpConfsGenerator(ExpConfsGenerator):
     """
@@ -331,10 +344,10 @@ class RandomExpConfsGenerator(ExpConfsGenerator):
 
     Attributes
     ----------
-    n: integer
+    _experiment_configurations_number: integer
         The number of experiment configurations to be returned
 
-    wrapped_generator: ExpConfsGenerator
+    _wrapped_generator: ExpConfsGenerator
         The wrapped generator to be used
 
     Methods
@@ -344,9 +357,11 @@ class RandomExpConfsGenerator(ExpConfsGenerator):
     Generates the set of points to be evaluated
     """
 
-    n = 0
+    _experiment_configurations_number = 0
 
-    def __init__(self, n, wrapped_generator, campaign_configuration):
+    _wrapped_generator = None
+
+    def __init__(self, experiment_configurations_number, wrapped_generator, campaign_configuration, seed):
         """
         Parameters
         ----------
@@ -358,8 +373,22 @@ class RandomExpConfsGenerator(ExpConfsGenerator):
 
         campaign_configuration: #TODO: add type
             The set of options specified by the user though command line and campaign configuration files
+
+        seed: integer
+            The seed to be used in random based activities
         """
         super().__init__(self, campaign_configuration, seed)
 
-        self.n = n
+        self._experiment_configurations_number = experiment_configurations_number
+        self._wrapped_generator = wrapped_generator
+
+    def generate_experiment_configurations(self):
+        """
+        Collected the set of points to be evaluated for the single technique
+
+        Returns
+        -------
+        list
+            a list of the experiment configurations to be evaluated
+        """
         #TODO  call wrapped generator and randomly pick n experiment configurations

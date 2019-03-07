@@ -24,18 +24,47 @@ import DataPreprocessing
 import Splitting
 import Normalization
 
+import pprint 
+import random
+import sys
+
+import model_building.experiment_configuration as ec
+import model_building.model_building as mb
 
 class SequenceDataProcessing(object):
-    """ main class """
-    def __init__(self):
-        """algorithm related parameters to be get from params.ini file"""
-        self.conf = cp.ConfigParser()
-        self.parameters = {}
-        self.get_parameters()
+    """
+    main class
+    """
+    def __init__(self, args):
+        """
+        Parameters
+        ----------
+        args: argparse
+            The arguments parsed at command line
+        """
 
-        self.debug = self.parameters['DebugLevel']['debug']
+        configuration_file = args.configuration_file
+        self.random_generator = random.Random(args.seed)
+        self.debug = args.debug
         logging.basicConfig(level=logging.DEBUG) if self.debug else logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
+
+        #Check if the configuration file exists
+        if not os.path.exists(configuration_file):
+            self.logger.error("%s does not exist", configuration_file)
+            sys.exit(-1)
+
+        self.conf = cp.ConfigParser()
+        self.conf.optionxform = str
+        self.parameters = {}
+        self.get_parameters(configuration_file)
+
+        #Check if output path already exist
+        if os.path.exists(args.output):
+            self.logger.error("%s already exists", args.output)
+            sys.exit(1)
+        self.parameters['General']['output'] = args.output
+        os.mkdir(self.parameters['General']['output'])
 
         # data dictionary storing independent runs information
         self.run_info = []
@@ -60,101 +89,31 @@ class SequenceDataProcessing(object):
         self.data_preprocessing = DataPreprocessing.DataPreprocessing()
         self.data_splitting = Splitting.Splitting()
         self.normalization = Normalization.Normalization()
+        self.model_building = mb.ModelBuilding(self.random_generator.random())
 
-    def get_parameters(self):
-        """Gets the parameters from the config file named parameters.ini and put them into a dictionary
-        named parameters"""
-        self.conf.read('params.ini')
+    def get_parameters(self, configuration_file):
+        """
+        Gets the parameters from the config file named parameters.ini and put them into a dictionary
+        named parameters
 
-        self.parameters['DebugLevel'] = {}
-        self.parameters['DebugLevel']['debug'] = ast.literal_eval(self.conf['DebugLevel']['debug'])
+        Parameters
+        ----------
+        configuration_file : string
+            The name of the file containing the configuration
+        """
+        self.conf.read(configuration_file)
 
-        self.parameters['General'] = {}
-        self.parameters['General']['run_num'] = int(self.conf['General']['run_num'])
+        self.parameters = {}
 
-        self.parameters['DataPreparation'] = {}
-        self.parameters['DataPreparation']['result_path'] = self.conf['DataPreparation']['result_path']
-        self.parameters['DataPreparation']['input_name'] = self.conf.get('DataPreparation', 'input_name')
-        self.parameters['DataPreparation']['input_path'] = self.conf.get('DataPreparation', 'input_path')
-        self.parameters['DataPreparation']['target_column'] = int(self.conf['DataPreparation']['target_column'])
-        self.parameters['DataPreparation']['split'] = self.conf.get('DataPreparation', 'split')
-        self.parameters['DataPreparation']['case'] = self.conf.get('DataPreparation', 'case')
-        self.parameters['DataPreparation']['use_spark_info'] = self.conf.get('DataPreparation', 'use_spark_info')
-        self.parameters['DataPreparation']['irrelevant_column_name'] = self.conf.get('DataPreparation', 'irrelevant_column_name')
+        for section in self.conf.sections():
+            self.parameters[section] = {}
+            for item in self.conf.items(section):
+                try:
+                    self.parameters[section][item[0]] = ast.literal_eval(item[1])
+                except (ValueError, SyntaxError) as e:
+                    self.parameters[section][item[0]] = item[1]
 
-        self.parameters['FS'] = {}
-        self.parameters['FS']['select_features_vif'] = bool(ast.literal_eval(self.conf.get('FS', 'select_features_vif')))
-        self.parameters['FS']['select_features_sfs'] = bool(ast.literal_eval(self.conf.get('FS', 'select_features_sfs')))
-        self.parameters['FS']['XGBoost'] = bool(ast.literal_eval(self.conf.get('FS', 'XGBoost')))
-
-        self.parameters['FS']['min_features'] = int(self.conf['FS']['min_features'])
-        self.parameters['FS']['max_features'] = int(self.conf['FS']['max_features'])
-        self.parameters['FS']['is_floating'] = bool(ast.literal_eval(self.conf.get('FS', 'is_floating')))
-        self.parameters['FS']['fold_num'] = int(self.conf['FS']['fold_num'])
-        self.parameters['FS']['Confidence_level'] = self.conf['FS']['Confidence_level']
-        self.parameters['FS']['clipping_no'] = int(self.conf['FS']['clipping_no'])
-        self.parameters['FS']['degree'] = int(self.conf['FS']['degree'])
-        self.parameters['FS']['SFS_Ridge_param_list'] = self.conf.get('FS', 'SFS_Ridge_param_list')
-        self.parameters['FS']['SFS_Ridge_param_list'] = [i for i in ast.literal_eval(self.parameters['FS']['SFS_Ridge_param_list'])]
-
-        self.parameters['XGBoost'] = {}
-        self.parameters['XGBoost']['learning_rate_v'] = self.conf['XGBoost']['learning_rate_v']
-        self.parameters['XGBoost']['learning_rate_v'] = [i for i in ast.literal_eval(self.parameters['XGBoost']['learning_rate_v'])]
-
-        self.parameters['XGBoost']['reg_lambda_v'] = self.conf['XGBoost']['reg_lambda_v']
-        self.parameters['XGBoost']['reg_lambda_v'] = [int(i) for i in ast.literal_eval(self.parameters['XGBoost']['reg_lambda_v'])]
-
-        self.parameters['XGBoost']['n_estimators_v'] = self.conf['XGBoost']['n_estimators_v']
-        self.parameters['XGBoost']['n_estimators_v'] = [int(i) for i in ast.literal_eval(self.parameters['XGBoost']['n_estimators_v'])]
-
-        self.parameters['XGBoost']['min_child_weight_v'] = self.conf['XGBoost']['min_child_weight_v']
-        self.parameters['XGBoost']['min_child_weight_v'] = [int(i) for i in ast.literal_eval(self.parameters['XGBoost']['min_child_weight_v'])]
-
-        self.parameters['XGBoost']['max_depth_v'] = self.conf['XGBoost']['max_depth_v']
-        self.parameters['XGBoost']['max_depth_v'] = [int(i) for i in ast.literal_eval(self.parameters['XGBoost']['max_depth_v'])]
-
-        self.parameters['XGBoost']['grid_elements'] = self.conf['XGBoost']['grid_elements']
-        self.parameters['XGBoost']['grid_elements'] = self.conf.get('XGBoost', 'grid_elements')
-        self.parameters['XGBoost']['grid_elements'] = [i for i in ast.literal_eval(self.parameters['XGBoost']['grid_elements'])]
-
-        self.parameters['Ridge'] = {}
-        self.parameters['Ridge']['ridge_params'] = self.conf['Ridge']['ridge_params']
-        self.parameters['Ridge']['ridge_params'] = [i for i in ast.literal_eval(self.parameters['Ridge']['ridge_params'])]
-
-        self.parameters['Lasso'] = {}
-        self.parameters['Lasso']['lasso_params'] = self.conf['Lasso']['lasso_params']
-        self.parameters['Lasso']['lasso_params'] = [i for i in ast.literal_eval(self.parameters['Lasso']['lasso_params'])]
-
-        self.parameters['Splitting'] = {}
-        self.parameters['Splitting']['seed_vector'] = self.conf['Splitting']['seed_vector']
-        self.parameters['Splitting']['seed_vector'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['seed_vector'])]
-
-        self.parameters['Splitting']['image_nums_train_data'] = self.conf['Splitting']['image_nums_train_data']
-        self.parameters['Splitting']['image_nums_train_data'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['image_nums_train_data'])]
-
-        self.parameters['Splitting']['image_nums_test_data'] = self.conf.get('Splitting', 'image_nums_test_data')
-        self.parameters['Splitting']['image_nums_test_data'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['image_nums_test_data'])]
-
-        self.parameters['Splitting']['core_nums_train_data'] = self.conf.get('Splitting', 'core_nums_train_data')
-        self.parameters['Splitting']['core_nums_train_data'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['core_nums_train_data'])]
-
-        self.parameters['Splitting']['core_nums_test_data'] = self.conf.get('Splitting', 'core_nums_test_data')
-        self.parameters['Splitting']['core_nums_test_data'] = [int(i) for i in ast.literal_eval(self.parameters['Splitting']['core_nums_test_data'])]
-
-        self.parameters['Splitting']['criterion_col_list'] = self.conf.get('Splitting', 'criterion_col_list')
-        self.parameters['Splitting']['criterion_col_list'] = [i for i in ast.literal_eval(self.parameters['Splitting']['criterion_col_list'])]
-
-        self.parameters['Inverse'] = {}
-        self.parameters['Inverse']['to_be_inv_List'] = [str(self.conf['Inverse']['to_be_inv_List'])]
-
-        self.parameters['Regression'] = {}
-        self.parameters['Regression']['regressor_name'] = str(self.conf['Regression']['regressor_name'])
-
-        self.parameters['dt'] = {}
-        self.parameters['dt']['max_features_dt'] = str(self.conf['dt']['max_features_dt'])
-        self.parameters['dt']['max_depth_dt'] = str(self.conf['dt']['max_depth_dt'])
-        self.parameters['dt']['min_samples_leaf_dt'] = str(self.conf['dt']['min_samples_leaf_dt'])
-        self.parameters['dt']['min_samples_split_dt'] = str(self.conf['dt']['min_samples_split_dt'])
+        self.logger.debug(pprint.pformat(self.parameters, width=1))
 
     def process(self):
 
@@ -162,23 +121,22 @@ class SequenceDataProcessing(object):
         start = time.time()
 
         self.logger.info("Start of the algorithm")
+
+
+        logging.info("Starting experimental campaign")
         # performs reading data, drops irrelevant columns
         df = self.preliminary_data_processing.process(self.parameters)
+        logging.info("Loaded and cleaned data")
 
         # performs inverting of the columns and adds combinatorial terms to the df
         ext_df = self.data_preprocessing.process(df, self.parameters)
+        logging.info("Preprocessed data")
 
-        matlab_var = pd.DataFrame(data = 0, index = range(66), columns= ['test'])
+        regression_inputs = ec.RegressionInputs(ext_df, ext_df.index.values.tolist(), self.parameters['Features']['Extended_feature_names'], str(ext_df.columns[0]))
 
-        factory = GeneratorsFactory('parameters.ini', 123)
-        gen = factory.build()
-        expconf = gen.generate_experiment_configurations()
-        for exp in expconf:
-            exp.train()
-            exp.evaluate()
+        self.model_building.process(self.parameters, regression_inputs)
 
-
-
+        """
 
         # performs the algorithm multiple time and each time changes the seed to shuffle
         for iter in range(self.run_num):
@@ -230,7 +188,7 @@ class SequenceDataProcessing(object):
 
         # matlab_var = matlab_var.drop(['test'], axis=1)
         # matlab_var.to_csv('matlab_var.csv', sep='\t')
-
+        """
         end = time.time()
         execution_time = str(end-start)
         print("Execution Time : " + execution_time)

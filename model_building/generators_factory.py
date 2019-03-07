@@ -15,19 +15,38 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import logging
+import random
+
+import model_building.design_space as ds
+
 class GeneratorsFactory:
     """
     Factory calls to build the logical hierarchy of generators
 
+    Attributes
+    ----------
+    _campaign_configuration: dict of dict
+        The set of options specified by the user though command line and campaign configuration files
+
+    _regression_inputs: RegressionInputs
+        The input of the regression problem to be solved
+
     Methods
+    -------
     build()
         Build the required hierarchy of generators on the basis of the configuration file
     """
 
     _campaign_configuration = None
-    _seed = 0
 
-    def __init__(self, campaign_configuration, seed):
+    _regression_inputs = None
+
+    _random_generator = random.Random(0)
+
+    _logger = None
+
+    def __init__(self, campaign_configuration, regression_inputs, seed):
         """
         Parameters
         ----------
@@ -36,9 +55,16 @@ class GeneratorsFactory:
 
         seed: integer
             The seed to be used in random based activities
+
+        Returns
+        -------
+        ExpConfsGenerator
+            The top level ExpConfsGenerator to be used to generate all the experiment configurations
         """
         self._campaign_configuration = campaign_configuration
-        self._seed = seed
+        self._regression_inputs = regression_inputs
+        self._random_generator = random.Random(seed)
+        self._logger = logging.getLogger(__name__)
 
     def build(self):
         """
@@ -46,8 +72,13 @@ class GeneratorsFactory:
 
         The methods start from the leaves and go up. Intermediate wrappers must be added or not on the basis of the requirements of the campaign configuration
         """
+        string_techique_to_enum = {v: k for k, v in ds.enum_to_configuration_label.items()}
 
-        #TODO: read from the campaign configuration file which are the techniques to be used; create a TechniqueExpConfsGenerator for each of them
+        technique_generators = []
+
+        for technique in self._campaign_configuration['General']['techniques']:
+            self._logger.debug("Building technique generator for %s", technique)
+            technique_generators.append(ds.TechniqueExpConfsGenerator(self._campaign_configuration, self._regression_inputs, self._random_generator.random(), string_techique_to_enum[technique]))
 
         #TODO: if we want to use k-fold, wraps the generator with KFoldExpConfsGenerator
 
@@ -55,6 +86,7 @@ class GeneratorsFactory:
 
         #TODO: if we want to run multiple times wraps the generator with RepeatedExpConfsGenerator
 
-        #TODO: wrap everyhing with MultiTechniquesExpConfsGenerator
+        assert technique_generators
 
-
+        multitechniques_generator = ds.MultiTechniquesExpConfsGenerator(self._campaign_configuration, self._regression_inputs, self._random_generator.random(), technique_generators)
+        return multitechniques_generator
