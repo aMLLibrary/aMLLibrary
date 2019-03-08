@@ -115,13 +115,21 @@ class ExperimentConfiguration(abc.ABC):
             The input of the regression problem to be solved
         """
 
+        #Initialized attributes
         self._campaign_configuration = campaign_configuration
         self._hyperparameters = hyperparameters
         self._regression_inputs = regression_inputs
         self._logger = logging.getLogger(__name__)
 
+        #Create experiment directory
         signature = self.compute_signature()
-        os.mkdir(os.path.join(self._campaign_configuration['General']['output'], signature))
+        experiment_directory = os.path.join(self._campaign_configuration['General']['output'], signature)
+        assert not os.path.exists(experiment_directory)
+        os.mkdir(experiment_directory)
+
+        #Logger writes to stdout and file
+        fh = logging.FileHandler(os.path.join(experiment_directory, 'log'))
+        self._logger.addHandler(fh)
 
     @abc.abstractmethod
     def train(self):
