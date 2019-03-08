@@ -3,7 +3,7 @@
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code
-extension-pkg-whitelist=
+extension-pkg-whitelist=lxml
 
 # Add files or directories to the blacklist. They should be base names, not
 # paths.
@@ -278,7 +278,7 @@ function-naming-style=any
 
 # Regular expression matching correct function names. Overrides function-
 # naming-style
-#function-rgx=
+function-rgx=[a-z_][a-z0-9_]{2,100}$
 
 # Good variable names which should always be accepted, separated by a comma
 good-names=i,
@@ -329,7 +329,7 @@ variable-naming-style=any
 
 # Regular expression matching correct variable names. Overrides variable-
 # naming-style
-#variable-rgx=
+variable-rgx=[a-z_][a-z0-9_]{2,100}$
 
 
 [SIMILARITIES]
@@ -350,9 +350,10 @@ min-similarity-lines=4
 [MISCELLANEOUS]
 
 # List of note tags to take in consideration, separated by a comma.
-notes=FIXME,
-      XXX,
-      TODO
+notes=
+#FIXME,
+#      XXX,
+#      TODO
 
 
 [TYPECHECK]
@@ -499,7 +500,7 @@ max-returns=6
 max-statements=50000
 
 # Minimum number of public methods for a class (see R0903).
-min-public-methods=1
+min-public-methods=0
 
 
 [IMPORTS]
