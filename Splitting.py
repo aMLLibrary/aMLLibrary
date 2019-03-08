@@ -1,5 +1,4 @@
 from SequenceDataProcessing import *
-from Normalization import Normalization
 import logging
 
 
@@ -19,7 +18,6 @@ class Splitting(DataPrepration):
     """performs splitting of the data based on the input parameters and scaling them """
     def __init__(self):
         DataPrepration.__init__(self)
-        self.normalization = Normalization()
         self.logger = logging.getLogger(__name__)
 
     def process(self, inputDF, parameters, run_info):
@@ -39,12 +37,9 @@ class Splitting(DataPrepration):
         run_info[-1]['train_indices'] = train_indices
         run_info[-1]['test_indices'] = test_indices
 
-        # scale the data
-        scaled_inputDF, scaler = self.normalization.process(self.inputDF)
-
         # split the data
-        train_df = scaled_inputDF.ix[train_indices]
-        test_df = scaled_inputDF.ix[test_indices]
+        train_df = inputDF.ix[train_indices]
+        test_df = inputDF.ix[test_indices]
         train_labels = train_df.iloc[:, 0]
         train_features = train_df.iloc[:, 1:]
 
@@ -52,7 +47,6 @@ class Splitting(DataPrepration):
         test_features = test_df.iloc[:, 1:]
 
         # populate the necessary variables in run_info for later use
-        run_info[-1]['scaler'] = scaler
         run_info[-1]['train_features'] = train_features
         run_info[-1]['train_labels'] = train_labels
         run_info[-1]['test_features'] = test_features

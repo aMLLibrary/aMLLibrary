@@ -1,5 +1,21 @@
+#!/usr/bin/env python3
+"""
+Copyright 2019 Marjan Hosseini
+Copyright 2019 Marco Lattuada
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 import logging
-from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import configparser as cp
 import numpy as np
@@ -22,20 +38,28 @@ import Regression
 import PreliminaryDataProcessing
 import DataPreprocessing
 import Splitting
-import Normalization
 
 import pprint
 import random
 import shutil
 import sys
 
-import model_building.experiment_configuration as ec
+import data_preparation.normalization as no
 import model_building.model_building as mb
+import regression_inputs as ri
 
 class SequenceDataProcessing(object):
     """
     main class
+
+    Attributes
+    ----------
+    _data_preprocessing_list: list of DataPreparation
+        The list of steps to be executed for data preparation
     """
+
+    _data_preprocessing_list = []
+
     def __init__(self, args):
         """
         Parameters
@@ -72,12 +96,13 @@ class SequenceDataProcessing(object):
         shutil.copyfile(args.configuration_file, os.path.join(args.output, 'configuration_file.ini'))
         self.conf.write(open(os.path.join(args.output, "enriched_configuration_file.ini"), 'w'))
 
+        #Check if the number of runs is 1; multiple runs are not supported in the current version
+        if self.parameters['General']['run_num'] > 1:
+            self.logger.error("Multiple runs not yet supported")
+            sys.exit(1)
 
         # data dictionary storing independent runs information
         self.run_info = []
-
-        # number of independent runs
-        self.run_num = self.parameters['General']['run_num']
 
         # main folder for saving the results
         self.result_path = self.parameters['DataPreparation']['result_path']
@@ -93,10 +118,19 @@ class SequenceDataProcessing(object):
         self.regression = Regression.Regression()
         self.results = Results()
         self.preliminary_data_processing = PreliminaryDataProcessing.PreliminaryDataProcessing("P8_kmeans.csv")
-        self.data_preprocessing = DataPreprocessing.DataPreprocessing()
+        self.data_preprocessing = DataPreprocessing.DataPreprocessing(self.parameters)
         self.data_splitting = Splitting.Splitting()
-        self.normalization = Normalization.Normalization()
         self.model_building = mb.ModelBuilding(self.random_generator.random())
+
+
+        #FIXME: this boolean variable must be set to true if there is not any explicit definition of train or test in the configuration file
+        random_test_selection = True
+
+        #Check if scaling has to be applied globally; if yes, add the step to the list
+        if self.parameters['General']['run_num'] == 1 or not random_test_selection:
+            self._data_preprocessing_list.append(no.Normalization(self.parameters))
+
+
 
     def get_parameters(self, configuration_file):
         """
@@ -128,7 +162,7 @@ class SequenceDataProcessing(object):
         self.logger.info("Start of the algorithm")
 
 
-        logging.info("Starting experimental campaign")
+        self.logger.info("Starting experimental campaign")
         # performs reading data, drops irrelevant columns
         df = self.preliminary_data_processing.process(self.parameters)
         logging.info("Loaded and cleaned data")
@@ -137,7 +171,12 @@ class SequenceDataProcessing(object):
         ext_df = self.data_preprocessing.process(df, self.parameters)
         logging.info("Preprocessed data")
 
-        regression_inputs = ec.RegressionInputs(ext_df, ext_df.index.values.tolist(), self.parameters['Features']['Extended_feature_names'], str(ext_df.columns[0]))
+        regression_inputs = ri.RegressionInputs(ext_df, ext_df.index.values.tolist(), ext_df.index.values.tolist(), self.parameters['Features']['Extended_feature_names'], str(ext_df.columns[0]))
+
+        for data_preprocessing in self._data_preprocessing_list:
+            self.logger.info("Executing %s", data_preprocessing.get_name())
+            regression_inputs = data_preprocessing.process(regression_inputs)
+
 
         self.model_building.process(self.parameters, regression_inputs)
 
@@ -283,7 +322,6 @@ class Results(Task):
         XGBoost = parameters['FS']['XGBoost']
 
         is_floating = parameters['FS']['is_floating']
-        run_num = parameters['General']['run_num']
         image_nums_train_data = parameters['Splitting']['image_nums_train_data']
         image_nums_test_data = parameters['Splitting']['image_nums_test_data']
         degree = str(degree)
@@ -310,7 +348,7 @@ class Results(Task):
         if XGBoost:
             result_name += "XGB_"
 
-        result_name = result_name + '_' + str(run_num) + '_runs'
+        result_name = result_name + '_' + str(parameters['General']['run_num']) + '_runs'
 
         # add dataSize in training and test samples in the name
         Tr_size = '_Tr'

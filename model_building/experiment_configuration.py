@@ -18,53 +18,6 @@ limitations under the License.
 import abc
 import logging
 import os
-import pandas as pd
-
-class RegressionInputs:
-    """
-    Data structure storing inputs information for a regression problem
-
-    Attributes
-    ----------
-    data: dataframe
-        The whole dataframe
-
-    training_idx: list of integers
-        The indices of the rows of the data frame to be used to train the model
-
-    x_columns: list of strings
-        The labels of the columns of the data frame to be used to train the model
-
-    y_column: string
-        The label of the y column
-    """
-    data = pd.DataFrame()
-
-    training_idx = []
-
-    x_columns = []
-
-    y_column = ""
-
-    def __init__(self, data, training_idx, x_columns, y_column):
-        """
-        Parameters
-        data: dataframe
-            The whole dataframe
-
-        training_idx: list of integers
-            The indices of the rows of the data frame to be used to train the model
-
-        x_columns: list of strings
-            The labels of the columns of the data frame to be used to train the model
-
-        y_column: string
-            The label of the y column
-        """
-        self.data = data
-        self.training_idx = training_idx
-        self.x_columns = x_columns
-        self.y_column = y_column
 
 class ExperimentConfiguration(abc.ABC):
     """
@@ -89,8 +42,17 @@ class ExperimentConfiguration(abc.ABC):
 
     Methods
     -------
-    _prepare_data()
-        Generates the two pandas data frame with x_columns and y
+    train()
+        Build the model starting from training data
+
+    validate()
+        Compute the MAPE on the validation set
+
+    compute_signature()
+        Compute the string identifier of this experiment
+
+    compute_estimations()
+        Compute the estimated values for a give set of data
     """
 
     _campaign_configuration = {}
@@ -128,8 +90,8 @@ class ExperimentConfiguration(abc.ABC):
         os.mkdir(experiment_directory)
 
         #Logger writes to stdout and file
-        fh = logging.FileHandler(os.path.join(experiment_directory, 'log'))
-        self._logger.addHandler(fh)
+        file_handler = logging.FileHandler(os.path.join(experiment_directory, 'log'))
+        self._logger.addHandler(file_handler)
 
     @abc.abstractmethod
     def train(self):
@@ -137,21 +99,22 @@ class ExperimentConfiguration(abc.ABC):
         Build the model with the experiment configuration represented by this object
         """
 
+    def validate(self):
+        """
+        Validate the model, i.e., compute the MAPE on the validation set
+        """
+        self._logger.debug("Validating model")
+        self.compute_estimations(self._regression_inputs.validation_idx)
+        self._logger.debug("Validated model")
+
     @abc.abstractmethod
     def compute_signature(self):
         """
         Compute the signature associated with this experiment configuration
         """
 
-    def _prepare_data(self):
+    @abc.abstractmethod
+    def compute_estimations(self, rows):
         """
-        Generate the x and y pandas dataframes containing only the necessary information
-
-        Returns
-        -------
-        df,df
-            The data frame containing the x_columns column and the data frame containing the y column
+        Compute the estimations and the MAPE for runs in rows
         """
-        xdata = self._regression_inputs.data.loc[self._regression_inputs.training_idx, self._regression_inputs.x_columns]
-        ydata = self._regression_inputs.data.loc[self._regression_inputs.training_idx, self._regression_inputs.y_column]
-        return xdata, ydata

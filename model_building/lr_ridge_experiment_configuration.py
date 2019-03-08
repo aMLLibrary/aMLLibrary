@@ -32,6 +32,8 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
     train()
         Performs the actual building of the linear model
 
+    compute_estimations()
+        Compute the estimated values for a give set of data
     """
     _linear_regression = lr.Ridge()
 
@@ -47,8 +49,16 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         """
         self._logger.debug("Building model for %s", self.compute_signature())
         self._linear_regression = lr.Ridge(alpha=self._hyperparameters['alpha'])
-        xdata, ydata = self._prepare_data()
+        assert self._regression_inputs
+        xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.training_idx)
         self._linear_regression.fit(xdata, ydata)
         self._logger.debug("Model built")
         for idx, col_name in enumerate(self._regression_inputs.x_columns):
             self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])
+
+    def compute_estimations(self, rows):
+        """
+        Compute the estimations and the MAPE for runs in rows
+        """
+        xdata, _ = self._regression_inputs.get_xy_data(rows)
+        self._linear_regression.predict(xdata)

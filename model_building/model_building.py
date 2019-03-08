@@ -63,4 +63,4 @@ class ModelBuilding:
         assert expconf
         for exp in expconf:
             exp.train()
-            exp.evaluate()
+            exp.validate()

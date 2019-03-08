@@ -1,24 +1,10 @@
-from SequenceDataProcessing import *
 import logging
+import numpy as np
+import pandas as pd
 
-class Task(object):
-    def __init__(self):
-        self.inputDF = None  # Check with Marco this is a DF, I would create an empty DF
-        self.outputDF = None
+import data_preparation.data_preparation as dp
 
-class DataPrepration(Task):
-    """This is the main class defining the pipeline of machine learning task"""
-
-    def __init__(self):
-        Task.__init__(self)
-
-
-class DataPreprocessing(DataPrepration):
-    """performs invesing of needed features and adds them to the dataframe, extends the dataframe to a degree"""
-    def __init__(self):
-        DataPrepration.__init__(self)
-        self.logger = logging.getLogger(__name__)
-
+class DataPreprocessing(dp.DataPreparation):
     def process(self, inputDF, parameters):
         """inversing and extension of features in the dataframe"""
         self.inputDF = inputDF
@@ -27,12 +13,12 @@ class DataPreprocessing(DataPrepration):
         target_column = parameters['DataPreparation']['target_column']
         degree = parameters['FS']['degree']
 
-        self.logger.info("Inverting relevant features: ")
+        self._logger.info("Inverting relevant features: ")
         # add the inverted column(s)
         self.outputDF, inversing_cols = self.add_inverse_features(self.inputDF, to_be_inv_list)
         parameters['Inverse']['inversing_cols'] = inversing_cols
 
-        self.logger.info("Extending features: ")
+        self._logger.info("Extending features: ")
         # add combinatorial terms
         self.outputDF = self.add_all_comb(self.outputDF, inversing_cols, target_column, degree)
 
