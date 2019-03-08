@@ -24,8 +24,9 @@ import DataPreprocessing
 import Splitting
 import Normalization
 
-import pprint 
+import pprint
 import random
+import shutil
 import sys
 
 import model_building.experiment_configuration as ec
@@ -56,6 +57,10 @@ class SequenceDataProcessing(object):
 
         self.conf = cp.ConfigParser()
         self.conf.optionxform = str
+        self.conf.read(configuration_file)
+        self.conf['General']['configuration_file'] = args.configuration_file
+        self.conf['General']['output'] = args.output
+        self.conf['General']['seed'] = str(args.seed)
         self.parameters = {}
         self.get_parameters(configuration_file)
 
@@ -63,8 +68,10 @@ class SequenceDataProcessing(object):
         if os.path.exists(args.output):
             self.logger.error("%s already exists", args.output)
             sys.exit(1)
-        self.parameters['General']['output'] = args.output
         os.mkdir(self.parameters['General']['output'])
+        shutil.copyfile(args.configuration_file, os.path.join(args.output, 'configuration_file.ini'))
+        self.conf.write(open(os.path.join(args.output, "enriched_configuration_file.ini"), 'w'))
+
 
         # data dictionary storing independent runs information
         self.run_info = []
@@ -101,8 +108,6 @@ class SequenceDataProcessing(object):
         configuration_file : string
             The name of the file containing the configuration
         """
-        self.conf.read(configuration_file)
-
         self.parameters = {}
 
         for section in self.conf.sections():
