@@ -45,7 +45,7 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         """
         Build the model with the experiment configuration represented by this object
         """
-        self._logger.debug("Building model for %s", self.compute_signature)
+        self._logger.debug("Building model for %s", self.compute_signature())
         self._linear_regression = lr.Ridge(alpha=self._hyperparameters['alpha'])
         xdata, ydata = self._prepare_data()
         self._linear_regression.fit(xdata, ydata)
