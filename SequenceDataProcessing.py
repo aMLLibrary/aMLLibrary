@@ -188,8 +188,8 @@ class SequenceDataProcessing(object):
         # performs inverting of the columns and adds combinatorial terms to the df
         ext_df = self.data_preprocessing.process(df, self.parameters)
 
-        matlab_var_train = pd.DataFrame(data = 0, index = range(137), columns= ['test'])
-        matlab_var_test = pd.DataFrame(data = 0, index = range(35), columns= ['test'])
+        matlab_var_train = pd.DataFrame(data = 0, index = range(416), columns= ['test'])
+        matlab_var_test = pd.DataFrame(data = 0, index = range(104), columns= ['test'])
 
         # performs the algorithm multiple time and each time changes the seed to shuffle
         for iter in range(self.run_num):

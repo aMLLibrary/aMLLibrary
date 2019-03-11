@@ -45,7 +45,7 @@ class DataPreprocessing(DataPrepration):
         return self.outputDF
 
     def add_inverse_features(self, df, to_be_inv_list):
-        """Given a dataframe and the name of columns that should be inversed, add the needed inversed columns and
+        """Given a dataframe and the name of columns that should be inverted, add the needed inverted columns and
         returns the resulting df and the indices of two reciprocals separately"""
 
         # a dictionary of DataFrame used for adding the inverted columns
@@ -79,18 +79,30 @@ class DataPreprocessing(DataPrepration):
 
         # compute all possible combinations with replacement
         for j in range(2, degree + 1):
+            print('Adding features with ', j, ' terms ...')
             combs = list(itertools.combinations_with_replacement(indices, j))
+
+            # finds the combinations containing target column
+            remove_target_list = []
+            for ii in combs:
+                if output_column_idx in ii:
+                    remove_target_list.append(ii)
+
+            # removes the combinations containing target column
+            for rt in range(0, len(remove_target_list)):
+                combs.remove(remove_target_list[rt])
+
             # finds the combinations containing features and inverted of them
             remove_list_idx = []
             for ii in combs:
                 for kk in inversed_cols_tr:
-                    if len(list(set.intersection(set(ii), set(kk)))) >= 2:
+                    if len(list(set.intersection(set(ii), set(kk)))) >= 2 and ii not in remove_list_idx:
                         remove_list_idx.append(ii)
-                if output_column_idx in ii:
-                    remove_list_idx.append(ii)
+
             # removes the combinations containing features and inverted of them
-            for r in range(0,len(remove_list_idx)):
+            for r in range(0, len(remove_list_idx)):
                 combs.remove(remove_list_idx[r])
+
             # compute resulting column of the remaining combinations and add to the df
             for cc in combs:
                 new_col = self.calculate_new_col(data_matrix, list(cc))
@@ -103,6 +115,7 @@ class DataPreprocessing(DataPrepration):
                 df_dict[new_feature_name] = new_col
         # convert the dictionary to a dataframe
         ext_df = pd.DataFrame.from_dict(df_dict)
+        print(ext_df.columns.values)
         return ext_df
 
     def calculate_new_col(self, X, indices):
