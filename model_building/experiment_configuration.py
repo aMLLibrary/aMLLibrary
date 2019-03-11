@@ -82,7 +82,7 @@ class ExperimentConfiguration(abc.ABC):
         self._campaign_configuration = campaign_configuration
         self._hyperparameters = hyperparameters
         self._regression_inputs = regression_inputs
-        self._logger = logging.getLogger(__name__)
+        self._logger = logging.getLogger(self.compute_signature())
 
         #Create experiment directory
         signature = self.compute_signature()
