@@ -17,6 +17,7 @@ limitations under the License.
 
 import abc
 import logging
+import numpy as np
 import os
 
 class ExperimentConfiguration(abc.ABC):
@@ -103,9 +104,17 @@ class ExperimentConfiguration(abc.ABC):
         """
         Validate the model, i.e., compute the MAPE on the validation set
         """
+        validation_rows = self._regression_inputs.validation_idx
         self._logger.debug("Validating model")
-        self.compute_estimations(self._regression_inputs.validation_idx)
-        self._logger.debug("Validated model")
+        predicted_y = self.compute_estimations(validation_rows)
+        real_y = self._regression_inputs.data.loc[validation_rows, self._regression_inputs.y_column].values.astype(np.float64)
+        if self._regression_inputs.y_scaler:
+            y_scaler = self._regression_inputs.y_scaler
+            predicted_y = y_scaler.inverse_transform(predicted_y)
+            real_y = y_scaler.inverse_transform(real_y)
+        difference = real_y - predicted_y
+        mape = np.mean(np.abs(np.divide(difference, real_y))) * 100
+        self._logger.debug("Validated model. MAPE is %f", mape)
 
     @abc.abstractmethod
     def compute_signature(self):

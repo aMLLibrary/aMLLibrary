@@ -57,22 +57,32 @@ class Normalization(dp.DataPreparation):
         ------
             The normalized data
         """
-        inputs.scaler = sklearn.preprocessing.StandardScaler()
+        self._logger.debug("Normalizing data")
+        inputs.x_scaler = sklearn.preprocessing.StandardScaler()
+        inputs.y_scaler = sklearn.preprocessing.StandardScaler()
         inputs.scaled_columns = []
         #Extract the columns which have to be normalized
         for column in inputs.x_columns:
             #FIXME: add a check if this column has actually be normalized by looking at the some field in the campaign_configuration
             inputs.scaled_columns.append(column)
 
-        #Filter training data
-        training_inputs = inputs.data.loc[inputs.training_idx, :]
+        #Compute the normalization parameters for the x columns
+        column_transformer = sklearn.compose.ColumnTransformer([('fit_on_training', inputs.x_scaler, inputs.scaled_columns)], remainder='passthrough')
+        column_transformer.fit(inputs.data)
+        #Copy the ColumnTransformer internal scaler back
+        inputs.x_scaler = column_transformer.named_transformers_['fit_on_training']
 
-        #Build the column transformer
-
-        #Compute the normalization parameters
-        column_transformer = sklearn.compose.ColumnTransformer([('fit_on_training', inputs.scaler, inputs.scaled_columns)], remainder='passthrough')
-        column_transformer.fit(training_inputs)
-
-        #Apply normalization to the whole data frame
+        #Apply normalization to the x columns
         column_transformer.transform(inputs.data)
+
+        #Compute the normalization parameters for the y column
+        column_transformer = sklearn.compose.ColumnTransformer([('fit_on_training', inputs.y_scaler, [inputs.y_column])], remainder='passthrough')
+        column_transformer.fit(inputs.data)
+        #Copy the ColumnTransformer internal scaler back
+        inputs.y_scaler = column_transformer.named_transformers_['fit_on_training']
+
+        #Apply normalization to the y column
+        column_transformer.transform(inputs.data)
+        self._logger.debug("Normalized data")
+
         return inputs

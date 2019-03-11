@@ -61,4 +61,4 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         Compute the estimations and the MAPE for runs in rows
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
-        self._linear_regression.predict(xdata)
+        return self._linear_regression.predict(xdata)

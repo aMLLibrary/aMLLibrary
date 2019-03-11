@@ -37,8 +37,11 @@ class RegressionInputs:
     y_column: string
         The label of the y column
 
-    scaler: Scaler
-        The scaler which have been used to scale the data
+    x_scaler: Scaler
+        The scaler which has been used to scale the x columns of the data
+
+    y_scaler: Sclaer
+        The scaler which has been used to scale the y column of the data
 
     scaled_columns: list of strings
         The list of columns which have been scaled
@@ -62,7 +65,9 @@ class RegressionInputs:
 
     y_column = ""
 
-    scaler = None
+    x_scaler = None
+
+    y_scaler = None
 
     scaled_columns = []
 
@@ -89,7 +94,8 @@ class RegressionInputs:
         self.validation_idx = validation_idx
         self.x_columns = x_columns
         self.y_column = y_column
-        self.scaler = None
+        self.x_scaler = None
+        self.y_scaler = None
         self.scaled_columns = []
 
     def _get_data(self, rows, columns):
