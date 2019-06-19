@@ -15,8 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from enum import Enum
-
 import abc
 import itertools
 import logging
@@ -24,17 +22,8 @@ import pprint
 import random
 import sys
 
-import model_building.lr_ridge_experiment_configuration
-
-class Technique(Enum):
-    """
-    Enum class listing the different refression techniques"
-    """
-    NONE = 0
-    LR_RIDGE = 1
-    #TODO: add extra techniques such as XGBoost, SVR, etc.
-
-enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge'}
+import model_building.experiment_configuration as ec
+import model_building.lr_ridge_experiment_configuration as lr
 
 class ExpConfsGenerator(abc.ABC):
     """
@@ -105,11 +94,6 @@ class ExpConfsGenerator(abc.ABC):
             a list of the experiment configurations
         """
 
-    def collect_data(self):
-        """
-        Return the results obtained with the different experiment configurations
-        """
-
 class MultiExpConfsGenerator(ExpConfsGenerator):
     """
     Specialization of MultiExpConfsGenerator which wraps multiple generators
@@ -125,7 +109,7 @@ class MultiExpConfsGenerator(ExpConfsGenerator):
         Generates the set of expriment configurations to be evaluated
     """
 
-    _generators = []
+    _generators = {}
 
     def __init__(self, campaign_configuration, regression_inputs, seed, generators):
         """
@@ -161,7 +145,7 @@ class MultiExpConfsGenerator(ExpConfsGenerator):
         self._logger.debug("Calling generate_experiment_configurations in %s", self.__class__.__name__)
         return_list = []
         assert self._generators
-        for generator in self._generators:
+        for _, generator in self._generators.items():
             return_list.extend(generator.generate_experiment_configurations())
         assert return_list
         return return_list
@@ -190,7 +174,7 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
     Generates the set of points to be evaluated
     """
 
-    _technique = Technique.NONE
+    _technique = ec.Technique.NONE
 
     def __init__(self, campaign_configuration, regression_inputs, seed, technique):
         """
@@ -222,11 +206,11 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         first_key = ""
         #We expect that hyperparameters for a technique are stored in campaign_configuration[first_key] as a dictionary from string to list of values
         #TODO: build the grid search on the basis of the configuration and return the set of built points
-        if self._technique == Technique.NONE:
+        if self._technique == ec.Technique.NONE:
             self._logger.error("Not supported regression technique")
             sys.exit(-1)
 
-        first_key = enum_to_configuration_label[self._technique]
+        first_key = ec.enum_to_configuration_label[self._technique]
         hyperparams = self._campaign_configuration[first_key]
         self._logger.debug("Hyperparams are %s", pprint.pformat(hyperparams, width=1))
         hyperparams_names = []
@@ -245,8 +229,8 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
             hyperparams_point_values = {}
             for hyperparams_name, hyperparams_value in zip(hyperparams_names, combination):
                 hyperparams_point_values[hyperparams_name] = hyperparams_value
-            if self._technique == Technique.LR_RIDGE:
-                point = model_building.lr_ridge_experiment_configuration.LRRidgeExperimentConfiguration(self._campaign_configuration, hyperparams_point_values, self._regression_inputs)
+            if self._technique == ec.Technique.LR_RIDGE:
+                point = lr.LRRidgeExperimentConfiguration(self._campaign_configuration, hyperparams_point_values, self._regression_inputs)
             else:
                 self._logger.error("Not supported regression technique")
                 point = None
@@ -256,7 +240,6 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         assert self._experiment_configurations
 
         return self._experiment_configurations
-
 
 class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
     """

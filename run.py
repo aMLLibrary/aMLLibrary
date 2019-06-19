@@ -15,12 +15,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
 import argparse
 
-from SequenceDataProcessing import *
-
-
+import sequence_data_processing
 
 def main():
 
@@ -31,8 +28,8 @@ def main():
     parser.add_argument('-o', "--output", help="The output where all the models will be stored", default="output")
     args = parser.parse_args()
 
-    dp = SequenceDataProcessing(args)
-    dp.process()
+    sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args)
+    sequence_data_processor.process()
 
 if __name__ == '__main__':
     main()

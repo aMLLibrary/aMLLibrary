@@ -19,6 +19,7 @@ import logging
 import random
 
 import model_building.design_space as ds
+import model_building.experiment_configuration as ec
 
 class GeneratorsFactory:
     """
@@ -72,13 +73,13 @@ class GeneratorsFactory:
 
         The methods start from the leaves and go up. Intermediate wrappers must be added or not on the basis of the requirements of the campaign configuration
         """
-        string_techique_to_enum = {v: k for k, v in ds.enum_to_configuration_label.items()}
+        string_techique_to_enum = {v: k for k, v in ec.enum_to_configuration_label.items()}
 
-        technique_generators = []
+        technique_generators = {}
 
         for technique in self._campaign_configuration['General']['techniques']:
             self._logger.debug("Building technique generator for %s", technique)
-            technique_generators.append(ds.TechniqueExpConfsGenerator(self._campaign_configuration, self._regression_inputs, self._random_generator.random(), string_techique_to_enum[technique]))
+            technique_generators[technique] = ds.TechniqueExpConfsGenerator(self._campaign_configuration, self._regression_inputs, self._random_generator.random(), string_techique_to_enum[technique])
 
         #TODO: if we want to use k-fold, wraps the generator with KFoldExpConfsGenerator
 

@@ -1,4 +1,4 @@
-from SequenceDataProcessing import *
+from sequence_data_processing import *
 import logging
 from sklearn.metrics import mean_squared_error
 import xgboost as xgb

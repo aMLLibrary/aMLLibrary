@@ -17,8 +17,22 @@ limitations under the License.
 
 import abc
 import logging
-import numpy as np
 import os
+from enum import Enum
+
+
+import numpy as np
+
+class Technique(Enum):
+    """
+    Enum class listing the different refression techniques"
+    """
+    NONE = 0
+    LR_RIDGE = 1
+    #TODO: add extra techniques such as XGBoost, SVR, etc.
+
+enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge'}
+
 
 class ExperimentConfiguration(abc.ABC):
     """
@@ -41,6 +55,9 @@ class ExperimentConfiguration(abc.ABC):
     _logger: Logger
         The logger associated with this class and its descendents
 
+    validation_mape: float
+        The MAPE obtained on the validation data
+
     Methods
     -------
     train()
@@ -53,7 +70,7 @@ class ExperimentConfiguration(abc.ABC):
         Compute the string identifier of this experiment
 
     compute_estimations()
-        Compute the estimated values for a give set of data
+        Compute the estimated values for a give set of DataAnalysis
     """
 
     _campaign_configuration = {}
@@ -65,6 +82,10 @@ class ExperimentConfiguration(abc.ABC):
     _local_folder = ""
 
     _logger = None
+
+    validation_mape = 0.0
+
+    technique = Technique.NONE
 
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs):
         """
@@ -113,8 +134,8 @@ class ExperimentConfiguration(abc.ABC):
             predicted_y = y_scaler.inverse_transform(predicted_y)
             real_y = y_scaler.inverse_transform(real_y)
         difference = real_y - predicted_y
-        mape = np.mean(np.abs(np.divide(difference, real_y))) * 100
-        self._logger.debug("Validated model. MAPE is %f", mape)
+        self.validation_mape = np.mean(np.abs(np.divide(difference, real_y)))
+        self._logger.debug("Validated model. MAPE is %f", self.validation_mape)
 
     @abc.abstractmethod
     def compute_signature(self):
@@ -126,4 +147,9 @@ class ExperimentConfiguration(abc.ABC):
     def compute_estimations(self, rows):
         """
         Compute the estimations and the MAPE for runs in rows
+
+        Parameters
+        ----------
+        rows: list of integers
+            The set of rows to be considered
         """

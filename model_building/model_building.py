@@ -14,9 +14,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
 import random
 
 import model_building.generators_factory as gf
+import results as re
 
 class ModelBuilding:
     """
@@ -26,6 +28,9 @@ class ModelBuilding:
     ----------
     random_generator : Random
         The internal random generator
+
+    _logger: Logger
+        The logger used by this class
 
     Methods
     ------
@@ -43,6 +48,7 @@ class ModelBuilding:
             The seed to be used for the internal random generator
         """
         self._random_generator = random.Random(seed)
+        self._logger = logging.getLogger(__name__)
 
     def process(self, campaign_configuration, regression_inputs):
         """
@@ -58,9 +64,19 @@ class ModelBuilding:
         """
         factory = gf.GeneratorsFactory(campaign_configuration, regression_inputs, self._random_generator.random())
         top_generator = factory.build()
-        expconf = top_generator.generate_experiment_configurations()
+        expconfs = top_generator.generate_experiment_configurations()
 
-        assert expconf
-        for exp in expconf:
+        assert expconfs
+        for exp in expconfs:
             exp.train()
-            exp.validate()
+
+        results = re.Results(expconfs)
+        results.collect_data()
+
+        for metric, mapes in results.raw_results.items():
+            for experiment_configuration, mape in mapes.items():
+                self._logger.info("%s of %s is %f", metric, experiment_configuration, mape)
+
+        best_results = results.get_best_for_technique()
+        for technique, best_result in best_results.items():
+            self._logger.info("MAPE of best %s is for configuration %s: %f", technique, best_result[0], best_result[1])

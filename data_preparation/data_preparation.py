@@ -37,7 +37,11 @@ class DataPreparation:
         Return the name of this step
     """
 
+    _campaign_configuration = None
+
     _logger = None
+
+    _parameters = None
 
     def __init__(self, campaign_configuration):
         """

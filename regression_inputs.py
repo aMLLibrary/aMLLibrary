@@ -98,6 +98,13 @@ class RegressionInputs:
         self.y_scaler = None
         self.scaled_columns = []
 
+    def __str__(self):
+        ret = "x_columns: " + str(self.x_columns) + " - y_column: " + self.y_column + "\n"
+        ret = ret + "training_idx: " + str(self.training_idx) + "\n"
+        ret = ret + "validation_idx: " + str(self.validation_idx) + "\n"
+        ret = ret + self.data.to_string()
+        return ret
+
     def _get_data(self, rows, columns):
         """
         Extract a portion of the data frame as a matrix

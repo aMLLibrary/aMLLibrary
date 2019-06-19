@@ -16,7 +16,9 @@ limitations under the License.
 """
 
 import sklearn.linear_model as lr
+
 import model_building.experiment_configuration as ec
+
 
 class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
     """
@@ -36,6 +38,20 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         Compute the estimated values for a give set of data
     """
     _linear_regression = lr.Ridge()
+
+    def __init__(self, campaign_configuration, hyperparameters, regression_inputs):
+        """
+        campaign_configuration: dict of dict:
+            The set of options specified by the user though command line and campaign configuration files
+
+        hyperparameters: dictionary
+            The set of hyperparameters of this experiment configuration
+
+        regression_inputs: RegressionInputs
+            The input of the regression problem to be solved
+        """
+        super().__init__(campaign_configuration, hyperparameters, regression_inputs)
+        self.technique = ec.Technique.LR_RIDGE
 
     def compute_signature(self):
         """
