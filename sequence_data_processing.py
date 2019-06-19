@@ -32,6 +32,7 @@ matplotlib.use('Agg')
 import data_preparation.data_loading
 import data_preparation.inversion
 import data_preparation.normalization
+import data_preparation.product
 import model_building.model_building
 import regression_inputs
 
@@ -112,8 +113,12 @@ class SequenceDataProcessing:
         #    self._data_preprocessing_list.append(data_preparation.normalization.Normalization(self.parameters))
 
         #Adding inverted features if required
-        if self.parameters['DataPreparation']['inverse']:
+        if 'inverse' in self.parameters['DataPreparation'] and self.parameters['DataPreparation']['inverse']:
             self._data_preprocessing_list.append(data_preparation.inversion.Inversion(self.parameters))
+
+        #Adding product features if required
+        if 'product_max_degree' in self.parameters['DataPreparation'] and self.parameters['DataPreparation']['product_max_degree']:
+            self._data_preprocessing_list.append(data_preparation.product.Product(self.parameters))
 
         self._model_building = model_building.model_building.ModelBuilding(self.random_generator.random())
 

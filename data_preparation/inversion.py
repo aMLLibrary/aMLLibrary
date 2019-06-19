@@ -28,7 +28,7 @@ class Inversion(data_preparation.data_preparation.DataPreparation):
         Return the name of this step
 
     process()
-        Read the data
+        Invert the specified columns
     """
 
     def get_name(self):
@@ -56,3 +56,12 @@ class Inversion(data_preparation.data_preparation.DataPreparation):
             self._campaign_configuration['Features']['Extended_feature_names'].append(new_feature_name)
 
         return outputs
+
+    @staticmethod
+    def check_reciprocal(combination):
+        for first_element in combination:
+            if first_element.startswith("inverse_"):
+                plain = first_element.replace("inverse_", "")
+                if plain in combination:
+                    return True
+        return False
