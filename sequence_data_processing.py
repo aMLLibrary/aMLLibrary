@@ -30,6 +30,7 @@ matplotlib.use('Agg')
 #pylint: disable=wrong-import-position
 
 import data_preparation.data_loading
+import data_preparation.inversion
 import data_preparation.normalization
 import model_building.model_building
 import regression_inputs
@@ -109,6 +110,10 @@ class SequenceDataProcessing:
         #Check if scaling has to be applied globally; if yes, add the step to the list
         #if self.parameters['General']['run_num'] == 1 or not random_test_selection:
         #    self._data_preprocessing_list.append(data_preparation.normalization.Normalization(self.parameters))
+
+        #Adding inverted features if required
+        if self.parameters['DataPreparation']['inverse']:
+            self._data_preprocessing_list.append(data_preparation.inversion.Inversion(self.parameters))
 
         self._model_building = model_building.model_building.ModelBuilding(self.random_generator.random())
 
