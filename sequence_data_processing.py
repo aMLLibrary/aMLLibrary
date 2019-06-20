@@ -34,7 +34,6 @@ import data_preparation.inversion
 import data_preparation.normalization
 import data_preparation.product
 import model_building.model_building
-import regression_inputs
 
 class SequenceDataProcessing:
     """
@@ -102,15 +101,14 @@ class SequenceDataProcessing:
             self.logger.error("Multiple runs not yet supported")
             sys.exit(1)
 
-        #FIXME: this boolean variable must be set to true if there is not any explicit definition of train or test in the configuration file
-        #random_test_selection = True
+        #Check that validation method has been specified
+        if 'validation' not in self.parameters['General']:
+            self.logger.error("Validation not specified")
+            sys.exit(1)
+
 
         #Adding read on input to data preprocessing step
         self._data_preprocessing_list.append(data_preparation.data_loading.DataLoading(self.parameters))
-
-        #Check if scaling has to be applied globally; if yes, add the step to the list
-        #if self.parameters['General']['run_num'] == 1 or not random_test_selection:
-        #    self._data_preprocessing_list.append(data_preparation.normalization.Normalization(self.parameters))
 
         #Adding inverted features if required
         if 'inverse' in self.parameters['DataPreparation'] and self.parameters['DataPreparation']['inverse']:
@@ -119,6 +117,10 @@ class SequenceDataProcessing:
         #Adding product features if required
         if 'product_max_degree' in self.parameters['DataPreparation'] and self.parameters['DataPreparation']['product_max_degree']:
             self._data_preprocessing_list.append(data_preparation.product.Product(self.parameters))
+
+        #Normalize data if we are not doing cross-validation
+        if self.parameters['General']['validation'] in {'All'}:
+            self._data_preprocessing_list.append(data_preparation.normalization.Normalization(self.parameters))
 
         self._model_building = model_building.model_building.ModelBuilding(self.random_generator.random())
 
@@ -161,18 +163,14 @@ class SequenceDataProcessing:
         #logging.info("Preprocessed data")
 
 
-        data_processing_inputs = None
+        data_processing = None
 
-        for data_preprocessing in self._data_preprocessing_list:
-            self.logger.info("Executing %s", data_preprocessing.get_name())
-            data_processing_inputs = data_preprocessing.process(data_processing_inputs)
-            self.logger.debug("Current data frame is:\n%s", data_processing_inputs.to_string())
+        for data_preprocessing_step in self._data_preprocessing_list:
+            self.logger.info("Executing %s", data_preprocessing_step.get_name())
+            data_processing = data_preprocessing_step.process(data_processing)
+            self.logger.debug("Current data frame is:\n%s", str(data_processing))
 
-        preprocessed_inputs = regression_inputs.RegressionInputs(data_processing_inputs, data_processing_inputs.index.values.tolist(), data_processing_inputs.index.values.tolist(), self.parameters['Features']['Extended_feature_names'], self.parameters['General']['y'])
-
-        self.logger.debug(str(preprocessed_inputs))
-
-        self._model_building.process(self.parameters, preprocessed_inputs)
+        self._model_building.process(self.parameters, data_processing)
 
         end = time.time()
         execution_time = str(end-start)

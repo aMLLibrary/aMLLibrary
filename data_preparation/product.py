@@ -52,9 +52,9 @@ class Product(data_preparation.data_preparation.DataPreparation):
 
         max_degree = self._campaign_configuration["DataPreparation"]['product_max_degree']
         if str(max_degree) == "inf":
-            max_degree = len(self._campaign_configuration['Features']['Extended_feature_names'])
+            max_degree = len(inputs.x_columns)
 
-        features = sorted(set(self._campaign_configuration['Features']['Extended_feature_names']))
+        features = sorted(set(inputs.x_columns))
 
         for degree in range(2, max_degree + 1):
             combinations = itertools.combinations(features, degree)
@@ -64,10 +64,10 @@ class Product(data_preparation.data_preparation.DataPreparation):
                 #Compute the string for combination[:-2]
                 print(combination)
                 base = self._compute_column_name(combination[:-1])
-                new_column = np.array(outputs[base]) * np.array(outputs[combination[-1]])
+                new_column = np.array(outputs.data[base]) * np.array(outputs.data[combination[-1]])
                 new_feature_name = self._compute_column_name(combination)
-                outputs[new_feature_name] = new_column
-                self._campaign_configuration['Features']['Extended_feature_names'].append(new_feature_name)
+                outputs.data[new_feature_name] = new_column
+                outputs.x_columns.append(new_feature_name)
 
         return outputs
 

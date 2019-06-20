@@ -20,6 +20,7 @@ import sys
 import pandas
 
 import data_preparation.data_preparation
+import regression_inputs
 
 class DataLoading(data_preparation.data_preparation.DataPreparation):
     """
@@ -70,6 +71,7 @@ class DataLoading(data_preparation.data_preparation.DataPreparation):
         for column_name in data_frame.columns.values:
             if column_name != self._campaign_configuration['General']['y']:
                 self._campaign_configuration['Features']['Original_feature_names'].append(column_name)
-        self._campaign_configuration['Features']['Extended_feature_names'] = self._campaign_configuration['Features']['Original_feature_names']
 
-        return data_frame
+        output = regression_inputs.RegressionInputs(data_frame, data_frame.index.values.tolist(), data_frame.index.values.tolist(), self._campaign_configuration['Features']['Original_feature_names'], self._campaign_configuration['General']['y'])
+
+        return output

@@ -129,8 +129,8 @@ class ExperimentConfiguration(abc.ABC):
         self._logger.debug("Validating model")
         predicted_y = self.compute_estimations(validation_rows)
         real_y = self._regression_inputs.data.loc[validation_rows, self._regression_inputs.y_column].values.astype(np.float64)
-        if self._regression_inputs.y_scaler:
-            y_scaler = self._regression_inputs.y_scaler
+        if self._regression_inputs.y_column in self._regression_inputs.scalers:
+            y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
             predicted_y = y_scaler.inverse_transform(predicted_y)
             real_y = y_scaler.inverse_transform(real_y)
         difference = real_y - predicted_y

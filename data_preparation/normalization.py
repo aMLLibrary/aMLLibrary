@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import numpy
 import sklearn.compose
 import sklearn.preprocessing
 
@@ -57,32 +58,20 @@ class Normalization(dp.DataPreparation):
         ------
             The normalized data
         """
-        self._logger.debug("Normalizing data")
-        inputs.x_scaler = sklearn.preprocessing.StandardScaler()
-        inputs.y_scaler = sklearn.preprocessing.StandardScaler()
-        inputs.scaled_columns = []
+
+        outputs = inputs
+
+        to_be_normalized = inputs.x_columns.copy()
+        to_be_normalized.append(inputs.y_column)
+
         #Extract the columns which have to be normalized
-        for column in inputs.x_columns:
-            #FIXME: add a check if this column has actually be normalized by looking at the some field in the campaign_configuration
+        for column in to_be_normalized:
             inputs.scaled_columns.append(column)
+            data_to_be_normalized = inputs.data[column].to_numpy()
+            data_to_be_normalized = numpy.reshape(data_to_be_normalized, (-1, 1))
+            outputs.scalers[column] = sklearn.preprocessing.StandardScaler().fit(data_to_be_normalized)
+            normalized_data = outputs.scalers[column].transform(data_to_be_normalized)
+            outputs.data["original_" + column] = outputs.data[column]
+            outputs.data[column] = normalized_data
 
-        #Compute the normalization parameters for the x columns
-        column_transformer = sklearn.compose.ColumnTransformer([('fit_on_training', inputs.x_scaler, inputs.scaled_columns)], remainder='passthrough')
-        column_transformer.fit(inputs.data)
-        #Copy the ColumnTransformer internal scaler back
-        inputs.x_scaler = column_transformer.named_transformers_['fit_on_training']
-
-        #Apply normalization to the x columns
-        column_transformer.transform(inputs.data)
-
-        #Compute the normalization parameters for the y column
-        column_transformer = sklearn.compose.ColumnTransformer([('fit_on_training', inputs.y_scaler, [inputs.y_column])], remainder='passthrough')
-        column_transformer.fit(inputs.data)
-        #Copy the ColumnTransformer internal scaler back
-        inputs.y_scaler = column_transformer.named_transformers_['fit_on_training']
-
-        #Apply normalization to the y column
-        column_transformer.transform(inputs.data)
-        self._logger.debug("Normalized data")
-
-        return inputs
+        return outputs

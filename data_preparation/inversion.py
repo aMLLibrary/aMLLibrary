@@ -47,13 +47,13 @@ class Inversion(data_preparation.data_preparation.DataPreparation):
 
         to_be_inv_list = self._campaign_configuration['DataPreparation']['inverse']
         if to_be_inv_list == "[*]":
-            to_be_inv_list = self._campaign_configuration['Features']['Extended_feature_names'].copy()
+            to_be_inv_list = inputs.x_columns.copy()
 
         for column in to_be_inv_list:
-            new_column = 1 / np.array(inputs[column])
+            new_column = 1 / np.array(inputs.data[column])
             new_feature_name = 'inverse_' + column
-            outputs[new_feature_name] = new_column
-            self._campaign_configuration['Features']['Extended_feature_names'].append(new_feature_name)
+            outputs.data[new_feature_name] = new_column
+            outputs.x_columns.append(new_feature_name)
 
         return outputs
 

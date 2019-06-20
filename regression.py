@@ -22,14 +22,14 @@ class Regression(DataAnalysis):
         self.conf = cp.ConfigParser()
         self.logger = logging.getLogger(__name__)
 
-    def process(self, y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, parameters, run_info):
+    def process(self, x_columns, y_pred_test, y_pred_train, test_features, test_labels, train_features, train_labels, parameters, run_info):
         """computes the MAPE error of the real predication by first scaling the predicted values"""
 
         # retrieve the same scaler used for normalization to perform inverse transform
         scaler = run_info[-1]['scaler']
 
         # retrieve all the feature names
-        features_names = parameters['Features']['Extended_feature_names']
+        features_names = x_columns
 
         self.logger.info("Computing MAPE: ")
         # compute MAPE error for not scaled data

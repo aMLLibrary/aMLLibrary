@@ -37,11 +37,8 @@ class RegressionInputs:
     y_column: string
         The label of the y column
 
-    x_scaler: Scaler
-        The scaler which has been used to scale the x columns of the data
-
-    y_scaler: Sclaer
-        The scaler which has been used to scale the y column of the data
+    scalers: dict str->sklearn.preprocessing.StandardScaler
+        The scaler which has been used to scale the input
 
     scaled_columns: list of strings
         The list of columns which have been scaled
@@ -65,9 +62,7 @@ class RegressionInputs:
 
     y_column = ""
 
-    x_scaler = None
-
-    y_scaler = None
+    scalers = {}
 
     scaled_columns = []
 
@@ -94,8 +89,6 @@ class RegressionInputs:
         self.validation_idx = validation_idx
         self.x_columns = x_columns
         self.y_column = y_column
-        self.x_scaler = None
-        self.y_scaler = None
         self.scaled_columns = []
 
     def __str__(self):
