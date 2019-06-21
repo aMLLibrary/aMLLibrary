@@ -55,6 +55,9 @@ class ExperimentConfiguration(abc.ABC):
     _logger: Logger
         The logger associated with this class and its descendents
 
+    _signature: str
+        The signature associated with this experiment configuration
+
     validation_mape: float
         The MAPE obtained on the validation data
 
@@ -66,11 +69,14 @@ class ExperimentConfiguration(abc.ABC):
     validate()
         Compute the MAPE on the validation set
 
-    compute_signature()
+    _compute_signature()
         Compute the string identifier of this experiment
 
     compute_estimations()
         Compute the estimated values for a give set of DataAnalysis
+
+    get_signature()
+        Return the signature of this experiment
     """
 
     _campaign_configuration = {}
@@ -83,11 +89,13 @@ class ExperimentConfiguration(abc.ABC):
 
     _logger = None
 
+    _signature = None
+
     validation_mape = 0.0
 
     technique = Technique.NONE
 
-    def __init__(self, campaign_configuration, hyperparameters, regression_inputs):
+    def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
         campaign_configuration: dict of dict:
             The set of options specified by the user though command line and campaign configuration files
@@ -103,13 +111,15 @@ class ExperimentConfiguration(abc.ABC):
         self._campaign_configuration = campaign_configuration
         self._hyperparameters = hyperparameters
         self._regression_inputs = regression_inputs
-        self._logger = logging.getLogger(self.compute_signature())
+        self._signature = self._compute_signature(prefix)
+        self._logger = logging.getLogger("_".join(self._signature))
 
         #Create experiment directory
-        signature = self.compute_signature()
-        experiment_directory = os.path.join(self._campaign_configuration['General']['output'], signature)
+        experiment_directory = self._campaign_configuration['General']['output']
+        for token in self._signature:
+            experiment_directory = os.path.join(experiment_directory, token)
         assert not os.path.exists(experiment_directory)
-        os.mkdir(experiment_directory)
+        os.makedirs(experiment_directory)
 
         #Logger writes to stdout and file
         file_handler = logging.FileHandler(os.path.join(experiment_directory, 'log'))
@@ -138,7 +148,7 @@ class ExperimentConfiguration(abc.ABC):
         self._logger.debug("Validated model. MAPE is %f", self.validation_mape)
 
     @abc.abstractmethod
-    def compute_signature(self):
+    def _compute_signature(self, prefix):
         """
         Compute the signature associated with this experiment configuration
         """
@@ -153,3 +163,9 @@ class ExperimentConfiguration(abc.ABC):
         rows: list of integers
             The set of rows to be considered
         """
+
+    def get_signature(self):
+        """
+        Return the signature of this experiment
+        """
+        return "_".join(self._signature)

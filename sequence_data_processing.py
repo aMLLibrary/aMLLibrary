@@ -118,7 +118,7 @@ class SequenceDataProcessing:
         if 'product_max_degree' in self.parameters['DataPreparation'] and self.parameters['DataPreparation']['product_max_degree']:
             self._data_preprocessing_list.append(data_preparation.product.Product(self.parameters))
 
-        #Normalize data if we are not doing cross-validation
+        #Normalize data if we are not doing cross-validation; HoldOut with run==1 is included in the management of the HoldOut with run>=1
         if self.parameters['General']['validation'] in {'All'}:
             self._data_preprocessing_list.append(data_preparation.normalization.Normalization(self.parameters))
 

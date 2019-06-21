@@ -64,7 +64,7 @@ class ModelBuilding:
         """
         factory = gf.GeneratorsFactory(campaign_configuration, regression_inputs, self._random_generator.random())
         top_generator = factory.build()
-        expconfs = top_generator.generate_experiment_configurations()
+        expconfs = top_generator.generate_experiment_configurations([])
 
         assert expconfs
         for exp in expconfs:

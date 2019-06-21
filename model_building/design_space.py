@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Copyright 2019 Marco Lattuada
 
@@ -84,7 +83,7 @@ class ExpConfsGenerator(abc.ABC):
         self._logger = logging.getLogger(__name__)
 
     @abc.abstractmethod
-    def generate_experiment_configurations(self):
+    def generate_experiment_configurations(self, prefix):
         """
         Generates the set of experiment configurations to be evaluated
 
@@ -93,6 +92,9 @@ class ExpConfsGenerator(abc.ABC):
         list
             a list of the experiment configurations
         """
+
+    def __deepcopy__(self, memo):
+        raise NotImplementedError()
 
 class MultiExpConfsGenerator(ExpConfsGenerator):
     """
@@ -127,12 +129,11 @@ class MultiExpConfsGenerator(ExpConfsGenerator):
         generators: dict
             The ExpConfsGenerator to be used
         """
-
+        assert generators
         super().__init__(campaign_configuration, regression_inputs, seed)
         self._generators = generators
 
-
-    def generate_experiment_configurations(self):
+    def generate_experiment_configurations(self, prefix):
         """
         Collect the experiment configurations to be evaluated for all the generators
 
@@ -141,14 +142,20 @@ class MultiExpConfsGenerator(ExpConfsGenerator):
         list
             a list of the experiment configurations to be evaluated
         """
-
+        print(str(type(self)))
+        print(str(prefix))
         self._logger.debug("Calling generate_experiment_configurations in %s", self.__class__.__name__)
         return_list = []
         assert self._generators
-        for _, generator in self._generators.items():
-            return_list.extend(generator.generate_experiment_configurations())
+        for key, generator in self._generators.items():
+            new_prefix = prefix.copy()
+            new_prefix.append(key)
+            return_list.extend(generator.generate_experiment_configurations(new_prefix))
         assert return_list
         return return_list
+
+    def __deepcopy__(self, memo):
+        raise NotImplementedError()
 
 class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
     """
@@ -161,6 +168,9 @@ class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
     generate_experiment_configurations()
         Generates the set of expriment configurations to be evaluated
     """
+
+    def __deepcopy__(self, memo):
+        raise NotImplementedError()
 
 class TechniqueExpConfsGenerator(ExpConfsGenerator):
     """
@@ -193,7 +203,7 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         super().__init__(campaign_configuration, regression_inputs, seed)
         self._technique = technique
 
-    def generate_experiment_configurations(self):
+    def generate_experiment_configurations(self, prefix):
         """
         Collected the set of points to be evaluated for the single technique
 
@@ -230,7 +240,7 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
             for hyperparams_name, hyperparams_value in zip(hyperparams_names, combination):
                 hyperparams_point_values[hyperparams_name] = hyperparams_value
             if self._technique == ec.Technique.LR_RIDGE:
-                point = lr.LRRidgeExperimentConfiguration(self._campaign_configuration, hyperparams_point_values, self._regression_inputs)
+                point = lr.LRRidgeExperimentConfiguration(self._campaign_configuration, hyperparams_point_values, self._regression_inputs, prefix)
             else:
                 self._logger.error("Not supported regression technique")
                 point = None
@@ -240,6 +250,9 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         assert self._experiment_configurations
 
         return self._experiment_configurations
+
+    def __deepcopy__(self, memo):
+        raise NotImplementedError()
 
 class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
     """
@@ -259,7 +272,7 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
 
     _repetitions_number = 0
 
-    def __init__(self, repetitions_number, wrapped_generator, campaign_configuration):
+    def __init__(self, campaign_configuration, regression_inputs, seed, repetitions_number, wrapped_generator):
         """
         Parameters
         ----------
@@ -274,11 +287,16 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
         """
 
         self._repetitions_number = repetitions_number
-        #TODO generate the n generators passing different seeds
 
-        wrapped_generators = []
+        wrapped_generators = {}
+        wrapped_generators["run_0"] = wrapped_generator
 
-        super().__init__(self, wrapped_generators, campaign_configuration, self._random_generator.random())
+        for run_index in range(1, self._repetitions_number):
+            wrapped_generators["run_" + str(run_index)] = wrapped_generator.deepcopy()
+        super().__init__(campaign_configuration, regression_inputs, seed, wrapped_generators)
+
+    def __deepcopy__(self, memo):
+        raise NotImplementedError()
 
 class KFoldExpConfsGenerator(MultiExpConfsGenerator):
     """
@@ -298,7 +316,7 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
 
     k = 0
 
-    def __init__(self, k, wrapped_generator, campaign_configuration, seed):
+    def __init__(self, campaign_configuration, regression_inputs, seed, k, wrapped_generator):
         """
         Parameters
         ----------
@@ -317,9 +335,12 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
 
         #TODO generate the k generators with different training set
         kfold_generators = []
-        super().__init__(self, kfold_generators, campaign_configuration, seed)
+        super().__init__(campaign_configuration, regression_inputs, seed, kfold_generators)
 
         self.k = k
+
+    def __deepcopy__(self, memo):
+        raise NotImplementedError()
 
 class RandomExpConfsGenerator(ExpConfsGenerator):
     """
@@ -344,7 +365,7 @@ class RandomExpConfsGenerator(ExpConfsGenerator):
 
     _wrapped_generator = None
 
-    def __init__(self, experiment_configurations_number, wrapped_generator, campaign_configuration, seed):
+    def __init__(self, campaign_configuration, regression_inputs, seed, experiment_configurations_number, wrapped_generator):
         """
         Parameters
         ----------
@@ -360,12 +381,12 @@ class RandomExpConfsGenerator(ExpConfsGenerator):
         seed: integer
             The seed to be used in random based activities
         """
-        super().__init__(self, campaign_configuration, seed)
+        super().__init__(campaign_configuration, regression_inputs, seed)
 
         self._experiment_configurations_number = experiment_configurations_number
         self._wrapped_generator = wrapped_generator
 
-    def generate_experiment_configurations(self):
+    def generate_experiment_configurations(self, prefix):
         """
         Collected the set of points to be evaluated for the single technique
 
@@ -375,3 +396,6 @@ class RandomExpConfsGenerator(ExpConfsGenerator):
             a list of the experiment configurations to be evaluated
         """
         #TODO  call wrapped generator and randomly pick n experiment configurations
+
+    def __deepcopy__(self, memo):
+        raise NotImplementedError()

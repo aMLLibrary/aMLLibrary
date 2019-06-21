@@ -62,7 +62,7 @@ class Results:
         self.raw_results['validation_MAPE'] = {}
         for exp_conf in self._exp_confs:
             exp_conf.validate()
-            self.raw_results['validation_MAPE'][exp_conf.compute_signature()] = exp_conf.validation_mape
+            self.raw_results['validation_MAPE'][exp_conf.get_signature()] = exp_conf.validation_mape
 
     def get_best_for_technique(self) -> Dict[ec.Technique, Tuple[str, float]]:
         """
@@ -78,5 +78,5 @@ class Results:
         for exp_conf in self._exp_confs:
             technique = exp_conf.technique
             if technique not in return_value or exp_conf.validation_mape < return_value[technique][1]:
-                return_value[technique] = (exp_conf.compute_signature(), exp_conf.validation_mape)
+                return_value[technique] = (exp_conf.get_signature(), exp_conf.validation_mape)
         return return_value

@@ -39,7 +39,7 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
     """
     _linear_regression = lr.Ridge()
 
-    def __init__(self, campaign_configuration, hyperparameters, regression_inputs):
+    def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
         campaign_configuration: dict of dict:
             The set of options specified by the user though command line and campaign configuration files
@@ -50,20 +50,22 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         regression_inputs: RegressionInputs
             The input of the regression problem to be solved
         """
-        super().__init__(campaign_configuration, hyperparameters, regression_inputs)
+        super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.LR_RIDGE
 
-    def compute_signature(self):
+    def _compute_signature(self, prefix):
         """
         Compute the signature associated with this experiment configuration
         """
-        return "LRRidge_alpha_" + str(self._hyperparameters['alpha'])
+        signature = prefix.copy()
+        signature.append("alpha_" + str(self._hyperparameters['alpha']))
+        return signature
 
     def train(self):
         """
         Build the model with the experiment configuration represented by this object
         """
-        self._logger.debug("Building model for %s", self.compute_signature())
+        self._logger.debug("Building model for %s", self._signature)
         self._linear_regression = lr.Ridge(alpha=self._hyperparameters['alpha'])
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.training_idx)

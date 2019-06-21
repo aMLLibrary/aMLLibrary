@@ -75,19 +75,18 @@ class GeneratorsFactory:
         """
         string_techique_to_enum = {v: k for k, v in ec.enum_to_configuration_label.items()}
 
-        technique_generators = {}
+        generators = {}
 
         for technique in self._campaign_configuration['General']['techniques']:
             self._logger.debug("Building technique generator for %s", technique)
-            technique_generators[technique] = ds.TechniqueExpConfsGenerator(self._campaign_configuration, self._regression_inputs, self._random_generator.random(), string_techique_to_enum[technique])
+            generators[technique] = ds.TechniqueExpConfsGenerator(self._campaign_configuration, self._regression_inputs, None, string_techique_to_enum[technique])
+        assert generators
 
         #TODO: if we want to use k-fold, wraps the generator with KFoldExpConfsGenerator
 
         #TODO: if we want to use feature selection, wraps with a subclass of FSExpConfsGenerator
 
-        #TODO: if we want to run multiple times wraps the generator with RepeatedExpConfsGenerator
+        multitechniques_generator = ds.MultiTechniquesExpConfsGenerator(self._campaign_configuration, self._regression_inputs, self._random_generator.random(), generators)
 
-        assert technique_generators
-
-        multitechniques_generator = ds.MultiTechniquesExpConfsGenerator(self._campaign_configuration, self._regression_inputs, self._random_generator.random(), technique_generators)
-        return multitechniques_generator
+        top_generator = ds.RepeatedExpConfsGenerator(self._campaign_configuration, self._regression_inputs, self._random_generator.random(), self._campaign_configuration['General']['run_num'], multitechniques_generator)
+        return top_generator
