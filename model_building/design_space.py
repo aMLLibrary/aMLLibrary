@@ -25,6 +25,7 @@ import data_preparation.random_splitting
 
 import model_building.experiment_configuration as ec
 import model_building.lr_ridge_experiment_configuration as lr
+import model_building.xgboost_experiment_configuration as xgb
 
 class ExpConfsGenerator(abc.ABC):
     """
@@ -231,6 +232,8 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
                 hyperparams_point_values[hyperparams_name] = hyperparams_value
             if self._technique == ec.Technique.LR_RIDGE:
                 point = lr.LRRidgeExperimentConfiguration(self._campaign_configuration, hyperparams_point_values, regression_inputs, prefix)
+            elif self._technique == ec.Technique.XGBOOST:
+                point = xgb.XGBoostExperimentConfiguration(self._campaign_configuration, hyperparams_point_values, regression_inputs, prefix)
             else:
                 self._logger.error("Not supported regression technique")
                 point = None

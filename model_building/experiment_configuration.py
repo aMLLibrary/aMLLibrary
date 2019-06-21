@@ -29,9 +29,10 @@ class Technique(Enum):
     """
     NONE = 0
     LR_RIDGE = 1
-    #TODO: add extra techniques such as XGBoost, SVR, etc.
+    XGBOOST = 2
+    #TODO: add extra techniques such as  SVR, etc.
 
-enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge'}
+enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST: 'XGBoost'}
 
 
 class ExperimentConfiguration(abc.ABC):
