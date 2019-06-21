@@ -75,11 +75,11 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
-        self._xgboost = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], 
-                                          gamma = self._hyperparameters['gamma'],
-                                          n_estimators = self._hyperparameters['n_estimators'],
-                                          learning_rate = self._hyperparameters['learning_rate'],
-                                          max_depth = self._hyperparameters['max_depth'])
+        self._xgboost = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'],
+                                         gamma=self._hyperparameters['gamma'],
+                                         n_estimators=self._hyperparameters['n_estimators'],
+                                         learning_rate=self._hyperparameters['learning_rate'],
+                                         max_depth=self._hyperparameters['max_depth'])
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.training_idx)
         self._xgboost.fit(xdata, ydata)
