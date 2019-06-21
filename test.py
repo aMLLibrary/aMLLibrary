@@ -27,6 +27,8 @@ def main():
     abs_root = os.path.dirname(abs_script)
 
     for file in os.listdir(os.path.join(abs_root, "example_configurations")):
+        if not file.endswith(".ini"):
+            continue
         command = os.path.join(abs_root, "run.py") + " -c " + os.path.join(abs_root, "example_configurations", file) + " -d -o output_" + file
         print("Running " + command)
         ret_program = subprocess.call(command, shell=True, executable="/bin/bash")
