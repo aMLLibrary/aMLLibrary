@@ -91,6 +91,12 @@ class RegressionInputs:
         self.y_column = y_column
         self.scaled_columns = []
 
+    def __copy__(self):
+        return RegressionInputs(self.data, self.training_idx.copy(), self.validation_idx.copy(), self.x_columns.copy(), self.y_column)
+
+    def copy(self):
+        return self.__copy__()
+
     def __str__(self):
         ret = "x_columns: " + str(self.x_columns) + " - y_column: " + self.y_column + "\n"
         ret = ret + "training_idx: " + str(self.training_idx) + "\n"

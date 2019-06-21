@@ -30,9 +30,6 @@ class GeneratorsFactory:
     _campaign_configuration: dict of dict
         The set of options specified by the user though command line and campaign configuration files
 
-    _regression_inputs: RegressionInputs
-        The input of the regression problem to be solved
-
     Methods
     -------
     build()
@@ -41,13 +38,11 @@ class GeneratorsFactory:
 
     _campaign_configuration = None
 
-    _regression_inputs = None
-
     _random_generator = random.Random(0)
 
     _logger = None
 
-    def __init__(self, campaign_configuration, regression_inputs, seed):
+    def __init__(self, campaign_configuration, seed):
         """
         Parameters
         ----------
@@ -63,7 +58,6 @@ class GeneratorsFactory:
             The top level ExpConfsGenerator to be used to generate all the experiment configurations
         """
         self._campaign_configuration = campaign_configuration
-        self._regression_inputs = regression_inputs
         self._random_generator = random.Random(seed)
         self._logger = logging.getLogger(__name__)
 
@@ -79,14 +73,14 @@ class GeneratorsFactory:
 
         for technique in self._campaign_configuration['General']['techniques']:
             self._logger.debug("Building technique generator for %s", technique)
-            generators[technique] = ds.TechniqueExpConfsGenerator(self._campaign_configuration, self._regression_inputs, None, string_techique_to_enum[technique])
+            generators[technique] = ds.TechniqueExpConfsGenerator(self._campaign_configuration, None, string_techique_to_enum[technique])
         assert generators
 
         #TODO: if we want to use k-fold, wraps the generator with KFoldExpConfsGenerator
 
         #TODO: if we want to use feature selection, wraps with a subclass of FSExpConfsGenerator
 
-        multitechniques_generator = ds.MultiTechniquesExpConfsGenerator(self._campaign_configuration, self._regression_inputs, self._random_generator.random(), generators)
+        multitechniques_generator = ds.MultiTechniquesExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), generators)
 
-        top_generator = ds.RepeatedExpConfsGenerator(self._campaign_configuration, self._regression_inputs, self._random_generator.random(), self._campaign_configuration['General']['run_num'], multitechniques_generator)
+        top_generator = ds.RepeatedExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._campaign_configuration['General']['run_num'], multitechniques_generator)
         return top_generator

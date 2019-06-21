@@ -62,9 +62,9 @@ class ModelBuilding:
         regression_inputs: RegressionInputs
             The input of the regression problem
         """
-        factory = gf.GeneratorsFactory(campaign_configuration, regression_inputs, self._random_generator.random())
+        factory = gf.GeneratorsFactory(campaign_configuration, self._random_generator.random())
         top_generator = factory.build()
-        expconfs = top_generator.generate_experiment_configurations([])
+        expconfs = top_generator.generate_experiment_configurations([], regression_inputs)
 
         assert expconfs
         for exp in expconfs:
