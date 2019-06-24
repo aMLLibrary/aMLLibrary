@@ -25,14 +25,15 @@ import numpy as np
 
 class Technique(Enum):
     """
-    Enum class listing the different refression techniques"
+    Enum class listing the different regression techniques"
     """
     NONE = 0
     LR_RIDGE = 1
     XGBOOST = 2
+    DT = 3
     #TODO: add extra techniques such as  SVR, etc.
 
-enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST: 'XGBoost'}
+enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST: 'XGBoost', Technique.DT: 'DecisionTree'}
 
 
 class ExperimentConfiguration(abc.ABC):
