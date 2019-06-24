@@ -31,9 +31,11 @@ class Technique(Enum):
     LR_RIDGE = 1
     XGBOOST = 2
     DT = 3
+    RF = 4
     #TODO: add extra techniques such as  SVR, etc.
 
-enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST: 'XGBoost', Technique.DT: 'DecisionTree'}
+enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST: 'XGBoost', Technique.DT: 'DecisionTree',
+                               Technique.RF: 'RandomForest'}
 
 
 class ExperimentConfiguration(abc.ABC):

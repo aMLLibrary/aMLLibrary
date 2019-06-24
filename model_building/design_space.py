@@ -27,6 +27,7 @@ import model_building.experiment_configuration as ec
 import model_building.lr_ridge_experiment_configuration as lr
 import model_building.xgboost_experiment_configuration as xgb
 import model_building.decision_tree_experiment_configuration as dt
+import model_building.random_forest_experiment_configuration as rf
 
 class ExpConfsGenerator(abc.ABC):
     """
@@ -237,6 +238,9 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
                 point = xgb.XGBoostExperimentConfiguration(self._campaign_configuration, hyperparams_point_values, regression_inputs, prefix)
             elif self._technique == ec.Technique.DT:
                 point = dt.DecisionTreeExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
+                                                           regression_inputs, prefix)
+            elif self._technique == ec.Technique.RF:
+                point = rf.RandomForestExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
                                                            regression_inputs, prefix)
             else:
                 self._logger.error("Not supported regression technique")
