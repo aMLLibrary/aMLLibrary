@@ -63,7 +63,7 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         """
         signature = prefix.copy()
         signature.append("fit_intercept_" + str(self._hyperparameters['fit_intercept']))
-        signature.append("alpha_" + str(self._hyperparameters['alpha']))
+
 
 
         return signature
@@ -74,7 +74,7 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         """
         self._logger.debug("Building model for %s", self._signature)
         self._nnls = lm.Lasso(fit_intercept=self._hyperparameters['fit_intercept'],
-                                         alpha=self._hyperparameters['alpha'],
+                                         alpha=0.001,
                                          positive=True)
 
 
