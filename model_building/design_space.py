@@ -239,17 +239,13 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
             elif self._technique == ec.Technique.XGBOOST:
                 point = xgb.XGBoostExperimentConfiguration(self._campaign_configuration, hyperparams_point_values, regression_inputs, prefix)
             elif self._technique == ec.Technique.DT:
-                point = dt.DecisionTreeExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
-                                                           regression_inputs, prefix)
+                point = dt.DecisionTreeExperimentConfiguration(self._campaign_configuration, hyperparams_point_values, regression_inputs, prefix)
             elif self._technique == ec.Technique.RF:
-                point = rf.RandomForestExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
-                                                           regression_inputs, prefix)
+                point = rf.RandomForestExperimentConfiguration(self._campaign_configuration, hyperparams_point_values, regression_inputs, prefix)
             elif self._technique == ec.Technique.SVR:
-                point = svr.SVRExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
-                                                           regression_inputs, prefix)
+                point = svr.SVRExperimentConfiguration(self._campaign_configuration, hyperparams_point_values, regression_inputs, prefix)
             elif self._technique == ec.Technique.NNLS:
-                point = nnls.NNLSExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
-                                                           regression_inputs, prefix)
+                point = nnls.NNLSExperimentConfiguration(self._campaign_configuration, hyperparams_point_values, regression_inputs, prefix)
             else:
                 self._logger.error("Not supported regression technique")
                 point = None
