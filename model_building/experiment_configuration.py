@@ -67,10 +67,16 @@ class ExperimentConfiguration(abc.ABC):
     validation_mape: float
         The MAPE obtained on the validation data
 
+    _experiment_directory: str
+        The directory where output of this experiment has to be stored
+
     Methods
     -------
     train()
         Build the model starting from training data
+
+    _train()
+        Actual implementation of train
 
     validate()
         Compute the MAPE on the validation set
@@ -83,6 +89,12 @@ class ExperimentConfiguration(abc.ABC):
 
     get_signature()
         Return the signature of this experiment
+
+    _start_file_logger()
+        Start to log also to output file
+
+    stop_file_logger()
+        Stop to log also to output file
     """
 
     _campaign_configuration = {}
@@ -121,18 +133,23 @@ class ExperimentConfiguration(abc.ABC):
         self._logger = logging.getLogger("_".join(self._signature))
 
         #Create experiment directory
-        experiment_directory = self._campaign_configuration['General']['output']
+        self._experiment_directory = self._campaign_configuration['General']['output']
         for token in self._signature:
-            experiment_directory = os.path.join(experiment_directory, token)
-        assert not os.path.exists(experiment_directory)
-        os.makedirs(experiment_directory)
+            self._experiment_directory = os.path.join(self._experiment_directory, token)
+        assert not os.path.exists(self._experiment_directory)
+        os.makedirs(self._experiment_directory)
 
-        #Logger writes to stdout and file
-        file_handler = logging.FileHandler(os.path.join(experiment_directory, 'log'))
-        self._logger.addHandler(file_handler)
+
+    def train(self):
+        """
+        Build the model with the experiment configuration represented by this object
+        """
+        self._start_file_logger()
+        self._train()
+        self._stop_file_logger()
 
     @abc.abstractmethod
-    def train(self):
+    def _train(self):
         """
         Build the model with the experiment configuration represented by this object
         """
@@ -141,6 +158,7 @@ class ExperimentConfiguration(abc.ABC):
         """
         Validate the model, i.e., compute the MAPE on the validation set
         """
+        self._start_file_logger()
         validation_rows = self._regression_inputs.validation_idx
         self._logger.debug("Validating model")
         predicted_y = self.compute_estimations(validation_rows)
@@ -152,6 +170,7 @@ class ExperimentConfiguration(abc.ABC):
         difference = real_y - predicted_y
         self.validation_mape = np.mean(np.abs(np.divide(difference, real_y)))
         self._logger.debug("Validated model. MAPE is %f", self.validation_mape)
+        self._stop_file_logger()
 
     @abc.abstractmethod
     def _compute_signature(self, prefix):
@@ -175,3 +194,20 @@ class ExperimentConfiguration(abc.ABC):
         Return the signature of this experiment
         """
         return "_".join(self._signature)
+
+    def _start_file_logger(self):
+        """
+        Add the file handler to the logger
+        """
+        #Logger writes to stdout and file
+        file_handler = logging.FileHandler(os.path.join(self._experiment_directory, 'log'), 'a+')
+        self._logger.addHandler(file_handler)
+
+    def _stop_file_logger(self):
+        """
+        Remove the file handler from the logger
+        """
+        handlers = self._logger.handlers[:]
+        for handler in handlers:
+            handler.close()
+            self._logger.removeHandler(handler)

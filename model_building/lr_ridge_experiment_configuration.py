@@ -31,7 +31,7 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
 
     Methods
     -------
-    train()
+    _train()
         Performs the actual building of the linear model
 
     compute_estimations()
@@ -61,7 +61,7 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         signature.append("alpha_" + str(self._hyperparameters['alpha']))
         return signature
 
-    def train(self):
+    def _train(self):
         """
         Build the model with the experiment configuration represented by this object
         """

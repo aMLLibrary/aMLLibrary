@@ -35,7 +35,7 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
 
     Methods
     -------
-    train()
+    _train()
         Performs the actual building of the linear model
 
     compute_estimations()
@@ -71,14 +71,14 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
 
         return signature
 
-    def train(self):
+    def _train(self):
         """
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
-        self.svm = svm.SVR(C=self._hyperparameters['C'], epsilon=self._hyperparameters['epsilon'],
-                           gamma=self._hyperparameters['gamma'], kernel=self._hyperparameters['kernel'],
-                           degree=self._hyperparameters['degree'])
+        self._svr = svm.SVR(C=self._hyperparameters['C'], epsilon=self._hyperparameters['epsilon'],
+                            gamma=self._hyperparameters['gamma'], kernel=self._hyperparameters['kernel'],
+                            degree=self._hyperparameters['degree'])
 
 
 

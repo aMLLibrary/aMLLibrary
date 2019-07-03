@@ -35,7 +35,7 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
 
     Methods
     -------
-    train()
+    _train()
         Performs the actual building of the linear model
 
     compute_estimations()
@@ -68,14 +68,14 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
 
         return signature
 
-    def train(self):
+    def _train(self):
         """
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
         self._nnls = lm.Lasso(fit_intercept=self._hyperparameters['fit_intercept'],
-                                         alpha=0.001,
-                                         positive=True)
+                              alpha=0.001,
+                              positive=True)
 
 
 
