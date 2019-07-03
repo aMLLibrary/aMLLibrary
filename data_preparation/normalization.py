@@ -64,10 +64,13 @@ class Normalization(dp.DataPreparation):
         to_be_normalized = inputs.x_columns.copy()
         to_be_normalized.append(inputs.y_column)
 
+        filtered_data = inputs.data.iloc[inputs.training_idx, :]
+        #filtered_data = inputs.data
+
         #Extract the columns which have to be normalized
         for column in to_be_normalized:
-            inputs.scaled_columns.append(column)
-            data_to_be_normalized = inputs.data[column].to_numpy()
+            outputs.scaled_columns.append(column)
+            data_to_be_normalized = filtered_data[column].to_numpy()
             data_to_be_normalized = numpy.reshape(data_to_be_normalized, (-1, 1))
             outputs.scalers[column] = sklearn.preprocessing.StandardScaler().fit(data_to_be_normalized)
             normalized_data = outputs.scalers[column].transform(data_to_be_normalized)
