@@ -96,11 +96,6 @@ class SequenceDataProcessing:
         shutil.copyfile(args.configuration_file, os.path.join(args.output, 'configuration_file.ini'))
         self.conf.write(open(os.path.join(args.output, "enriched_configuration_file.ini"), 'w'))
 
-        #Check if the number of runs is 1; multiple runs are not supported in the current version
-        if self.parameters['General']['run_num'] > 1:
-            self.logger.error("Multiple runs not yet supported")
-            sys.exit(1)
-
         #Check that validation method has been specified
         if 'validation' not in self.parameters['General']:
             self.logger.error("Validation not specified")

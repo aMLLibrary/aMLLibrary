@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 import abc
+import copy
 import itertools
 import logging
 import pprint
@@ -102,6 +103,11 @@ class MultiExpConfsGenerator(ExpConfsGenerator):
     ----------
     generators: dict
         The ExpConfsGenerator to be used
+
+    Methods
+    -------
+    _get_deep_copy_parameters()
+        Computes the parameters to be used by __deepcopy__ of subclasses
     """
 
     _generators = {}
@@ -125,6 +131,13 @@ class MultiExpConfsGenerator(ExpConfsGenerator):
 
     def __deepcopy__(self, memo):
         raise NotImplementedError()
+
+    def _get_deep_copy_parameters(self):
+        campaign_configuration = self._campaign_configuration
+        seed = self._random_generator.random()
+        generators = copy.deepcopy(self._generators)
+        return campaign_configuration, seed, generators
+
 
 class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
     """
@@ -165,7 +178,8 @@ class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
         return return_list
 
     def __deepcopy__(self, memo):
-        raise NotImplementedError()
+        campaign_configuration, seed, generators = self._get_deep_copy_parameters()
+        return MultiTechniquesExpConfsGenerator(campaign_configuration, seed, generators)
 
 class TechniqueExpConfsGenerator(ExpConfsGenerator):
     """
@@ -210,7 +224,6 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
 
         first_key = ""
         #We expect that hyperparameters for a technique are stored in campaign_configuration[first_key] as a dictionary from string to list of values
-        #TODO: build the grid search on the basis of the configuration and return the set of built points
         if self._technique == ec.Technique.NONE:
             self._logger.error("Not supported regression technique")
             sys.exit(-1)
@@ -257,7 +270,7 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         return self._experiment_configurations
 
     def __deepcopy__(self, memo):
-        raise NotImplementedError()
+        return TechniqueExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._technique)
 
 class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
     """
@@ -297,7 +310,7 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
         wrapped_generators["run_0"] = wrapped_generator
 
         for run_index in range(1, self._repetitions_number):
-            wrapped_generators["run_" + str(run_index)] = wrapped_generator.deepcopy()
+            wrapped_generators["run_" + str(run_index)] = copy.deepcopy(wrapped_generator)
         super().__init__(campaign_configuration, seed, wrapped_generators)
 
     def generate_experiment_configurations(self, prefix, regression_inputs):
