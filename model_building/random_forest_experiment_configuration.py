@@ -41,8 +41,6 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
     compute_estimations()
         Compute the estimated values for a give set of data
     """
-    _random_forest = rf.RandomForestRegressor()
-
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
         campaign_configuration: dict of dict:
@@ -56,6 +54,8 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.RF
+        self._random_forest = rf.RandomForestRegressor()
+
 
     def _compute_signature(self, prefix):
         """
@@ -77,12 +77,13 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
-        self._random_forest = rf.RandomForestRegressor(n_estimators=self._hyperparameters['n_estimators'],
-                                         criterion=self._hyperparameters['criterion'],
-                                         max_depth=self._hyperparameters['max_depth'],
-                                         max_features=self._hyperparameters['max_features'],
-                                         min_samples_split=self._hyperparameters['min_samples_split'],
-                                         min_samples_leaf=self._hyperparameters['min_samples_leaf'])
+        self._random_forest = rf.RandomForestRegressor(
+            n_estimators=self._hyperparameters['n_estimators'],
+            criterion=self._hyperparameters['criterion'],
+            max_depth=self._hyperparameters['max_depth'],
+            max_features=self._hyperparameters['max_features'],
+            min_samples_split=self._hyperparameters['min_samples_split'],
+            min_samples_leaf=self._hyperparameters['min_samples_leaf'])
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.training_idx)
         self._random_forest.fit(xdata, ydata)

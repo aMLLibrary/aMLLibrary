@@ -41,7 +41,6 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
     compute_estimations()
         Compute the estimated values for a give set of data
     """
-    _svr = svm.SVR()
 
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
@@ -56,6 +55,7 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.SVR
+        self._svr = svm.SVR()
 
     def _compute_signature(self, prefix):
         """

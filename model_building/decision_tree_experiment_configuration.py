@@ -42,8 +42,6 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
     compute_estimations()
         Compute the estimated values for a give set of data
     """
-    _decision_tree = dt.DecisionTreeRegressor()
-
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
         campaign_configuration: dict of dict:
@@ -57,6 +55,8 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.DT
+        self._decision_tree = dt.DecisionTreeRegressor()
+
 
     def _compute_signature(self, prefix):
         """

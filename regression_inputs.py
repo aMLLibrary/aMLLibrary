@@ -14,7 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import pandas as pd
 
 class RegressionInputs:
     """
@@ -52,20 +51,6 @@ class RegressionInputs:
         Generates the two pandas data frame with x_columns and y
 
     """
-    data = pd.DataFrame()
-
-    training_idx = []
-
-    validation_idx = []
-
-    x_columns = []
-
-    y_column = ""
-
-    scalers = {}
-
-    scaled_columns = []
-
     def __init__(self, data, training_idx, validation_idx, x_columns, y_column):
         """
         Parameters
@@ -88,6 +73,7 @@ class RegressionInputs:
         self.training_idx = training_idx
         self.validation_idx = validation_idx
         self.x_columns = x_columns
+        self.scalers = {}
         self.y_column = y_column
         self.scaled_columns = []
 

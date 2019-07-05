@@ -51,12 +51,6 @@ class SequenceDataProcessing:
         The random generator used in the whole application
     """
 
-    _data_preprocessing_list = []
-
-    _model_building = None
-
-    _random_generator = None
-
     def __init__(self, args):
         """
         Parameters
@@ -64,6 +58,7 @@ class SequenceDataProcessing:
         args: argparse
             The arguments parsed at command line
         """
+        self._data_preprocessing_list = []
 
         configuration_file = args.configuration_file
         self.random_generator = random.Random(args.seed)

@@ -41,10 +41,6 @@ class Results:
     get_best_for_technique()
         For each technique identify the best model
     """
-    _exp_confs: List[ec.ExperimentConfiguration] = []
-
-    raw_results: Dict[str, Dict[str, float]] = {}
-
     def __init__(self, exp_confs: List[ec.ExperimentConfiguration]):
         """
         Parameters
@@ -53,6 +49,7 @@ class Results:
             The list of the run experiment configurations
         """
         self._exp_confs = exp_confs
+        self.raw_results = {}
 
     def collect_data(self):
         """

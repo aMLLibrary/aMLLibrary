@@ -31,8 +31,6 @@ class RandomSplitting(data_preparation.data_preparation.DataPreparation):
         Read the data
     """
 
-    _random_generator = random.Random(0)
-
     def __init__(self, campaign_configuration, seed):
         """
         campaign_configuration: dict of dict:

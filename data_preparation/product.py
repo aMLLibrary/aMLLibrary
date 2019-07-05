@@ -62,7 +62,6 @@ class Product(data_preparation.data_preparation.DataPreparation):
                 if data_preparation.inversion.Inversion.check_reciprocal(combination):
                     continue
                 #Compute the string for combination[:-2]
-                print(combination)
                 base = self._compute_column_name(combination[:-1])
                 new_column = np.array(outputs.data[base]) * np.array(outputs.data[combination[-1]])
                 new_feature_name = self._compute_column_name(combination)
@@ -71,5 +70,6 @@ class Product(data_preparation.data_preparation.DataPreparation):
 
         return outputs
 
-    def _compute_column_name(self, combination):
+    @staticmethod
+    def _compute_column_name(combination):
         return "_".join(combination)

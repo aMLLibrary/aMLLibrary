@@ -37,8 +37,6 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
     compute_estimations()
         Compute the estimated values for a give set of data
     """
-    _linear_regression = lr.Ridge()
-
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
         campaign_configuration: dict of dict:
@@ -50,8 +48,10 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         regression_inputs: RegressionInputs
             The input of the regression problem to be solved
         """
+        assert prefix
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.LR_RIDGE
+        self._linear_regression = lr.Ridge()
 
     def _compute_signature(self, prefix):
         """

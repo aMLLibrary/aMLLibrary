@@ -38,8 +38,6 @@ class ModelBuilding:
         Generates the set of expriment configurations to be evaluated
     """
 
-    _random_generator = random.Random(0)
-
     def __init__(self, seed):
         """
         Parameters

@@ -56,14 +56,6 @@ class ExpConfsGenerator(abc.ABC):
         Generates the set of expriment configurations to be evaluated
     """
 
-    _campaign_configuration = {}
-
-    _random_generator = random.Random(0)
-
-    _experiment_configurations = []
-
-    _logger = None
-
     def __init__(self, campaign_configuration, seed):
         """
         Parameters
@@ -77,6 +69,7 @@ class ExpConfsGenerator(abc.ABC):
 
         #TODO: modify this constructor and all the other constructors which use it to pass the added attributes
 
+        self._experiment_configurations = []
         self._campaign_configuration = campaign_configuration
         self._random_generator = random.Random(seed)
         self._logger = logging.getLogger(__name__)
@@ -109,8 +102,6 @@ class MultiExpConfsGenerator(ExpConfsGenerator):
     _get_deep_copy_parameters()
         Computes the parameters to be used by __deepcopy__ of subclasses
     """
-
-    _generators = {}
 
     def __init__(self, campaign_configuration, seed, generators):
         """
@@ -173,6 +164,7 @@ class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
         for key, generator in self._generators.items():
             new_prefix = prefix.copy()
             new_prefix.append(key)
+            assert new_prefix
             return_list.extend(generator.generate_experiment_configurations(new_prefix, regression_inputs))
         assert return_list
         return return_list
@@ -192,8 +184,6 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
 
     Generates the set of points to be evaluated
     """
-
-    _technique = ec.Technique.NONE
 
     def __init__(self, campaign_configuration, seed, technique):
         """
@@ -221,7 +211,7 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         list
             a list of the experiment configurations to be evaluated
         """
-
+        assert prefix
         first_key = ""
         #We expect that hyperparameters for a technique are stored in campaign_configuration[first_key] as a dictionary from string to list of values
         if self._technique == ec.Technique.NONE:
@@ -241,6 +231,8 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         for hyperparam in hyperparams:
             hyperparams_names.append(hyperparam)
             hyperparams_values.append(hyperparams[hyperparam])
+
+        assert not self._experiment_configurations
 
         #Cartesian product of parameters
         for combination in itertools.product(*hyperparams_values):
@@ -270,7 +262,8 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         return self._experiment_configurations
 
     def __deepcopy__(self, memo):
-        return TechniqueExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._technique)
+        ret = TechniqueExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._technique)
+        return ret
 
 class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
     """
@@ -287,8 +280,6 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
 
     Generates the set of points to be evaluated
     """
-
-    _repetitions_number = 0
 
     def __init__(self, campaign_configuration, seed, repetitions_number, wrapped_generator):
         """
@@ -336,8 +327,9 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
         for key, generator in self._generators.items():
             new_prefix = prefix.copy()
             new_prefix.append(key)
+            assert new_prefix
             validation = self._campaign_configuration['General']['validation']
-            if validation == "All":
+            if validation in {"All", "KFold"}:
                 run_regression_inputs = regression_inputs
             elif validation == "HoldOut":
                 run_regression_inputs = regression_inputs.copy()
@@ -360,7 +352,7 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
 
     Attributes
     ----------
-    k: integer
+    _k: integer
         The number of different folds to be used
 
     Methods
@@ -369,8 +361,6 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
 
     Generates the set of points to be evaluated
     """
-
-    k = 0
 
     def __init__(self, campaign_configuration, seed, k, wrapped_generator):
         """
@@ -388,15 +378,52 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
         seed: integer
             The seed to be used in random based activities
         """
+        self._k = k
 
-        #TODO generate the k generators with different training set
-        kfold_generators = []
+
+        kfold_generators = {}
+
+        for fold in range(0, self._k):
+            kfold_generators[fold] = copy.deepcopy(wrapped_generator)
+
         super().__init__(campaign_configuration, seed, kfold_generators)
 
-        self.k = k
+    def generate_experiment_configurations(self, prefix, regression_inputs):
+        """
+        Generates the set of experiment configurations to be evaluated
+
+        Returns
+        -------
+        list
+            a list of the experiment configurations
+        """
+        assert prefix
+        return_list = []
+        dataset_size = len(regression_inputs.training_idx)
+        fold_size = int(dataset_size / self._k)
+        all_training_idx = set(regression_inputs.training_idx)
+        remaining = set(all_training_idx)
+        for fold in range(0, self._k):
+            assert prefix
+            fold_prefix = copy.copy(prefix)
+            assert fold_prefix
+            fold_prefix.append("f" + str(fold))
+            assert fold_prefix
+            fold_regresion_inputs = copy.copy(regression_inputs)
+            if fold == self._k - 1:
+                fold_testing_idx = remaining
+            else:
+                fold_testing_idx = set(self._random_generator.sample(remaining, fold_size))
+            fold_training_idx = all_training_idx - fold_testing_idx
+            remaining = remaining - fold_testing_idx
+            fold_regresion_inputs.training_idx = list(fold_training_idx)
+            fold_regresion_inputs.fold_testing_idx = list(fold_testing_idx)
+            return_list.extend(self._generators[fold].generate_experiment_configurations(fold_prefix, fold_regresion_inputs))
+        return return_list
 
     def __deepcopy__(self, memo):
-        raise NotImplementedError()
+        return KFoldExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._k, self._generators[0])
+
 
 class RandomExpConfsGenerator(ExpConfsGenerator):
     """
@@ -416,10 +443,6 @@ class RandomExpConfsGenerator(ExpConfsGenerator):
 
     Generates the set of points to be evaluated
     """
-
-    _experiment_configurations_number = 0
-
-    _wrapped_generator = None
 
     def __init__(self, campaign_configuration, seed, experiment_configurations_number, wrapped_generator):
         """

@@ -36,8 +36,6 @@ class FSExpConfsGenerator(mb.ExpConfsGenerator):
         Generates the set of expriment configurations to be evaluated
     """
 
-    _wrapped_generator = None
-
     def __init__(self, wrapped_generator, campaign_configuration, seed):
         """
         Parameters
@@ -56,7 +54,7 @@ class FSExpConfsGenerator(mb.ExpConfsGenerator):
         self._wrapped_generator = wrapped_generator
 
     @abc.abstractmethod
-    def generate_experiment_configurations(self):
+    def generate_experiment_configurations(self, prefix, regression_inputs):
         """
         Generates the set of experiment configurations to be evaluated
 

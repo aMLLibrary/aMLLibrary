@@ -41,8 +41,6 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
     compute_estimations()
         Compute the estimated values for a give set of data
     """
-    _nnls = lm.Lasso()
-
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
         campaign_configuration: dict of dict:
@@ -56,6 +54,8 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.NNLS
+        self._nnls = lm.Lasso()
+
 
     def _compute_signature(self, prefix):
         """

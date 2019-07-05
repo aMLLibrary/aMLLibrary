@@ -35,13 +35,6 @@ class GeneratorsFactory:
     build()
         Build the required hierarchy of generators on the basis of the configuration file
     """
-
-    _campaign_configuration = None
-
-    _random_generator = random.Random(0)
-
-    _logger = None
-
     def __init__(self, campaign_configuration, seed):
         """
         Parameters
@@ -76,7 +69,12 @@ class GeneratorsFactory:
             generators[technique] = ds.TechniqueExpConfsGenerator(self._campaign_configuration, None, string_techique_to_enum[technique])
         assert generators
 
-        #TODO: if we want to use k-fold, wraps the generator with KFoldExpConfsGenerator
+        validation = self._campaign_configuration['General']['validation']
+        if validation == "KFold":
+            kfold_generators = {}
+            for technique, generator in generators.items():
+                kfold_generators[technique] = ds.KFoldExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._campaign_configuration['General']['folds'], generator)
+            generators = kfold_generators
 
         #TODO: if we want to use feature selection, wraps with a subclass of FSExpConfsGenerator
 
