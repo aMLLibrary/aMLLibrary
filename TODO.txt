@@ -1,0 +1,7 @@
+- extrapolation
+- parallelization
+- customized grid search
+- Ernest
+- Results elaboration
+- Drop column step
+- Feature selection
