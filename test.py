@@ -15,11 +15,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import argparse
 import os
 import subprocess
 import sys
 
 def main():
+    parser = argparse.ArgumentParser(description="Performs regression tests")
+    parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
+    parser.add_argument('-j', help="The number of processes to be used", default=1)
+    args = parser.parse_args()
+
     #The absolute path of the current script
     abs_script = os.path.abspath(sys.argv[0])
 
@@ -29,7 +35,11 @@ def main():
     for file in os.listdir(os.path.join(abs_root, "example_configurations")):
         if not file.endswith(".ini"):
             continue
-        command = os.path.join(abs_root, "run.py") + " -c " + os.path.join(abs_root, "example_configurations", file) + " -d -o output_" + file
+        extra_options = ""
+        if args.debug:
+            extra_options = extra_options + " -d"
+        extra_options = extra_options +  " -j" + str(args.j)
+        command = os.path.join(abs_root, "run.py") + " -c " + os.path.join(abs_root, "example_configurations", file) + " -o output_" + file + extra_options
         print("Running " + command)
         ret_program = subprocess.call(command, shell=True, executable="/bin/bash")
         if ret_program:

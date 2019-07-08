@@ -15,10 +15,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
+import multiprocessing
 import random
 
 import model_building.generators_factory as gf
 import results as re
+
+def process_wrapper(experiment_configuration):
+    experiment_configuration.train()
+    return experiment_configuration
 
 class ModelBuilding:
     """
@@ -48,7 +53,7 @@ class ModelBuilding:
         self._random_generator = random.Random(seed)
         self._logger = logging.getLogger(__name__)
 
-    def process(self, campaign_configuration, regression_inputs):
+    def process(self, campaign_configuration, regression_inputs, processes_number):
         """
         Perform the actual regression
 
@@ -65,8 +70,12 @@ class ModelBuilding:
         expconfs = top_generator.generate_experiment_configurations([], regression_inputs)
 
         assert expconfs
-        for exp in expconfs:
-            exp.train()
+        if processes_number == 1:
+            for exp in expconfs:
+                exp.train()
+        else:
+            pool = multiprocessing.Pool(processes_number)
+            expconfs = pool.map(process_wrapper, expconfs)
 
         results = re.Results(expconfs)
         results.collect_data()

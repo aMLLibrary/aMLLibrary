@@ -80,6 +80,7 @@ class SequenceDataProcessing:
         self.conf['General']['configuration_file'] = args.configuration_file
         self.conf['General']['output'] = args.output
         self.conf['General']['seed'] = str(args.seed)
+        self.conf['General']['j'] = str(args.j)
         self.parameters = {}
         self.get_parameters(configuration_file)
 
@@ -160,7 +161,7 @@ class SequenceDataProcessing:
             data_processing = data_preprocessing_step.process(data_processing)
             self.logger.debug("Current data frame is:\n%s", str(data_processing))
 
-        self._model_building.process(self.parameters, data_processing)
+        self._model_building.process(self.parameters, data_processing, int(self.conf['General']['j']))
 
         end = time.time()
         execution_time = str(end-start)
