@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Copyright 2019 Marco Lattuada
 Copyright 2019 Danilo Ardagna
@@ -54,7 +53,7 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.NNLS
-        self._nnls = lm.Lasso()
+        self._regressor = lm.Lasso()
 
 
     def _compute_signature(self, prefix):
@@ -73,15 +72,15 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
-        self._nnls = lm.Lasso(fit_intercept=self._hyperparameters['fit_intercept'],
-                              alpha=0.001,
-                              positive=True)
+        self._regressor = lm.Lasso(fit_intercept=self._hyperparameters['fit_intercept'],
+                                   alpha=0.001,
+                                   positive=True)
 
 
 
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.training_idx)
-        self._nnls.fit(xdata, ydata)
+        self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
 
         #for idx, col_name in enumerate(self._regression_inputs.x_columns):
@@ -92,4 +91,4 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         Compute the estimations and the MAPE for runs in rows
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
-        return self._nnls.predict(xdata)
+        return self._regressor.predict(xdata)

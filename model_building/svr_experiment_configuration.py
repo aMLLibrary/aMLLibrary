@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Copyright 2019 Marco Lattuada
 Copyright 2019 Danilo Ardagna
@@ -16,13 +15,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
-
-
 import sklearn.svm as svm
 
 import model_building.experiment_configuration as ec
-
 
 class SVRExperimentConfiguration(ec.ExperimentConfiguration):
     """
@@ -55,7 +50,6 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.SVR
-        self._svr = svm.SVR()
 
     def _compute_signature(self, prefix):
         """
@@ -76,15 +70,15 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
-        self._svr = svm.SVR(C=self._hyperparameters['C'], epsilon=self._hyperparameters['epsilon'],
-                            gamma=self._hyperparameters['gamma'], kernel=self._hyperparameters['kernel'],
-                            degree=self._hyperparameters['degree'])
+        self._regressor = svm.SVR(C=self._hyperparameters['C'], epsilon=self._hyperparameters['epsilon'],
+                                  gamma=self._hyperparameters['gamma'], kernel=self._hyperparameters['kernel'],
+                                  degree=self._hyperparameters['degree'])
 
 
 
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.training_idx)
-        self._svr.fit(xdata, ydata)
+        self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
 
         #for idx, col_name in enumerate(self._regression_inputs.x_columns):
@@ -95,4 +89,4 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
         Compute the estimations and the MAPE for runs in rows
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
-        return self._svr.predict(xdata)
+        return self._regressor.predict(xdata)

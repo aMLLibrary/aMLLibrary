@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Copyright 2019 Marco Lattuada
 Copyright 2019 Danilo Ardagna
@@ -55,7 +54,7 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.DT
-        self._decision_tree = dt.DecisionTreeRegressor()
+        self._regressor = dt.DecisionTreeRegressor()
 
 
     def _compute_signature(self, prefix):
@@ -77,14 +76,14 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
-        self._decision_tree = dt.DecisionTreeRegressor(criterion=self._hyperparameters['criterion'],
-                                                       max_depth=self._hyperparameters['max_depth'],
-                                                       max_features=self._hyperparameters['max_features'],
-                                                       min_samples_split=self._hyperparameters['min_samples_split'],
-                                                       min_samples_leaf=self._hyperparameters['min_samples_leaf'])
+        self._regressor = dt.DecisionTreeRegressor(criterion=self._hyperparameters['criterion'],
+                                                   max_depth=self._hyperparameters['max_depth'],
+                                                   max_features=self._hyperparameters['max_features'],
+                                                   min_samples_split=self._hyperparameters['min_samples_split'],
+                                                   min_samples_leaf=self._hyperparameters['min_samples_leaf'])
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.training_idx)
-        self._decision_tree.fit(xdata, ydata)
+        self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
 
         #for idx, col_name in enumerate(self._regression_inputs.x_columns):
@@ -95,4 +94,4 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         Compute the estimations and the MAPE for runs in rows
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
-        return self._decision_tree.predict(xdata)
+        return self._regressor.predict(xdata)

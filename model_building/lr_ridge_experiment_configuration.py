@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Copyright 2019 Marco Lattuada
 
@@ -15,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from typing import List
+
 import sklearn.linear_model as lr
 
 import model_building.experiment_configuration as ec
@@ -26,7 +27,7 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
 
     Attributes
     ----------
-    _linear_regression : LinearRegression
+    _regressor : LinearRegression
         The actual scikt object which performs the linear regression
 
     Methods
@@ -37,7 +38,7 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
     compute_estimations()
         Compute the estimated values for a give set of data
     """
-    def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
+    def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix: List[str]):
         """
         campaign_configuration: dict of dict:
             The set of options specified by the user though command line and campaign configuration files
@@ -51,14 +52,18 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         assert prefix
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.LR_RIDGE
-        self._linear_regression = lr.Ridge()
+        self._regressor = lr.Ridge()
 
     def _compute_signature(self, prefix):
         """
         Compute the signature associated with this experiment configuration
         """
+        assert isinstance(prefix, list)
+        print("A002 " + str(prefix))
         signature = prefix.copy()
+        print("A003 " + str(signature))
         signature.append("alpha_" + str(self._hyperparameters['alpha']))
+        print("A004 " + str(signature))
         return signature
 
     def _train(self):
@@ -66,17 +71,17 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
-        self._linear_regression = lr.Ridge(alpha=self._hyperparameters['alpha'])
+        self._regressor = lr.Ridge(alpha=self._hyperparameters['alpha'])
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.training_idx)
-        self._linear_regression.fit(xdata, ydata)
+        self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
         for idx, col_name in enumerate(self._regression_inputs.x_columns):
-            self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])
+            self._logger.debug("The coefficient for %s is %f", col_name, self._regressor.coef_[idx])
 
     def compute_estimations(self, rows):
         """
         Compute the estimations and the MAPE for runs in rows
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
-        return self._linear_regression.predict(xdata)
+        return self._regressor.predict(xdata)
