@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Copyright 2019 Marco Lattuada
 
@@ -15,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-#TODO: Define feature selector enum
+import copy
 
-import abc
+import model_building.design_space
+import model_building.sfs_experiment_configuration
 
-import model_building.design_space as mb
-
-class FSExpConfsGenerator(mb.ExpConfsGenerator):
+class SFSExpConfsGenerator(model_building.design_space.ExpConfsGenerator):
     """
     Abstract superclass for feature selector methods which exploits regressors
 
@@ -53,7 +51,6 @@ class FSExpConfsGenerator(mb.ExpConfsGenerator):
         super().__init__(campaign_configuration, seed)
         self._wrapped_generator = wrapped_generator
 
-    @abc.abstractmethod
     def generate_experiment_configurations(self, prefix, regression_inputs):
         """
         Generates the set of experiment configurations to be evaluated
@@ -63,3 +60,11 @@ class FSExpConfsGenerator(mb.ExpConfsGenerator):
         list
             a list of the experiment configurations
         """
+        internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
+        ret_list = []
+        for wrapped_point in internal_list:
+            ret_list.append(model_building.sfs_experiment_configuration.SFSExperimentConfiguration(self._campaign_configuration, regression_inputs, prefix, wrapped_point))
+        return ret_list
+
+    def __deepcopy__(self, memo):
+        return SFSExpConfsGenerator(copy.deepcopy(self._wrapped_generator), self._campaign_configuration, self._random_generator.random())

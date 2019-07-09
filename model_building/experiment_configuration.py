@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Copyright 2019 Marco Lattuada
 
@@ -20,7 +19,6 @@ import logging
 import os
 from enum import Enum
 
-
 import numpy as np
 
 class Technique(Enum):
@@ -34,7 +32,6 @@ class Technique(Enum):
     RF = 4
     SVR = 5
     NNLS = 6
-    #TODO: add extra techniques such as  SVR, etc.
 
 enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST: 'XGBoost', Technique.DT: 'DecisionTree',
                                Technique.RF: 'RandomForest', Technique.SVR: 'SVR', Technique.NNLS: 'NNLS'}
@@ -70,6 +67,9 @@ class ExperimentConfiguration(abc.ABC):
     _experiment_directory: str
         The directory where output of this experiment has to be stored
 
+    _regressor
+        The actual object performing the regression
+
     Methods
     -------
     train()
@@ -90,28 +90,21 @@ class ExperimentConfiguration(abc.ABC):
     get_signature()
         Return the signature of this experiment
 
+    get_signature_string()
+        Return the signature of this experiment as string
+
     _start_file_logger()
         Start to log also to output file
 
     stop_file_logger()
         Stop to log also to output file
+
+    get_regressor()
+        Return the regressor associated with this experiment configuration
+
+    get_technique()
+        Return the technique associated with this experiment configuration
     """
-
-    _campaign_configuration = {}
-
-    _hyperparameters = None
-
-    _regression_inputs = None
-
-    _local_folder = ""
-
-    _logger = None
-
-    _signature = None
-
-    validation_mape = 0.0
-
-    technique = Technique.NONE
 
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
@@ -129,15 +122,23 @@ class ExperimentConfiguration(abc.ABC):
         self._campaign_configuration = campaign_configuration
         self._hyperparameters = hyperparameters
         self._regression_inputs = regression_inputs
+        print("A001 " + str(prefix))
+        print(str(type(self)))
         self._signature = self._compute_signature(prefix)
-        self._logger = logging.getLogger("_".join(self._signature))
+        self._logger = logging.getLogger(self.get_signature_string())
+        self._logger.debug("---")
+        self.validation_mape = None
+        self._regressor = None
 
         #Create experiment directory
         self._experiment_directory = self._campaign_configuration['General']['output']
         for token in self._signature:
             self._experiment_directory = os.path.join(self._experiment_directory, token)
-        assert not os.path.exists(self._experiment_directory)
-        os.makedirs(self._experiment_directory)
+        #Import here to avoid problems with circular dependencies
+        import model_building.sfs_experiment_configuration
+        if isinstance(self, model_building.sfs_experiment_configuration.SFSExperimentConfiguration) or 'FeatureSelection' not in self._campaign_configuration:
+            assert not os.path.exists(self._experiment_directory)
+            os.makedirs(self._experiment_directory)
 
 
     def train(self):
@@ -169,6 +170,7 @@ class ExperimentConfiguration(abc.ABC):
             real_y = y_scaler.inverse_transform(real_y)
         difference = real_y - predicted_y
         self.validation_mape = np.mean(np.abs(np.divide(difference, real_y)))
+        self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
         self._logger.debug("Validated model. MAPE is %f", self.validation_mape)
         self._stop_file_logger()
 
@@ -192,6 +194,12 @@ class ExperimentConfiguration(abc.ABC):
     def get_signature(self):
         """
         Return the signature of this experiment
+        """
+        return self._signature
+
+    def get_signature_string(self):
+        """
+        Return the signature of this experiment as string
         """
         return "_".join(self._signature)
 
@@ -228,3 +236,9 @@ class ExperimentConfiguration(abc.ABC):
         if '_logger' in temp_d:
             temp_d['_logger'] = logging.getLogger(temp_d['_logger'])
         self.__dict__.update(temp_d)
+
+    def get_regressor(self):
+        """
+        Return the regressor wrapped in this experiment configuration
+        """
+        return self._regressor

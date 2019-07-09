@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Copyright 2019 Marco Lattuada
 
@@ -20,6 +19,7 @@ import random
 
 import model_building.design_space as ds
 import model_building.experiment_configuration as ec
+import model_building.sequential_feature_selection
 
 class GeneratorsFactory:
     """
@@ -69,14 +69,18 @@ class GeneratorsFactory:
             generators[technique] = ds.TechniqueExpConfsGenerator(self._campaign_configuration, None, string_techique_to_enum[technique])
         assert generators
 
+        if 'FeatureSelection' in self._campaign_configuration and self._campaign_configuration['FeatureSelection']['method']:
+            feature_selection_generators = {}
+            for technique, generator in generators.items():
+                feature_selection_generators[technique] = model_building.sequential_feature_selection.SFSExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
+            generators = feature_selection_generators
+
         validation = self._campaign_configuration['General']['validation']
         if validation == "KFold":
             kfold_generators = {}
             for technique, generator in generators.items():
                 kfold_generators[technique] = ds.KFoldExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._campaign_configuration['General']['folds'], generator)
             generators = kfold_generators
-
-        #TODO: if we want to use feature selection, wraps with a subclass of FSExpConfsGenerator
 
         multitechniques_generator = ds.MultiTechniquesExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), generators)
 
