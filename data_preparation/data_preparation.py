@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Copyright 2019 Marjan Hosseini
 Copyright 2019 Marco Lattuada
