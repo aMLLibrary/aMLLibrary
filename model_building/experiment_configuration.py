@@ -122,8 +122,6 @@ class ExperimentConfiguration(abc.ABC):
         self._campaign_configuration = campaign_configuration
         self._hyperparameters = hyperparameters
         self._regression_inputs = regression_inputs
-        print("A001 " + str(prefix))
-        print(str(type(self)))
         self._signature = self._compute_signature(prefix)
         self._logger = logging.getLogger(self.get_signature_string())
         self._logger.debug("---")

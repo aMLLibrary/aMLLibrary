@@ -59,11 +59,8 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         Compute the signature associated with this experiment configuration
         """
         assert isinstance(prefix, list)
-        print("A002 " + str(prefix))
         signature = prefix.copy()
-        print("A003 " + str(signature))
         signature.append("alpha_" + str(self._hyperparameters['alpha']))
-        print("A004 " + str(signature))
         return signature
 
     def _train(self):

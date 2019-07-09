@@ -84,7 +84,6 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
         ###Use the selected feature to retrain the regressor
         filtered_xdata = self._sfs.transform(xdata)
         self._wrapped_experiment_configuration.get_regressor().fit(filtered_xdata, ydata)
-        print("A000 " + str(self._wrapped_experiment_configuration.get_regressor().coef_))
 
     def compute_estimations(self, rows):
         """

@@ -165,4 +165,4 @@ class SequenceDataProcessing:
 
         end = time.time()
         execution_time = str(end-start)
-        print("Execution Time : " + execution_time)
+        logging.info("Execution Time : %s", execution_time)
