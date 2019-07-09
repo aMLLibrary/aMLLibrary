@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Copyright 2019 Marjan Hosseini
 Copyright 2019 Marco Lattuada
@@ -81,6 +80,7 @@ class SequenceDataProcessing:
         self.conf['General']['output'] = args.output
         self.conf['General']['seed'] = str(args.seed)
         self.conf['General']['j'] = str(args.j)
+        self.conf['General']['debug'] = str(args.debug)
         self.parameters = {}
         self.get_parameters(configuration_file)
 
