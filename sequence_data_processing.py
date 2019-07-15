@@ -28,6 +28,7 @@ import matplotlib
 matplotlib.use('Agg')
 #pylint: disable=wrong-import-position
 
+import data_preparation.column_selection
 import data_preparation.data_loading
 import data_preparation.inversion
 import data_preparation.normalization
@@ -100,6 +101,10 @@ class SequenceDataProcessing:
 
         #Adding read on input to data preprocessing step
         self._data_preprocessing_list.append(data_preparation.data_loading.DataLoading(self.parameters))
+
+        #Adding column selection if required
+        if 'use_columns' in self.parameters['DataPreparation'] or "skip_columns" in self.parameters['DataPreparation']:
+            self._data_preprocessing_list.append(data_preparation.column_selection.ColumnSelection(self.parameters))
 
         #Adding inverted features if required
         if 'inverse' in self.parameters['DataPreparation'] and self.parameters['DataPreparation']['inverse']:
