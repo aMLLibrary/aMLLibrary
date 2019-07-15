@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import sys
 
 import numpy as np
 
@@ -50,6 +51,9 @@ class Inversion(data_preparation.data_preparation.DataPreparation):
             to_be_inv_list = inputs.x_columns.copy()
 
         for column in to_be_inv_list:
+            if inputs.data[column].dtype == object:
+                self._logger.error("Trying to invert a string column: %s", column)
+                sys.exit(-1)
             new_column = 1 / np.array(inputs.data[column])
             new_feature_name = 'inverse_' + column
             outputs.data[new_feature_name] = new_column
