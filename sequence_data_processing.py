@@ -98,6 +98,12 @@ class SequenceDataProcessing:
             self.logger.error("Validation not specified")
             sys.exit(1)
 
+        #Check that if HoldOut is selected, hold_out_ratio is specified
+        if self.parameters['General']['validation'] == "HoldOut":
+            if "hold_out_ratio" not in self.parameters['General']:
+                self.logger.error("hold_out_ratio not set")
+                sys.exit(1)
+
 
         #Adding read on input to data preprocessing step
         self._data_preprocessing_list.append(data_preparation.data_loading.DataLoading(self.parameters))
