@@ -27,6 +27,7 @@ def main():
     parser.add_argument('-s', "--seed", help="The seed", default=0)
     parser.add_argument('-o', "--output", help="The output where all the models will be stored", default="output")
     parser.add_argument('-j', help="The number of processes to be used", default=1)
+    parser.add_argument('-g', "--generate-plots", help="Generate plots", default=False, action="store_true")
     args = parser.parse_args()
 
     sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args)

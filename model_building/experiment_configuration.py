@@ -19,6 +19,11 @@ import logging
 import os
 from enum import Enum
 
+import matplotlib
+matplotlib.use('Agg')
+#pylint: disable=wrong-import-position
+import matplotlib.pyplot as plt
+
 import numpy as np
 
 class Technique(Enum):
@@ -80,6 +85,9 @@ class ExperimentConfiguration(abc.ABC):
 
     validate()
         Compute the MAPE on the validation set
+
+    generate_plots()
+        Generate plots about real vs. predicted
 
     _compute_signature()
         Compute the string identifier of this experiment
@@ -170,6 +178,36 @@ class ExperimentConfiguration(abc.ABC):
         self.validation_mape = np.mean(np.abs(np.divide(difference, real_y)))
         self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
         self._logger.debug("Validated model. MAPE is %f", self.validation_mape)
+        self._stop_file_logger()
+
+    def generate_plots(self):
+        self._start_file_logger()
+        if self._campaign_configuration['General']['validation'] == "HoldOut":
+            training_rows = self._regression_inputs.training_idx
+            predicted_y = self.compute_estimations(training_rows)
+            real_y = self._regression_inputs.data.loc[training_rows, self._regression_inputs.y_column].values.astype(np.float64)
+            if self._regression_inputs.y_column in self._regression_inputs.scalers:
+                y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
+                predicted_y = y_scaler.inverse_transform(predicted_y)
+                real_y = y_scaler.inverse_transform(real_y)
+            plt.scatter(real_y, predicted_y, linestyle='None', s=10, marker="*", linewidth=0.5, label="Training", c="green")
+        validation_rows = self._regression_inputs.validation_idx
+        predicted_y = self.compute_estimations(validation_rows)
+        real_y = self._regression_inputs.data.loc[validation_rows, self._regression_inputs.y_column].values.astype(np.float64)
+        if self._regression_inputs.y_column in self._regression_inputs.scalers:
+            y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
+            predicted_y = y_scaler.inverse_transform(predicted_y)
+            real_y = y_scaler.inverse_transform(real_y)
+        plt.scatter(real_y, predicted_y, linestyle='None', s=10, marker="+", linewidth=0.5, label="Validation", c="blue")
+        xlim = plt.xlim()
+        ylim = plt.ylim()
+        plt.plot(plt.xlim(), plt.ylim(), "r--", linewidth=0.5)
+        plt.xlim(xlim)
+        plt.ylim(ylim)
+        plt.xlabel("Real execution times [s]")
+        plt.ylabel("Predicted execution times [s]")
+        plt.legend()
+        plt.savefig(os.path.join(self._experiment_directory, "real_vs_predicted.pdf"))
         self._stop_file_logger()
 
     @abc.abstractmethod

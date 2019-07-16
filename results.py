@@ -26,6 +26,10 @@ class Results:
 
     Attributes
     ----------
+    _campaign_configuration: dict of dict:
+        The set of options specified by the user though command line and campaign configuration files
+
+
     _exp_confs : List[ec.ExperimentConfiguration]
         The list of all the experiments
 
@@ -40,13 +44,17 @@ class Results:
     get_best_for_technique()
         For each technique identify the best model
     """
-    def __init__(self, exp_confs: List[ec.ExperimentConfiguration]):
+    def __init__(self, campaign_configuration, exp_confs: List[ec.ExperimentConfiguration]):
         """
         Parameters
         ----------
+        campaign_configuration: dict of dict:
+            The set of options specified by the user though command line and campaign configuration files
+
         exp_confs: List[ec.ExperimentConfiguration]
             The list of the run experiment configurations
         """
+        self._campaign_configuration = campaign_configuration
         self._exp_confs = exp_confs
         self.raw_results = {}
 
@@ -58,6 +66,8 @@ class Results:
         self.raw_results['validation_MAPE'] = {}
         for exp_conf in self._exp_confs:
             exp_conf.validate()
+            if bool(self._campaign_configuration['General']['generate_plots']):
+                exp_conf.generate_plots()
             self.raw_results['validation_MAPE'][exp_conf.get_signature_string()] = exp_conf.validation_mape
 
     def get_best_for_technique(self) -> Dict[ec.Technique, Tuple[str, float]]:

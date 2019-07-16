@@ -82,6 +82,7 @@ class SequenceDataProcessing:
         self.conf['General']['seed'] = str(args.seed)
         self.conf['General']['j'] = str(args.j)
         self.conf['General']['debug'] = str(args.debug)
+        self.conf['General']['generate_plots'] = str(args.generate_plots)
         self.parameters = {}
         self.get_parameters(configuration_file)
 

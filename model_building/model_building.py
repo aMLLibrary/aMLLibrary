@@ -76,7 +76,7 @@ class ModelBuilding:
             pool = multiprocessing.Pool(processes_number)
             expconfs = pool.map(process_wrapper, expconfs)
 
-        results = re.Results(expconfs)
+        results = re.Results(campaign_configuration, expconfs)
         results.collect_data()
 
         for metric, mapes in results.raw_results.items():
