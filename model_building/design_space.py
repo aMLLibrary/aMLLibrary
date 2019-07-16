@@ -329,7 +329,7 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
             new_prefix.append(key)
             assert new_prefix
             validation = self._campaign_configuration['General']['validation']
-            if validation in {"All", "KFold"}:
+            if validation in {"All", "KFold", "Extrapolation"}:
                 run_regression_inputs = regression_inputs
             elif validation == "HoldOut":
                 run_regression_inputs = regression_inputs.copy()

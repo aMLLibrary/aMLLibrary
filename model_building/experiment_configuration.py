@@ -182,7 +182,7 @@ class ExperimentConfiguration(abc.ABC):
 
     def generate_plots(self):
         self._start_file_logger()
-        if self._campaign_configuration['General']['validation'] == "HoldOut":
+        if self._campaign_configuration['General']['validation'] in {"Extrapolation", "HoldOut"}:
             training_rows = self._regression_inputs.training_idx
             predicted_y = self.compute_estimations(training_rows)
             real_y = self._regression_inputs.data.loc[training_rows, self._regression_inputs.y_column].values.astype(np.float64)
@@ -208,6 +208,7 @@ class ExperimentConfiguration(abc.ABC):
         plt.ylabel("Predicted execution times [s]")
         plt.legend()
         plt.savefig(os.path.join(self._experiment_directory, "real_vs_predicted.pdf"))
+        plt.savefig(os.path.join(self._experiment_directory, "real_vs_predicted.png"))
         self._stop_file_logger()
 
     @abc.abstractmethod

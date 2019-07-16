@@ -24,12 +24,9 @@ import shutil
 import sys
 import time
 
-import matplotlib
-matplotlib.use('Agg')
-#pylint: disable=wrong-import-position
-
 import data_preparation.column_selection
 import data_preparation.data_loading
+import data_preparation.extrapolation
 import data_preparation.inversion
 import data_preparation.normalization
 import data_preparation.product
@@ -105,6 +102,11 @@ class SequenceDataProcessing:
                 self.logger.error("hold_out_ratio not set")
                 sys.exit(1)
 
+        #Check that if Extrapolation is selected, extrapolation_columns is specified
+        if self.parameters['General']['validation'] == "Extrapolation":
+            if "extrapolation_columns" not in self.parameters['General']:
+                self.logger.error("extrapolation_columns not set")
+                sys.exit(1)
 
         #Adding read on input to data preprocessing step
         self._data_preprocessing_list.append(data_preparation.data_loading.DataLoading(self.parameters))
@@ -112,6 +114,10 @@ class SequenceDataProcessing:
         #Adding column selection if required
         if 'use_columns' in self.parameters['DataPreparation'] or "skip_columns" in self.parameters['DataPreparation']:
             self._data_preprocessing_list.append(data_preparation.column_selection.ColumnSelection(self.parameters))
+
+        #Split according to extrapolation values if required
+        if self.parameters['General']['validation'] == "Extrapolation":
+            self._data_preprocessing_list.append(data_preparation.extrapolation.Extrapolation(self.parameters))
 
         #Adding inverted features if required
         if 'inverse' in self.parameters['DataPreparation'] and self.parameters['DataPreparation']['inverse']:
