@@ -30,6 +30,7 @@ import data_preparation.extrapolation
 import data_preparation.inversion
 import data_preparation.normalization
 import data_preparation.product
+import data_preparation.rename_columns
 import model_building.model_building
 
 class SequenceDataProcessing:
@@ -110,6 +111,10 @@ class SequenceDataProcessing:
 
         #Adding read on input to data preprocessing step
         self._data_preprocessing_list.append(data_preparation.data_loading.DataLoading(self.parameters))
+
+        #Adding column renaming if required
+        if 'rename_columns' in self.parameters['DataPreparation']:
+            self._data_preprocessing_list.append(data_preparation.rename_columns.RenameColumns(self.parameters))
 
         #Adding column selection if required
         if 'use_columns' in self.parameters['DataPreparation'] or "skip_columns" in self.parameters['DataPreparation']:
