@@ -218,6 +218,7 @@ class ExperimentConfiguration(abc.ABC):
 
             training_error = np.multiply(np.divide(real_training_y - predicted_training_y, real_training_y), 100)
             validation_error = np.multiply(np.divide(real_validation_y - predicted_validation_y, real_validation_y), 100)
+            mape = np.mean(np.abs(validation_error))
 
             plt.scatter(x_training_values, training_error, linestyle='None', s=10, marker="*", linewidth=0.5, label="Training", c="green")
             plt.scatter(x_validation_values, validation_error, linestyle='None', s=10, marker="+", linewidth=0.5, label="Validation", c="blue")
@@ -229,6 +230,7 @@ class ExperimentConfiguration(abc.ABC):
             plt.xlabel(extrapolation_column)
             plt.ylabel("Error [%]")
             plt.legend()
+            plt.title("Extrapolation on " + extrapolation_column + " - MAPE " + "{0:.2f}".format(mape) + "%")
             plt.savefig(os.path.join(self._experiment_directory, "error_vs_extrapolation.pdf"))
             plt.savefig(os.path.join(self._experiment_directory, "error_vs_extrapolation.png"))
 
