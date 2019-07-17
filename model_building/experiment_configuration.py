@@ -184,21 +184,21 @@ class ExperimentConfiguration(abc.ABC):
         self._start_file_logger()
         if self._campaign_configuration['General']['validation'] in {"Extrapolation", "HoldOut"}:
             training_rows = self._regression_inputs.training_idx
-            predicted_y = self.compute_estimations(training_rows)
-            real_y = self._regression_inputs.data.loc[training_rows, self._regression_inputs.y_column].values.astype(np.float64)
+            predicted_training_y = self.compute_estimations(training_rows)
+            real_training_y = self._regression_inputs.data.loc[training_rows, self._regression_inputs.y_column].values.astype(np.float64)
             if self._regression_inputs.y_column in self._regression_inputs.scalers:
                 y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
-                predicted_y = y_scaler.inverse_transform(predicted_y)
-                real_y = y_scaler.inverse_transform(real_y)
-            plt.scatter(real_y, predicted_y, linestyle='None', s=10, marker="*", linewidth=0.5, label="Training", c="green")
+                predicted_training_y = y_scaler.inverse_transform(predicted_training_y)
+                real_training_y = y_scaler.inverse_transform(real_training_y)
+            plt.scatter(real_training_y, predicted_training_y, linestyle='None', s=10, marker="*", linewidth=0.5, label="Training", c="green")
         validation_rows = self._regression_inputs.validation_idx
-        predicted_y = self.compute_estimations(validation_rows)
-        real_y = self._regression_inputs.data.loc[validation_rows, self._regression_inputs.y_column].values.astype(np.float64)
+        predicted_validation_y = self.compute_estimations(validation_rows)
+        real_validation_y = self._regression_inputs.data.loc[validation_rows, self._regression_inputs.y_column].values.astype(np.float64)
         if self._regression_inputs.y_column in self._regression_inputs.scalers:
             y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
-            predicted_y = y_scaler.inverse_transform(predicted_y)
-            real_y = y_scaler.inverse_transform(real_y)
-        plt.scatter(real_y, predicted_y, linestyle='None', s=10, marker="+", linewidth=0.5, label="Validation", c="blue")
+            predicted_validation_y = y_scaler.inverse_transform(predicted_validation_y)
+            real_validation_y = y_scaler.inverse_transform(real_validation_y)
+        plt.scatter(real_validation_y, predicted_validation_y, linestyle='None', s=10, marker="+", linewidth=0.5, label="Validation", c="blue")
         xlim = plt.xlim()
         ylim = plt.ylim()
         plt.plot(plt.xlim(), plt.ylim(), "r--", linewidth=0.5)
@@ -209,6 +209,29 @@ class ExperimentConfiguration(abc.ABC):
         plt.legend()
         plt.savefig(os.path.join(self._experiment_directory, "real_vs_predicted.pdf"))
         plt.savefig(os.path.join(self._experiment_directory, "real_vs_predicted.png"))
+        if self._campaign_configuration['General']['validation'] == "Extrapolation" and len(self._campaign_configuration['General']['extrapolation_columns']) == 1:
+            plt.figure()
+            extrapolation_column = next(iter(self._campaign_configuration['General']['extrapolation_columns']))
+
+            x_training_values = self._regression_inputs.data.loc[self._regression_inputs.training_idx, extrapolation_column]
+            x_validation_values = self._regression_inputs.data.loc[self._regression_inputs.validation_idx, extrapolation_column]
+
+            training_error = np.multiply(np.divide(real_training_y - predicted_training_y, real_training_y), 100)
+            validation_error = np.multiply(np.divide(real_validation_y - predicted_validation_y, real_validation_y), 100)
+
+            plt.scatter(x_training_values, training_error, linestyle='None', s=10, marker="*", linewidth=0.5, label="Training", c="green")
+            plt.scatter(x_validation_values, validation_error, linestyle='None', s=10, marker="+", linewidth=0.5, label="Validation", c="blue")
+            xlim = plt.xlim()
+            ylim = plt.ylim()
+            plt.plot(xlim, [0, 0], "r--", linewidth=0.5)
+            plt.xlim(xlim)
+            plt.ylim(ylim)
+            plt.xlabel(extrapolation_column)
+            plt.ylabel("Error [%]")
+            plt.legend()
+            plt.savefig(os.path.join(self._experiment_directory, "error_vs_extrapolation.pdf"))
+            plt.savefig(os.path.join(self._experiment_directory, "error_vs_extrapolation.png"))
+
         self._stop_file_logger()
 
     @abc.abstractmethod
