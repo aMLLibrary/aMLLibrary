@@ -84,7 +84,7 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
             min_samples_split=self._hyperparameters['min_samples_split'],
             min_samples_leaf=self._hyperparameters['min_samples_leaf'])
         assert self._regression_inputs
-        xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.training_idx)
+        xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
 

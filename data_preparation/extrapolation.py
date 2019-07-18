@@ -41,8 +41,8 @@ class Extrapolation(data_preparation.data_preparation.DataPreparation):
 
     def process(self, inputs):
         data = inputs
-        data.training_idx = []
-        data.validation_idx = []
+        data.inputs_split["training"] = []
+        data.inputs_split["validation"] = []
         extrapolation_columns = self._campaign_configuration['General']['extrapolation_columns']
         for index, row in data.data.iterrows():
             validation = False
@@ -51,7 +51,7 @@ class Extrapolation(data_preparation.data_preparation.DataPreparation):
                     validation = True
                     break
             if validation:
-                data.validation_idx.append(index)
+                data.inputs_split["validation"].append(index)
             else:
-                data.training_idx.append(index)
+                data.inputs_split["training"].append(index)
         return data

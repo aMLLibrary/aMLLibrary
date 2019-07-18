@@ -166,7 +166,7 @@ class ExperimentConfiguration(abc.ABC):
         Validate the model, i.e., compute the MAPE on the validation set
         """
         self._start_file_logger()
-        validation_rows = self._regression_inputs.validation_idx
+        validation_rows = self._regression_inputs.inputs_split["validation"]
         self._logger.debug("Validating model")
         predicted_y = self.compute_estimations(validation_rows)
         real_y = self._regression_inputs.data.loc[validation_rows, self._regression_inputs.y_column].values.astype(np.float64)
@@ -183,7 +183,7 @@ class ExperimentConfiguration(abc.ABC):
     def generate_plots(self):
         self._start_file_logger()
         if self._campaign_configuration['General']['validation'] in {"Extrapolation", "HoldOut"}:
-            training_rows = self._regression_inputs.training_idx
+            training_rows = self._regression_inputs.inputs_split["training"]
             predicted_training_y = self.compute_estimations(training_rows)
             real_training_y = self._regression_inputs.data.loc[training_rows, self._regression_inputs.y_column].values.astype(np.float64)
             if self._regression_inputs.y_column in self._regression_inputs.scalers:
@@ -191,7 +191,7 @@ class ExperimentConfiguration(abc.ABC):
                 predicted_training_y = y_scaler.inverse_transform(predicted_training_y)
                 real_training_y = y_scaler.inverse_transform(real_training_y)
             plt.scatter(real_training_y, predicted_training_y, linestyle='None', s=10, marker="*", linewidth=0.5, label="Training", c="green")
-        validation_rows = self._regression_inputs.validation_idx
+        validation_rows = self._regression_inputs.inputs_split["validation"]
         predicted_validation_y = self.compute_estimations(validation_rows)
         real_validation_y = self._regression_inputs.data.loc[validation_rows, self._regression_inputs.y_column].values.astype(np.float64)
         if self._regression_inputs.y_column in self._regression_inputs.scalers:
@@ -213,8 +213,8 @@ class ExperimentConfiguration(abc.ABC):
             plt.figure()
             extrapolation_column = next(iter(self._campaign_configuration['General']['extrapolation_columns']))
 
-            x_training_values = self._regression_inputs.data.loc[self._regression_inputs.training_idx, extrapolation_column]
-            x_validation_values = self._regression_inputs.data.loc[self._regression_inputs.validation_idx, extrapolation_column]
+            x_training_values = self._regression_inputs.data.loc[self._regression_inputs.inputs_split["training"], extrapolation_column]
+            x_validation_values = self._regression_inputs.data.loc[self._regression_inputs.inputs_split["validation"], extrapolation_column]
 
             training_error = np.multiply(np.divide(real_training_y - predicted_training_y, real_training_y), 100)
             validation_error = np.multiply(np.divide(real_validation_y - predicted_validation_y, real_validation_y), 100)

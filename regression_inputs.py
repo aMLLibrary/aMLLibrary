@@ -23,12 +23,6 @@ class RegressionInputs:
     data: dataframe
         The whole dataframe
 
-    training_idx: list of integers
-        The indices of the rows of the data frame to be used to train the model
-
-    validation_idx: list of integers
-        The indices of the rows of the data frame to be used to validate the model
-
     x_columns: list of strings
         The labels of the columns of the data frame to be used to train the model
 
@@ -50,17 +44,14 @@ class RegressionInputs:
         Generates the two pandas data frame with x_columns and y
 
     """
-    def __init__(self, data, training_idx, validation_idx, x_columns, y_column):
+    def __init__(self, data, inputs_split, x_columns, y_column):
         """
         Parameters
         data: dataframe
             The whole dataframe
 
-        training_idx: list of integers
-            The indices of the rows of the data frame to be used to train the model
-
-        validation_idx: list of integers
-            The indices of the rows of the data frame to be used to validate the model
+        inputs_split: map of str to list of integers
+            How the input is split. Key is the type of set (e.g., training, cv1, validation), value is the list of rows beloning to that set
 
         x_columns: list of strings
             The labels of the columns of the data frame to be used to train the model
@@ -69,23 +60,22 @@ class RegressionInputs:
             The label of the y column
         """
         self.data = data
-        self.training_idx = training_idx
-        self.validation_idx = validation_idx
+        self.inputs_split = inputs_split
         self.x_columns = x_columns
         self.scalers = {}
         self.y_column = y_column
         self.scaled_columns = []
 
     def __copy__(self):
-        return RegressionInputs(self.data, self.training_idx.copy(), self.validation_idx.copy(), self.x_columns.copy(), self.y_column)
+        return RegressionInputs(self.data, self.inputs_split.copy(), self.x_columns.copy(), self.y_column)
 
     def copy(self):
         return self.__copy__()
 
     def __str__(self):
         ret = "x_columns: " + str(self.x_columns) + " - y_column: " + self.y_column + "\n"
-        ret = ret + "training_idx: " + str(self.training_idx) + "\n"
-        ret = ret + "validation_idx: " + str(self.validation_idx) + "\n"
+        for name, values in self.inputs_split.items():
+            ret = ret + name + ": " + str(values) + "\n"
         ret = ret + self.data.to_string()
         return ret
 

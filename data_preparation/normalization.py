@@ -63,7 +63,7 @@ class Normalization(dp.DataPreparation):
         to_be_normalized = inputs.x_columns.copy()
         to_be_normalized.append(inputs.y_column)
 
-        filtered_data = inputs.data.iloc[inputs.training_idx, :]
+        filtered_data = inputs.data.iloc[inputs.inputs_split["training"], :]
         #filtered_data = inputs.data
 
         #Extract the columns which have to be normalized

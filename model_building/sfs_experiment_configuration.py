@@ -77,7 +77,7 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
         """
         Build the model with the experiment configuration represented by this object
         """
-        xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.training_idx)
+        xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._sfs.fit(xdata, ydata)
         self._logger.debug("Selected features: %s", str(self._sfs.k_feature_names_))
 

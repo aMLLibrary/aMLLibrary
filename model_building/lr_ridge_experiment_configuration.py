@@ -70,7 +70,7 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         self._logger.debug("Building model for %s", self._signature)
         self._regressor = lr.Ridge(alpha=self._hyperparameters['alpha'])
         assert self._regression_inputs
-        xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.training_idx)
+        xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
         for idx, col_name in enumerate(self._regression_inputs.x_columns):

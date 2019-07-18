@@ -399,9 +399,9 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
         """
         assert prefix
         return_list = []
-        dataset_size = len(regression_inputs.training_idx)
+        dataset_size = len(regression_inputs.inputs_split["training"])
         fold_size = int(dataset_size / self._k)
-        all_training_idx = set(regression_inputs.training_idx)
+        all_training_idx = set(regression_inputs.inputs_split["training"])
         remaining = set(all_training_idx)
         for fold in range(0, self._k):
             assert prefix
@@ -416,7 +416,7 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
                 fold_testing_idx = set(self._random_generator.sample(remaining, fold_size))
             fold_training_idx = all_training_idx - fold_testing_idx
             remaining = remaining - fold_testing_idx
-            fold_regresion_inputs.training_idx = list(fold_training_idx)
+            fold_regresion_inputs.inputs_split["training"] = list(fold_training_idx)
             fold_regresion_inputs.fold_testing_idx = list(fold_testing_idx)
             return_list.extend(self._generators[fold].generate_experiment_configurations(fold_prefix, fold_regresion_inputs))
         return return_list

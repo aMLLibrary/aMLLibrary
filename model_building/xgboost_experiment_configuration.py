@@ -80,7 +80,7 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
                                            learning_rate=self._hyperparameters['learning_rate'],
                                            max_depth=self._hyperparameters['max_depth'])
         assert self._regression_inputs
-        xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.training_idx)
+        xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
 

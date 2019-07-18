@@ -53,12 +53,12 @@ class RandomSplitting(data_preparation.data_preparation.DataPreparation):
         return "RandomSplitting"
 
     def process(self, inputs):
-        outputs = inputs
+        data = inputs
 
-        assert outputs.training_idx
-        validation_size = int(float(len(outputs.training_idx)) * self._campaign_configuration['General']['hold_out_ratio'])
+        assert data.inputs_split["training"]
+        validation_size = int(float(len(data.inputs_split["training"])) * self._campaign_configuration['General']['hold_out_ratio'])
 
-        outputs.validation_idx = self._random_generator.sample(outputs.validation_idx, validation_size)
-        outputs.training_idx = list(set(outputs.training_idx) - set(outputs.validation_idx))
+        data.inputs_split["validation"] = self._random_generator.sample(data.inputs_split["validation"], validation_size)
+        data.inputs_split["training"] = list(set(data.inputs_split["training"]) - set(data.inputs_split["validation"]))
 
-        return outputs
+        return data
