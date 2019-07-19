@@ -75,14 +75,18 @@ class GeneratorsFactory:
                 feature_selection_generators[technique] = model_building.sequential_feature_selection.SFSExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
             generators = feature_selection_generators
 
-        validation = self._campaign_configuration['General']['validation']
-        if validation == "KFold":
-            kfold_generators = {}
-            for technique, generator in generators.items():
-                kfold_generators[technique] = ds.KFoldExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._campaign_configuration['General']['folds'], generator)
-            generators = kfold_generators
+        #Wrap together different techniques
+        generator = ds.MultiTechniquesExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), generators)
 
-        multitechniques_generator = ds.MultiTechniquesExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), generators)
+        #Add wrapper to perform normalization
+        generator = ds.NormalizationExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), generator)
 
-        top_generator = ds.RepeatedExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._campaign_configuration['General']['run_num'], multitechniques_generator)
+        #Add wrapper to generate hp_selection
+        generator = ds.SelectionValidationExpConfsGenerator.get_selection_generator(self._campaign_configuration, self._random_generator.random(), generator, self._campaign_configuration['General']['hp_selection'])
+
+        #Add wrapper to generate validation
+        generator = ds.SelectionValidationExpConfsGenerator.get_validation_generator(self._campaign_configuration, self._random_generator.random(), generator, self._campaign_configuration['General']['validation'])
+
+        #Add wrapper to perform multiple runs
+        top_generator = ds.RepeatedExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._campaign_configuration['General']['run_num'], generator)
         return top_generator

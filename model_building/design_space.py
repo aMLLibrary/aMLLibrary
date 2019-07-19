@@ -22,6 +22,7 @@ import pprint
 import random
 import sys
 
+import data_preparation.normalization
 import data_preparation.random_splitting
 
 import model_building.experiment_configuration as ec
@@ -158,7 +159,8 @@ class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
         list
             a list of the experiment configurations to be evaluated
         """
-        self._logger.debug("Calling generate_experiment_configurations in %s", self.__class__.__name__)
+        self._logger.debug("Calling generate experiment_configurations in %s %s %s", str(id(self)), str(prefix), self.__class__.__name__)
+        self._logger.debug("Regression inputs is %s %s", str((id(regression_inputs))), str(regression_inputs))
         return_list = []
         assert self._generators
         for key, generator in self._generators.items():
@@ -211,6 +213,8 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         list
             a list of the experiment configurations to be evaluated
         """
+        self._logger.debug("Calling generate_experiment_configurations in %s %s", self.__class__.__name__, str(id(self)))
+        self._logger.debug("Regression inputs is %s %s", str((id(regression_inputs))), str(regression_inputs))
         assert prefix
         first_key = ""
         #We expect that hyperparameters for a technique are stored in campaign_configuration[first_key] as a dictionary from string to list of values
@@ -232,6 +236,7 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
             hyperparams_names.append(hyperparam)
             hyperparams_values.append(hyperparams[hyperparam])
 
+        self._logger.debug("I am %s", str(id(self)))
         assert not self._experiment_configurations
 
         #Cartesian product of parameters
@@ -321,32 +326,251 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
         list
             a list of the experiment configurations to be evaluated
         """
-        self._logger.debug("Calling generate_experiment_configurations in %s", self.__class__.__name__)
+        self._logger.debug("Calling generate_experiment_configurations in %s %s", self.__class__.__name__, str(id(self)))
+
         return_list = []
         assert self._generators
         for key, generator in self._generators.items():
+            self._logger.debug("A000")
             new_prefix = prefix.copy()
             new_prefix.append(key)
-            assert new_prefix
-            validation = self._campaign_configuration['General']['validation']
-            if validation in {"All", "KFold", "Extrapolation"}:
-                run_regression_inputs = regression_inputs
-            elif validation == "HoldOut":
-                run_regression_inputs = regression_inputs.copy()
-                splitter = data_preparation.random_splitting.RandomSplitting(self._campaign_configuration, self._random_generator.random())
-                run_regression_inputs = splitter.process(run_regression_inputs)
-            else:
-                self._logger.error("Unknown validation method %s", validation)
-                sys.exit(1)
-            self._logger.debug("Regression inputs for %s are %s", key, str(run_regression_inputs))
-            return_list.extend(generator.generate_experiment_configurations(new_prefix, run_regression_inputs))
+            return_list.extend(generator.generate_experiment_configurations(new_prefix, regression_inputs))
         assert return_list
         return return_list
 
     def __deepcopy__(self, memo):
         raise NotImplementedError()
 
-class KFoldExpConfsGenerator(MultiExpConfsGenerator):
+class SelectionValidationExpConfsGenerator(ExpConfsGenerator):
+    """
+    Base class for generator wrappers used to generate hy_selection or validation set
+
+    Methods
+    -------
+    _get_selection_validation()
+        Base method for get_selection_generator and get_validation_generator
+
+    get_selection_generator()
+        Static factory method to instantiate subclasses
+
+    get_validation_generator()
+        Static factory method to instantiate subclasses
+    """
+    def __init__(self, campaign_configuration, seed, is_validation):
+        """
+        Parameters
+        ----------
+        campaign_configuration: dict of dict
+            The set of options specified by the user though command line and campaign configuration files
+
+        seed: integer
+            The seed to be used to initialize the random generator
+
+        is_validation: bool
+            True if the instance to be created is for validating, false if it is for hp selection
+        """
+        self._is_validation = is_validation
+        super().__init__(campaign_configuration, seed)
+
+    @staticmethod
+    def _get_selection_validation_generator(campaign_configuration, seed, wrapped_generator, subclass_name, is_validation):
+        """
+        Static factory method to instantiate subclasses
+
+        Parameters
+        ----------
+        campaign_configuration: dict of dict
+            The set of options specified by the user though command line and campaign configuration files
+
+        seed: integer
+            The seed to be used to initialize the random generator
+
+        wrapped_generator: ExpConfsGenerator
+            The generator to be wrapped
+
+        subclass_name: str
+            The name of the class to be generated
+
+        is_validation: bool
+            True if the instance to be created is for validating, false if it is for hp selection
+
+        Returns
+        -------
+        The generated instance
+        """
+        if subclass_name == "All":
+            return AllExpConfsGenerator(campaign_configuration, seed, wrapped_generator, is_validation)
+        if subclass_name == "Extrapolation":
+            if is_validation:
+                #Split is performed as preprocessing step
+                return AllExpConfsGenerator(campaign_configuration, seed, wrapped_generator, is_validation)
+            else:
+                logging.error("Extrapolation cannot be used to perform hp_selection")
+                sys.exit(1)
+        elif subclass_name == "HoldOut":
+            return HoldOutExpConfsGenerator(campaign_configuration, seed, wrapped_generator, is_validation)
+        elif subclass_name == "KFold":
+            return KFoldExpConfsGenerator(campaign_configuration, seed, campaign_configuration['General']['folds'], wrapped_generator, is_validation)
+        else:
+            logging.error("Unknown hp_selection/validation method %s", subclass_name)
+            sys.exit(1)
+
+    @staticmethod
+    def get_selection_generator(campaign_configuration, seed, wrapped_generator, hp_selection):
+        """
+        Static factory method to instantiate subclasses
+
+        Parameters
+        ----------
+        campaign_configuration: dict of dict
+            The set of options specified by the user though command line and campaign configuration files
+
+        seed: integer
+            The seed to be used to initialize the random generator
+
+        wrapped_generator: ExpConfsGenerator
+            The generator to be wrapped
+
+        hp_selection: str
+            The name of the class to be generated
+
+        Returns
+        -------
+        The generated instance
+        """
+        return SelectionValidationExpConfsGenerator._get_selection_validation_generator(campaign_configuration, seed, wrapped_generator, hp_selection, False)
+
+    @staticmethod
+    def get_validation_generator(campaign_configuration, seed, wrapped_generator, validation):
+        """
+        Static factory method to instantiate subclasses
+
+        Parameters
+        ----------
+        campaign_configuration: dict of dict
+            The set of options specified by the user though command line and campaign configuration files
+
+        seed: integer
+            The seed to be used to initialize the random generator
+
+        wrapped_generator: ExpConfsGenerator
+            The generator to be wrapped
+
+        validation: str
+            The name of the class to be generated
+
+        Returns
+        -------
+        The generated instance
+        """
+        return SelectionValidationExpConfsGenerator._get_selection_validation_generator(campaign_configuration, seed, wrapped_generator, validation, True)
+
+    def __deepcopy__(self, memo):
+        raise NotImplementedError()
+
+class AllExpConfsGenerator(SelectionValidationExpConfsGenerator):
+    """
+    Wraps a generator and pass to it regression inputs without modification
+
+    Methods
+    -------
+    generate_experiment_configurations()
+
+    Calls generate_experiment_configurations of the wrapped generator
+    """
+    def __init__(self, campaign_configuration, seed, wrapped_generator, is_validation):
+        """
+        Parameters
+        ----------
+        campaign_configuration: dict of dict
+            The set of options specified by the user though command line and campaign configuration files
+
+        seed: integer
+            The seed to be used to initialize the random generator
+
+        wrapped_generator: ExpConfsGenerator
+            The generator to be wrapped
+
+        is_validation: bool
+            True if the instance to be created is for validating, false if it is for hp selection
+        """
+        self._wrapped_generator = wrapped_generator
+        super().__init__(campaign_configuration, seed, is_validation)
+
+    def generate_experiment_configurations(self, prefix, regression_inputs):
+        """
+        Calls generate_experiment_configurations of the wrapped generator
+
+        Parameters
+        ----------
+        prefix: list of str
+            The prefix to be considered
+
+        regression_inputs
+            The regression inputs to be used with the wrapped generator
+        """
+        self._logger.debug("Calling generate_experiment_configurations in %s %s", self.__class__.__name__, str(id(self)))
+        local_prefix = copy.copy(prefix)
+        local_prefix.append("All")
+        return self._wrapped_generator.generate_experiment_configurations(local_prefix, regression_inputs)
+
+    def __deepcopy__(self, memo):
+        return AllExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), copy.deepcopy(self._wrapped_generator), self._is_validation)
+
+class HoldOutExpConfsGenerator(SelectionValidationExpConfsGenerator):
+    """
+    Wraps a generator and pass to it the regression_inputs removing data for hp_selection/validation
+
+    Methods
+    -------
+    generate_experiment_configurations()
+
+    Calls generate_experiment_configurations of the wrapped generator
+    """
+    def __init__(self, campaign_configuration, seed, wrapped_generator, is_validation):
+        """
+        Parameters
+        ----------
+        campaign_configuration: dict of dict
+            The set of options specified by the user though command line and campaign configuration files
+
+        seed: integer
+            The seed to be used to initialize the random generator
+
+        wrapped_generator: ExpConfsGenerator
+            The generator to be wrapped
+
+        is_validation: bool
+            True if the instance to be created is for validating, false if it is for hp selection
+        """
+        self._wrapped_generator = wrapped_generator
+        super().__init__(campaign_configuration, seed, is_validation)
+
+    def generate_experiment_configurations(self, prefix, regression_inputs):
+        """
+        Calls generate_experiment_configurations of the wrapped generator
+
+        Parameters
+        ----------
+        prefix: list of str
+            The prefix to be considered
+
+        regression_inputs
+            The regression inputs to be used with the wrapped generator
+        """
+        self._logger.debug("Calling generate_experiment_configurations in %s %s", self.__class__.__name__, str(id(self)))
+        local_prefix = copy.copy(prefix)
+        local_prefix.append("HoldOut")
+        local_regression_inputs = regression_inputs.copy()
+        destinaion_set = "validation" if self._is_validation else "hp_selection"
+        splitter = data_preparation.random_splitting.RandomSplitting(self._campaign_configuration, self._random_generator.random(), "training", destinaion_set)
+        local_regression_inputs = splitter.process(local_regression_inputs)
+        return self._wrapped_generator.generate_experiment_configurations(local_prefix, local_regression_inputs)
+
+    def __deepcopy__(self, memo):
+        return HoldOutExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), copy.deepcopy(self._wrapped_generator), self._is_validation)
+
+class KFoldExpConfsGenerator(SelectionValidationExpConfsGenerator):
     """
     Wraps k instances of a generator with different training set
 
@@ -355,6 +579,9 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
     _k: integer
         The number of different folds to be used
 
+    _validation: bool
+        True if this KFold is used for validation, False if it is used to perform hyperparameter selection
+
     Methods
     ------
     generate_experiment_configurations()
@@ -362,7 +589,7 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
     Generates the set of points to be evaluated
     """
 
-    def __init__(self, campaign_configuration, seed, k, wrapped_generator):
+    def __init__(self, campaign_configuration, seed, k, wrapped_generator, is_validation):
         """
         Parameters
         ----------
@@ -380,13 +607,16 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
         """
         self._k = k
 
-
-        kfold_generators = {}
+        self._kfold_generators = {}
 
         for fold in range(0, self._k):
-            kfold_generators[fold] = copy.deepcopy(wrapped_generator)
+            self._kfold_generators[fold] = copy.deepcopy(wrapped_generator)
 
-        super().__init__(campaign_configuration, seed, kfold_generators)
+        super().__init__(campaign_configuration, seed, is_validation)
+
+        for key, value in self._kfold_generators.items():
+            self._logger.debug("Wrapped %s is %s", str(key), str(id(value)))
+
 
     def generate_experiment_configurations(self, prefix, regression_inputs):
         """
@@ -397,7 +627,12 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
         list
             a list of the experiment configurations
         """
+        self._logger.debug("Calling generate experiment_configurations in %s %s %s", str(id(self)), str(prefix), self.__class__.__name__)
+        self._logger.debug("Regression inputs is %s %s", str((id(regression_inputs))), str(regression_inputs))
         assert prefix
+        if len(regression_inputs.inputs_split["training"]) < self._k:
+            self._logger.error("Too few samples to perform %d-Fold", self._k)
+            sys.exit(1)
         return_list = []
         dataset_size = len(regression_inputs.inputs_split["training"])
         fold_size = int(dataset_size / self._k)
@@ -409,20 +644,70 @@ class KFoldExpConfsGenerator(MultiExpConfsGenerator):
             assert fold_prefix
             fold_prefix.append("f" + str(fold))
             assert fold_prefix
-            fold_regresion_inputs = copy.copy(regression_inputs)
+            fold_regression_inputs = copy.copy(regression_inputs)
             if fold == self._k - 1:
                 fold_testing_idx = remaining
             else:
                 fold_testing_idx = set(self._random_generator.sample(remaining, fold_size))
             fold_training_idx = all_training_idx - fold_testing_idx
             remaining = remaining - fold_testing_idx
-            fold_regresion_inputs.inputs_split["training"] = list(fold_training_idx)
-            fold_regresion_inputs.fold_testing_idx = list(fold_testing_idx)
-            return_list.extend(self._generators[fold].generate_experiment_configurations(fold_prefix, fold_regresion_inputs))
+            fold_regression_inputs.inputs_split["training"] = list(fold_training_idx)
+            second_set = "validation" if self._is_validation else "hp_selection"
+            fold_regression_inputs.inputs_split[second_set] = list(fold_testing_idx)
+            return_list.extend(self._kfold_generators[fold].generate_experiment_configurations(fold_prefix, fold_regression_inputs))
         return return_list
 
     def __deepcopy__(self, memo):
-        return KFoldExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._k, self._generators[0])
+        return KFoldExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._k, self._kfold_generators[0], self._is_validation)
+
+class NormalizationExpConfsGenerator(ExpConfsGenerator):
+    """
+    Wraps a generator and pass to it normalized regression inputs
+
+    Methods
+    -------
+    generate_experiment_configurations()
+
+    Calls generate_experiment_configurations of the wrapped generator with normalized data
+    """
+
+    def __init__(self, campaign_configuration, seed, wrapped_generator):
+        """
+        Parameters
+        ----------
+        campaign_configuration: dict of dict
+            The set of options specified by the user though command line and campaign configuration files
+
+        seed: integer
+            The seed to be used to initialize the random generator
+
+        wrapped_generator: ExpConfsGenerator
+            The wrapped generator to be duplicated and modified
+        """
+        self._wrapped_generator = wrapped_generator
+        super().__init__(campaign_configuration, seed)
+
+    def generate_experiment_configurations(self, prefix, regression_inputs):
+        """
+        Calls generate_experiment_configurations of the wrapped generator
+
+        Parameters
+        ----------
+        prefix: list of str
+            The prefix to be considered
+
+        regression_inputs
+            The regression inputs to be used with the wrapped generator
+        """
+        self._logger.debug("Calling generate experiment_configurations in %s %s %s", str(id(self)), str(prefix), self.__class__.__name__)
+        self._logger.debug("Regression inputs is %s", str((id(regression_inputs))))
+        normalizer = data_preparation.normalization.Normalization(self._campaign_configuration)
+        local_regression_inputs = copy.copy(regression_inputs)
+        local_regression_inputs = normalizer.process(local_regression_inputs)
+        return self._wrapped_generator.generate_experiment_configurations(prefix, local_regression_inputs)
+
+    def __deepcopy__(self, memo):
+        return NormalizationExpConfsGenerator(self._experiment_configurations, self._random_generator.random(), copy.deepcopy(self._wrapped_generator))
 
 
 class RandomExpConfsGenerator(ExpConfsGenerator):

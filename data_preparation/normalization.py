@@ -58,7 +58,8 @@ class Normalization(dp.DataPreparation):
             The normalized data
         """
 
-        outputs = inputs
+        self._logger.debug(str(inputs))
+        data = inputs
 
         to_be_normalized = inputs.x_columns.copy()
         to_be_normalized.append(inputs.y_column)
@@ -68,12 +69,17 @@ class Normalization(dp.DataPreparation):
 
         #Extract the columns which have to be normalized
         for column in to_be_normalized:
-            outputs.scaled_columns.append(column)
-            data_to_be_normalized = filtered_data[column].to_numpy()
-            data_to_be_normalized = numpy.reshape(data_to_be_normalized, (-1, 1))
-            outputs.scalers[column] = sklearn.preprocessing.StandardScaler().fit(data_to_be_normalized)
-            normalized_data = outputs.scalers[column].transform(data_to_be_normalized)
-            outputs.data["original_" + column] = outputs.data[column]
-            outputs.data[column] = normalized_data
+            data.scaled_columns.append(column)
 
-        return outputs
+            normalization_support = filtered_data[column].to_numpy()
+            normalization_support = numpy.reshape(normalization_support, (-1, 1))
+            data.scalers[column] = sklearn.preprocessing.StandardScaler().fit(normalization_support)
+
+            data_to_be_normalized = data.data[column].to_numpy()
+            data_to_be_normalized = numpy.reshape(data_to_be_normalized, (-1, 1))
+            normalized_data = data.scalers[column].transform(data_to_be_normalized)
+            data.data["original_" + column] = data.data[column]
+            self._logger.debug(str(len(column)))
+            data.data[column] = normalized_data
+
+        return data
