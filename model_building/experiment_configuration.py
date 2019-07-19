@@ -66,6 +66,9 @@ class ExperimentConfiguration(abc.ABC):
     _signature: str
         The signature associated with this experiment configuration
 
+    hp_selection_mape: float
+        The MAPE obtained on the hp_selection data
+
     validation_mape: float
         The MAPE obtained on the validation data
 
@@ -83,8 +86,8 @@ class ExperimentConfiguration(abc.ABC):
     _train()
         Actual implementation of train
 
-    validate()
-        Compute the MAPE on the validation set
+    evaluate()
+        Compute the MAPE on the hp_selection and set and on the validation set
 
     generate_plots()
         Generate plots about real vs. predicted
@@ -134,6 +137,7 @@ class ExperimentConfiguration(abc.ABC):
         self._logger = logging.getLogger(self.get_signature_string())
         self._logger.debug("---")
         self.validation_mape = None
+        self.hp_selection_mape = None
         self._regressor = None
 
         #Create experiment directory
@@ -161,11 +165,12 @@ class ExperimentConfiguration(abc.ABC):
         Build the model with the experiment configuration represented by this object
         """
 
-    def validate(self):
+    def evaluate(self):
         """
         Validate the model, i.e., compute the MAPE on the validation set
         """
         self._start_file_logger()
+
         validation_rows = self._regression_inputs.inputs_split["validation"]
         self._logger.debug("Validating model")
         predicted_y = self.compute_estimations(validation_rows)
@@ -177,7 +182,21 @@ class ExperimentConfiguration(abc.ABC):
         difference = real_y - predicted_y
         self.validation_mape = np.mean(np.abs(np.divide(difference, real_y)))
         self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
-        self._logger.debug("Validated model. MAPE is %f", self.validation_mape)
+        self._logger.debug("MAPE on validation set is %f", self.validation_mape)
+
+        hp_selection_rows = self._regression_inputs.inputs_split["hp_selection"]
+        self._logger.debug("Validating model")
+        predicted_y = self.compute_estimations(hp_selection_rows)
+        real_y = self._regression_inputs.data.loc[hp_selection_rows, self._regression_inputs.y_column].values.astype(np.float64)
+        if self._regression_inputs.y_column in self._regression_inputs.scalers:
+            y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
+            predicted_y = y_scaler.inverse_transform(predicted_y)
+            real_y = y_scaler.inverse_transform(real_y)
+        difference = real_y - predicted_y
+        self.hp_selection_mape = np.mean(np.abs(np.divide(difference, real_y)))
+        self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
+        self._logger.debug("MAPE on hp_selection set is %f", self.hp_selection_mape)
+
         self._stop_file_logger()
 
     def generate_plots(self):

@@ -512,7 +512,12 @@ class AllExpConfsGenerator(SelectionValidationExpConfsGenerator):
         self._logger.debug("Calling generate_experiment_configurations in %s %s", self.__class__.__name__, str(id(self)))
         local_prefix = copy.copy(prefix)
         local_prefix.append("All")
-        return self._wrapped_generator.generate_experiment_configurations(local_prefix, regression_inputs)
+        local_regression_inputs = copy.copy(regression_inputs)
+        if self._is_validation:
+            local_regression_inputs.inputs_split["validation"] = local_regression_inputs.inputs_split["training"].copy()
+        else:
+            local_regression_inputs.inputs_split["hp_selection"] = local_regression_inputs.inputs_split["training"].copy()
+        return self._wrapped_generator.generate_experiment_configurations(local_prefix, local_regression_inputs)
 
     def __deepcopy__(self, memo):
         return AllExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), copy.deepcopy(self._wrapped_generator), self._is_validation)

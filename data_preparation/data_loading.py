@@ -74,7 +74,6 @@ class DataLoading(data_preparation.data_preparation.DataPreparation):
 
         inputs_split = {}
         inputs_split["training"] = data_frame.index.values.tolist()
-        inputs_split["validation"] = data_frame.index.values.tolist()
 
         output = regression_inputs.RegressionInputs(data_frame, inputs_split, self._campaign_configuration['Features']['Original_feature_names'], self._campaign_configuration['General']['y'])
 

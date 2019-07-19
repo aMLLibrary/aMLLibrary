@@ -65,7 +65,7 @@ class Results:
         exp_conf: ec.ExperimentConfiguration
         self.raw_results['validation_MAPE'] = {}
         for exp_conf in self._exp_confs:
-            exp_conf.validate()
+            exp_conf.evaluate()
             if bool(self._campaign_configuration['General']['generate_plots']):
                 exp_conf.generate_plots()
             self.raw_results['validation_MAPE'][exp_conf.get_signature_string()] = exp_conf.validation_mape
