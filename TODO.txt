@@ -1,4 +1,4 @@
-- customized grid search
-- Ernest
-- Results elaboration
-- Feature selection by means of XGB
+- customized grid search : Marco 
+- Ernest : Danilo
+- Results elaboration : Marco
+- Feature selection by means of XGB : Danilo
