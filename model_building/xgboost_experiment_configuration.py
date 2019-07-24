@@ -17,6 +17,9 @@ limitations under the License.
 
 #import sklearn.linear_model as lr
 
+import eli5
+import os
+
 import xgboost as xgb
 
 import model_building.experiment_configuration as ec
@@ -83,6 +86,15 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
+
+        # Da simone
+
+        expl = eli5.xgboost.explain_weights_xgboost(self._regressor, top=None) # feature_names= XXX self.feature_names XXX
+        expl_weights = eli5.format_as_text(expl)
+        self._logger.debug("Features Importance Computed")#OK
+        target = open(os.path.join(self._experiment_directory, "explanations.txt"), 'w')
+        target.write(expl_weights)
+        target.close()
 
         #for idx, col_name in enumerate(self._regression_inputs.x_columns):
         #    self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])
