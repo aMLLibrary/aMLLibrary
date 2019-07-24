@@ -83,6 +83,4 @@ class ModelBuilding:
             for experiment_configuration, mape in mapes.items():
                 self._logger.info("%s of %s is %f", metric, experiment_configuration, mape)
 
-        best_results = results.get_best_for_technique()
-        for technique, best_result in best_results.items():
-            self._logger.info("MAPE of best %s is for configuration %s: %f", technique, best_result[0], best_result[1])
+        results.get_best_for_technique()
