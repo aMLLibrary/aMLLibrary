@@ -1,4 +1,4 @@
 - customized grid search : Marco 
 - Ernest : Danilo
 - Results elaboration : Marco
-- Feature selection by means of XGB : Danilo
+- Feature selection by means of XGB (file ini generation and fix of features separations): Marco
