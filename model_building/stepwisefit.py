@@ -49,7 +49,7 @@ class Stepwise:
                 not_in_use = [c for c in X.columns if c not in self.k_feature_names_]
                 possible_additions = X.loc[:, not_in_use]
                 rho = possible_additions.join(residuals).corr()
-                most_correlated = rho.iloc[-1, :-1].idxmax(axis="columns")
+                most_correlated = rho.iloc[-1, :-1].abs().idxmax(axis="columns")
                 current_columns = self.k_feature_names_ + [most_correlated]
                 current_data = X.loc[:, current_columns]
                 b_new, b_int_new, r_new = self._regress(current_data, y)
