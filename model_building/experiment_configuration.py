@@ -20,11 +20,12 @@ import os
 from enum import Enum
 
 import matplotlib
+import numpy as np
+
 matplotlib.use('Agg')
-#pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position
 import matplotlib.pyplot as plt
 
-import numpy as np
 
 class Technique(Enum):
     """
@@ -37,9 +38,13 @@ class Technique(Enum):
     RF = 4
     SVR = 5
     NNLS = 6
+    STEPWISE = 7
 
-enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST: 'XGBoost', Technique.DT: 'DecisionTree',
-                               Technique.RF: 'RandomForest', Technique.SVR: 'SVR', Technique.NNLS: 'NNLS'}
+
+enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST: 'XGBoost',
+                               Technique.DT: 'DecisionTree', Technique.RF: 'RandomForest',
+                               Technique.SVR: 'SVR', Technique.NNLS: 'NNLS',
+                               Technique.STEPWISE: 'Stepwise'}
 
 
 class ExperimentConfiguration(abc.ABC):
