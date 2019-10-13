@@ -10,6 +10,7 @@ mlxtend = "*"
 xgboost = "*"
 pylint = "*"
 matplotlib = "*"
+eli5 = "*"
 
 [dev-packages]
 

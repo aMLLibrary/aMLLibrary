@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 import numpy
+import pandas
 from scipy import linalg, stats
 
 
@@ -25,6 +26,7 @@ class Stepwise:
         self._add_intercept = fit_intercept
         self._max_iterations = max_iter
         self.coef_ = None
+        self.intercept_ = None
         self.k_feature_names_ = None
 
     def fit(self, X, y):
@@ -44,21 +46,21 @@ class Stepwise:
             dropped = False
 
             if len(self.k_feature_names_) < regressors:
-                not_in_use = [c not in self.k_feature_names_ for c in X.columns]
-                possible_additions = X[:, not_in_use]
-                most_correlated = possible_additions.join(residuals).corr()[0, :-1].idxmax(axis="columns")
-                column_new = X.columns[most_correlated]
-                current_columns = self.k_feature_names_ + [column_new]
+                not_in_use = [c for c in X.columns if c not in self.k_feature_names_]
+                possible_additions = X.loc[:, not_in_use]
+                rho = possible_additions.join(residuals).corr()
+                most_correlated = rho.iloc[-1, :-1].idxmax(axis="columns")
+                current_columns = self.k_feature_names_ + [most_correlated]
                 current_data = X.loc[:, current_columns]
                 b_new, b_int_new, r_new = self._regress(current_data, y)
                 z_new = numpy.abs(b_new[-1] / (b_int_new[-1, 1] - b_new[-1]))
 
                 if z_new > 1:  # which means you accept
                     added = True
-                    self.coef_ = b_new
+                    b = b_new
                     b_int = b_int_new
-                    residuals = r_new
-                    self.k_feature_names_.append(column_new)
+                    residuals = pandas.Series(r_new, name="r")
+                    self.k_feature_names_.append(most_correlated)
 
             if self.k_feature_names_:
                 variables = len(self.k_feature_names_)
@@ -66,9 +68,9 @@ class Stepwise:
                 t_ratio = stats.t.ppf(1 - self._p_to_discard / 2, dof) / stats.t.ppf(1 - self._p_to_add / 2, dof)
 
                 if self._add_intercept:
-                    z = numpy.abs(self.coef_[1:] / (b_int[1:, 1] - self.coef_[1:]))
+                    z = numpy.abs(b[1:] / (b_int[1:, 1] - b[1:]))
                 else:
-                    z = numpy.abs(self.coef_ / (b_int[:, 1] - self.coef_))
+                    z = numpy.abs(b / (b_int[:, 1] - b))
 
                 z_min = numpy.min(z, axis=None)
                 idx = numpy.argmin(z, axis=None)
@@ -77,9 +79,17 @@ class Stepwise:
                     dropped = True
                     del self.k_feature_names_[idx]
                     current_data = X.loc[:, self.k_feature_names_]
-                    self.coef_, b_int, residuals = self._regress(current_data, y)
+                    b, b_int, r = self._regress(current_data, y)
+                    residuals = pandas.Series(r, name="r")
 
             go_on = added or dropped
+
+        if self._add_intercept:
+            self.intercept_ = b[0]
+            self.coef_ = b[1:]
+        else:
+            self.intercept_ = 0.0
+            self.coef_ = b
 
     def _regress(self, X_df, y_df):
         """
@@ -104,7 +114,7 @@ class Stepwise:
         c = numpy.diag(linalg.inv(R.T.dot(R)))
         # delta is negative, because alpha is small and t_alpha_2 negative
         delta = t_alpha_2 * numpy.sqrt(MSE * c)
-        beta_interval = numpy.concatenate((beta + delta, beta - delta), axis=1)
+        beta_interval = numpy.c_[beta + delta, beta - delta]
 
         return beta, beta_interval, residuals
 
@@ -114,5 +124,8 @@ class Stepwise:
 
         if self._add_intercept:
             X = numpy.c_[numpy.ones(n), X]
+            b = numpy.r_[self.intercept_, self.coef_]
+        else:
+            b = self.coef_
 
-        return numpy.dot(X, self.coef_)
+        return numpy.dot(X, b)
