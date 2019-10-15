@@ -377,7 +377,6 @@
         },
         "wrapt": {
             "hashes": [
-                "sha256:52e79537559abcbea22795decb9c7c2c0a2fe4c01f15e92749042cdc5008d6e1",
                 "sha256:565a021fd19419476b9362b05eeaa094178de64f8361e44468f9e9d7843901e1"
             ],
             "version": "==1.11.2"
