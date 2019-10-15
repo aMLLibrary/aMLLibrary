@@ -90,7 +90,7 @@ class Results:
         validation = self._campaign_configuration['General']['validation']
         hp_selection = self._campaign_configuration['General']['hp_selection']
 
-        if (validation, hp_selection) in {("All", "All"), ("All", "Extrapolation"), ("All", "HoldOut"), ("HoldOut", "All"), ("HoldOut", "HoldOut")}:
+        if (validation, hp_selection) in {("All", "All"), ("Extrapolation", "All"), ("All", "HoldOut"), ("HoldOut", "All"), ("HoldOut", "HoldOut")}:
             #For each run, for each technique the best configuration
             run_tec_best_conf = recursivedict()
 
