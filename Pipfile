@@ -10,6 +10,7 @@ mlxtend = "*"
 xgboost = "*"
 pylint = "*"
 matplotlib = "*"
+flake8 = "*"
 
 [dev-packages]
 
