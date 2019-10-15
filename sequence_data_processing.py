@@ -30,7 +30,10 @@ import data_preparation.extrapolation
 import data_preparation.inversion
 import data_preparation.product
 import data_preparation.rename_columns
+import data_preparation.xgboost_feature_selection
+
 import model_building.model_building
+
 
 class SequenceDataProcessing:
     """
@@ -66,7 +69,7 @@ class SequenceDataProcessing:
             logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
-        #Check if the configuration file exists
+        # Check if the configuration file exists
         if not os.path.exists(configuration_file):
             self.logger.error("%s does not exist", configuration_file)
             sys.exit(-1)
@@ -83,7 +86,7 @@ class SequenceDataProcessing:
         self.parameters = {}
         self.get_parameters(configuration_file)
 
-        #Check if output path already exist
+        # Check if output path already exist
         if os.path.exists(args.output):
             self.logger.error("%s already exists", args.output)
             sys.exit(1)
@@ -91,45 +94,55 @@ class SequenceDataProcessing:
         shutil.copyfile(args.configuration_file, os.path.join(args.output, 'configuration_file.ini'))
         self.conf.write(open(os.path.join(args.output, "enriched_configuration_file.ini"), 'w'))
 
-        #Check that validation method has been specified
+        # Check that validation method has been specified
         if 'validation' not in self.parameters['General']:
             self.logger.error("Validation not specified")
             sys.exit(1)
 
-        #Check that if HoldOut is selected, hold_out_ratio is specified
+        # Check that if HoldOut is selected, hold_out_ratio is specified
         if self.parameters['General']['validation'] == "HoldOut" or self.parameters['General']['hp_selection'] == "HoldOut":
             if "hold_out_ratio" not in self.parameters['General']:
                 self.logger.error("hold_out_ratio not set")
                 sys.exit(1)
 
-        #Check that if Extrapolation is selected, extrapolation_columns is specified
+        # Check that if Extrapolation is selected, extrapolation_columns is specified
         if self.parameters['General']['validation'] == "Extrapolation":
             if "extrapolation_columns" not in self.parameters['General']:
                 self.logger.error("extrapolation_columns not set")
                 sys.exit(1)
 
-        #Adding read on input to data preprocessing step
+        # Check that if XGBoost is used for feature selection tolerance is specified
+        if 'FeatureSelection' in self.parameters and self.parameters['FeatureSelection']['method'] == "XGBoost":
+            if "XGBoost_tolerance" not in self.parameters['FeatureSelection']:
+                self.logger.error("XGBoost tolerance not set")
+                sys.exit(1)
+
+        # Adding read on input to data preprocessing step
         self._data_preprocessing_list.append(data_preparation.data_loading.DataLoading(self.parameters))
 
-        #Adding column renaming if required
+        # Adding column renaming if required
         if 'rename_columns' in self.parameters['DataPreparation']:
             self._data_preprocessing_list.append(data_preparation.rename_columns.RenameColumns(self.parameters))
 
-        #Adding column selection if required
+        # Adding column selection if required
         if 'use_columns' in self.parameters['DataPreparation'] or "skip_columns" in self.parameters['DataPreparation']:
             self._data_preprocessing_list.append(data_preparation.column_selection.ColumnSelection(self.parameters))
 
-        #Split according to extrapolation values if required
+        # Split according to extrapolation values if required
         if self.parameters['General']['validation'] == "Extrapolation":
             self._data_preprocessing_list.append(data_preparation.extrapolation.Extrapolation(self.parameters))
 
-        #Adding inverted features if required
+        # Adding inverted features if required
         if 'inverse' in self.parameters['DataPreparation'] and self.parameters['DataPreparation']['inverse']:
             self._data_preprocessing_list.append(data_preparation.inversion.Inversion(self.parameters))
 
-        #Adding product features if required
+        # Adding product features if required
         if 'product_max_degree' in self.parameters['DataPreparation'] and self.parameters['DataPreparation']['product_max_degree']:
             self._data_preprocessing_list.append(data_preparation.product.Product(self.parameters))
+
+        # Adding XGBoost preprocessing if required
+        if 'FeatureSelection' in self.parameters and self.parameters['FeatureSelection']['method'] == "XGBoost":
+            self._data_preprocessing_list.append(data_preparation.xgboost_feature_selection.XGBoostFeatureSelection(self.parameters))
 
         self._model_building = model_building.model_building.ModelBuilding(self.random_generator.random())
 
@@ -164,13 +177,12 @@ class SequenceDataProcessing:
 
         self.logger.info("Starting experimental campaign")
         # performs reading data, drops irrelevant columns
-        #initial_df = self.preliminary_data_processing.process(self.parameters)
-        #logging.info("Loaded and cleaned data")
+        # initial_df = self.preliminary_data_processing.process(self.parameters)
+        # logging.info("Loaded and cleaned data")
 
         # performs inverting of the columns and adds combinatorial terms to the df
-        #ext_df = self.data_preprocessing.process(initial_df, self.parameters)
-        #logging.info("Preprocessed data")
-
+        # ext_df = self.data_preprocessing.process(initial_df, self.parameters)
+        # logging.info("Preprocessed data")
 
         data_processing = None
 
@@ -182,5 +194,5 @@ class SequenceDataProcessing:
         self._model_building.process(self.parameters, data_processing, int(self.conf['General']['j']))
 
         end = time.time()
-        execution_time = str(end-start)
+        execution_time = str(end - start)
         logging.info("Execution Time : %s", execution_time)

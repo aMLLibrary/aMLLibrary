@@ -19,6 +19,7 @@ import argparse
 
 import sequence_data_processing
 
+
 def main():
 
     parser = argparse.ArgumentParser(description="Perform exploration of regression techniques")
@@ -32,6 +33,7 @@ def main():
 
     sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args)
     sequence_data_processor.process()
+
 
 if __name__ == '__main__':
     main()

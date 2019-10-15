@@ -11,6 +11,7 @@ xgboost = "*"
 pylint = "*"
 matplotlib = "*"
 flake8 = "*"
+eli5 = "*"
 
 [dev-packages]
 

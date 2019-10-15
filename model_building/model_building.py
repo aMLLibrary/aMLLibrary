@@ -20,9 +20,11 @@ import random
 import model_building.generators_factory as gf
 import results as re
 
+
 def process_wrapper(experiment_configuration):
     experiment_configuration.train()
     return experiment_configuration
+
 
 class ModelBuilding:
     """
@@ -84,3 +86,5 @@ class ModelBuilding:
                 self._logger.info("%s of %s is %f", metric, experiment_configuration, mape)
 
         results.get_best_for_technique()
+
+        return expconfs
