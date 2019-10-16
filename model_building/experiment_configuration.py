@@ -19,12 +19,12 @@ import logging
 import os
 from enum import Enum
 
-import matplotlib
 import numpy as np
+import matplotlib
 
 matplotlib.use('Agg')
 # pylint: disable=wrong-import-position
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa: E402
 
 
 class Technique(Enum):
@@ -134,7 +134,7 @@ class ExperimentConfiguration(abc.ABC):
             The input of the regression problem to be solved
         """
 
-        #Initialized attributes
+        # Initialized attributes
         self._campaign_configuration = campaign_configuration
         self._hyperparameters = hyperparameters
         self._regression_inputs = regression_inputs
@@ -145,16 +145,16 @@ class ExperimentConfiguration(abc.ABC):
         self.hp_selection_mape = None
         self._regressor = None
 
-        #Create experiment directory
+        # Create experiment directory
         self._experiment_directory = self._campaign_configuration['General']['output']
         for token in self._signature:
             self._experiment_directory = os.path.join(self._experiment_directory, token)
-        #Import here to avoid problems with circular dependencies
+        # Import here to avoid problems with circular dependencies
+        # pylint: disable=import-outside-toplevel
         import model_building.sfs_experiment_configuration
-        if isinstance(self, model_building.sfs_experiment_configuration.SFSExperimentConfiguration) or 'FeatureSelection' not in self._campaign_configuration:
+        if isinstance(self, model_building.sfs_experiment_configuration.SFSExperimentConfiguration) or 'FeatureSelection' not in self._campaign_configuration or 'method' not in self._campaign_configuration['FeatureSelection'] or self._campaign_configuration['FeatureSelection']['method'] != "SFS":
             assert not os.path.exists(self._experiment_directory)
             os.makedirs(self._experiment_directory)
-
 
     def train(self):
         """
@@ -293,7 +293,7 @@ class ExperimentConfiguration(abc.ABC):
         """
         Add the file handler to the logger
         """
-        #Logger writes to stdout and file
+        # Logger writes to stdout and file
         file_handler = logging.FileHandler(os.path.join(self._experiment_directory, 'log'), 'a+')
         self._logger.addHandler(file_handler)
 

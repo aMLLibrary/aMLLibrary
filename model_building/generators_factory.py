@@ -21,6 +21,7 @@ import model_building.design_space as ds
 import model_building.experiment_configuration as ec
 import model_building.sequential_feature_selection
 
+
 class GeneratorsFactory:
     """
     Factory calls to build the logical hierarchy of generators
@@ -69,24 +70,24 @@ class GeneratorsFactory:
             generators[technique] = ds.TechniqueExpConfsGenerator(self._campaign_configuration, None, string_techique_to_enum[technique])
         assert generators
 
-        if 'FeatureSelection' in self._campaign_configuration and self._campaign_configuration['FeatureSelection']['method']:
+        if 'FeatureSelection' in self._campaign_configuration and "method" in self._campaign_configuration['FeatureSelection'] and self._campaign_configuration['FeatureSelection']['method'] == 'SFS':
             feature_selection_generators = {}
             for technique, generator in generators.items():
                 feature_selection_generators[technique] = model_building.sequential_feature_selection.SFSExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
             generators = feature_selection_generators
 
-        #Wrap together different techniques
+        # Wrap together different techniques
         generator = ds.MultiTechniquesExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), generators)
 
-        #Add wrapper to perform normalization
+        # Add wrapper to perform normalization
         generator = ds.NormalizationExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), generator)
 
-        #Add wrapper to generate hp_selection
+        # Add wrapper to generate hp_selection
         generator = ds.SelectionValidationExpConfsGenerator.get_selection_generator(self._campaign_configuration, self._random_generator.random(), generator, self._campaign_configuration['General']['hp_selection'])
 
-        #Add wrapper to generate validation
+        # Add wrapper to generate validation
         generator = ds.SelectionValidationExpConfsGenerator.get_validation_generator(self._campaign_configuration, self._random_generator.random(), generator, self._campaign_configuration['General']['validation'])
 
-        #Add wrapper to perform multiple runs
+        # Add wrapper to perform multiple runs
         top_generator = ds.RepeatedExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._campaign_configuration['General']['run_num'], generator)
         return top_generator

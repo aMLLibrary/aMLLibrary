@@ -14,12 +14,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-#import sklearn.linear_model as lr
-
-import eli5
 import os
 
+import eli5
 import xgboost as xgb
 
 import model_building.experiment_configuration as ec
@@ -57,7 +54,6 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         self.technique = ec.Technique.XGBOOST
         self._regressor = xgb.XGBRegressor()
 
-
     def _compute_signature(self, prefix):
         """
         Compute the signature associated with this experiment configuration
@@ -68,7 +64,6 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         signature.append("n_estimators_" + str(self._hyperparameters['n_estimators']))
         signature.append("learning_rate_" + str(self._hyperparameters['learning_rate']))
         signature.append("max_depth_" + str(self._hyperparameters['max_depth']))
-
 
         return signature
 
@@ -81,7 +76,7 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
                                            gamma=self._hyperparameters['gamma'],
                                            n_estimators=self._hyperparameters['n_estimators'],
                                            learning_rate=self._hyperparameters['learning_rate'],
-                                           max_depth=self._hyperparameters['max_depth'])
+                                           max_depth=self._hyperparameters['max_depth'], tree_method="hist")
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
@@ -89,14 +84,14 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
 
         # Da simone
 
-        expl = eli5.xgboost.explain_weights_xgboost(self._regressor, top=None) # feature_names= XXX self.feature_names XXX
+        expl = eli5.xgboost.explain_weights_xgboost(self._regressor, top=None)  # feature_names= XXX self.feature_names XXX
         expl_weights = eli5.format_as_text(expl)
-        self._logger.debug("Features Importance Computed")#OK
+        self._logger.debug("Features Importance Computed")  # OK
         target = open(os.path.join(self._experiment_directory, "explanations.txt"), 'w')
         target.write(expl_weights)
         target.close()
 
-        #for idx, col_name in enumerate(self._regression_inputs.x_columns):
+        # for idx, col_name in enumerate(self._regression_inputs.x_columns):
         #    self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])
 
     def compute_estimations(self, rows):
