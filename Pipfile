@@ -12,6 +12,7 @@ pylint = "*"
 matplotlib = "*"
 flake8 = "*"
 eli5 = "*"
+mypy = "*"
 
 [dev-packages]
 
