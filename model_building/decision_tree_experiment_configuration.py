@@ -15,9 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
-
-#from sklearn.tree import DecisionTreeRegressor
+# from sklearn.tree import DecisionTreeRegressor
 
 import sklearn.tree as dt
 
@@ -56,7 +54,6 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         self.technique = ec.Technique.DT
         self._regressor = dt.DecisionTreeRegressor()
 
-
     def _compute_signature(self, prefix):
         """
         Compute the signature associated with this experiment configuration
@@ -67,7 +64,6 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         signature.append("max_features_" + str(self._hyperparameters['max_features']))
         signature.append("min_samples_split_" + str(self._hyperparameters['min_samples_split']))
         signature.append("min_samples_leaf_" + str(self._hyperparameters['min_samples_leaf']))
-
 
         return signature
 
@@ -86,7 +82,7 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
 
-        #for idx, col_name in enumerate(self._regression_inputs.x_columns):
+        # for idx, col_name in enumerate(self._regression_inputs.x_columns):
         #    self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])
 
     def compute_estimations(self, rows):
