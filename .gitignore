@@ -4,3 +4,4 @@ log
 output
 output_*
 /.idea/
+.mypy_cache/
