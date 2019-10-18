@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import argparse
+import os
 
 import sequence_data_processing
 
@@ -30,6 +31,8 @@ def main():
     parser.add_argument('-j', help="The number of processes to be used", default=1)
     parser.add_argument('-g', "--generate-plots", help="Generate plots", default=False, action="store_true")
     args = parser.parse_args()
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
     sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args)
     sequence_data_processor.process()
