@@ -19,6 +19,7 @@ import sklearn.svm as svm
 
 import model_building.experiment_configuration as ec
 
+
 class SVRExperimentConfiguration(ec.ExperimentConfiguration):
     """
     Class representing a single experiment configuration for linear regression
@@ -62,7 +63,6 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
         signature.append("kernel_" + str(self._hyperparameters['kernel']))
         signature.append("degree_" + str(self._hyperparameters['degree']))
 
-
         return signature
 
     def _train(self):
@@ -74,14 +74,12 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
                                   gamma=self._hyperparameters['gamma'], kernel=self._hyperparameters['kernel'],
                                   degree=self._hyperparameters['degree'])
 
-
-
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
 
-        #for idx, col_name in enumerate(self._regression_inputs.x_columns):
+        # for idx, col_name in enumerate(self._regression_inputs.x_columns):
         #    self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])
 
     def compute_estimations(self, rows):

@@ -16,7 +16,9 @@ limitations under the License.
 """
 
 import abc
-import logging
+
+import custom_logger
+
 
 class DataPreparation:
     """
@@ -41,8 +43,9 @@ class DataPreparation:
         campaign_configuration: dict of dict:
             The set of options specified by the user though command line and campaign configuration files
         """
+        assert campaign_configuration
         self._campaign_configuration = campaign_configuration
-        self._logger = logging.getLogger(__name__)
+        self._logger = custom_logger.getLogger(__name__)
 
     @abc.abstractmethod
     def get_name(self):

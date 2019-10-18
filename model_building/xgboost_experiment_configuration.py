@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import os
+import warnings
 
 import eli5
 import xgboost as xgb
@@ -71,22 +72,20 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         """
         Build the model with the experiment configuration represented by this object
         """
-        self._logger.debug("Building model for %s", self._signature)
-        self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'],
-                                           gamma=self._hyperparameters['gamma'],
-                                           n_estimators=self._hyperparameters['n_estimators'],
-                                           learning_rate=self._hyperparameters['learning_rate'],
-                                           max_depth=self._hyperparameters['max_depth'], tree_method="hist")
+        self._logger.debug("---Building model for %s", self._signature)
+        self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror')
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
-        self._regressor.fit(xdata, ydata)
-        self._logger.debug("Model built")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self._regressor.fit(xdata, ydata)
+        self._logger.debug("---Model built")
 
         # Da simone
 
         expl = eli5.xgboost.explain_weights_xgboost(self._regressor, top=None)  # feature_names= XXX self.feature_names XXX
         expl_weights = eli5.format_as_text(expl)
-        self._logger.debug("Features Importance Computed")  # OK
+        self._logger.debug("---Features Importance Computed")  # OK
         target = open(os.path.join(self._experiment_directory, "explanations.txt"), 'w')
         target.write(expl_weights)
         target.close()

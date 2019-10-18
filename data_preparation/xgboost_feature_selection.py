@@ -15,12 +15,12 @@ limitations under the License.
 """
 
 import copy
+import os
 import sys
 
 import eli5
 
 import data_preparation.data_preparation
-
 import model_building.model_building
 
 
@@ -36,6 +36,17 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
     process()
         Select the specified columns
     """
+
+    def __init__(self, campaign_configuration, prefix):
+        """
+        campaign_configuration: dict of dict:
+            The set of options specified by the user though command line and campaign configuration files
+
+        prefix: List[str]
+            The list of generators after which XGBoostFeatureSelectionExpConfsGenerator is plugged
+        """
+        self._prefix = prefix
+        super().__init__(campaign_configuration)
 
     def get_name(self):
         """
@@ -58,6 +69,15 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
 
         xgboost_parameters['General']['techniques'] = ['XGBoost']
 
+        xgboost_parameters['General']['run_num'] = 1
+
+        local_root_directory = self._campaign_configuration['General']['output']
+        for token in self._prefix:
+            local_root_directory = os.path.join(local_root_directory, token)
+        xgboost_parameters['General']['output'] = local_root_directory
+
+        del xgboost_parameters['FeatureSelection']
+
         if 'XGBoost' not in xgboost_parameters:
             # default parameters if not provided in the ini file
             xgboost_parameters['XGBoost'] = {}
@@ -71,51 +91,84 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
 
         hp_selection = self._campaign_configuration['General']['hp_selection']
 
-        if hp_selection == 'All':
-            # For each run, pick the best configuration
+        if hp_selection in {'All', 'HoldOut'}:
             best_conf = None
             # Hyperparameter search
             for conf in expconfs:
                 if not best_conf or conf.hp_selection_mape < best_conf.hp_selection_mape:
                     best_conf = conf
 
-            # best_conf is a XGBoost configuration exeperiment
+        elif hp_selection == "KFold":
 
-            xgb_regressor = best_conf.get_regressor()
+            # Aggregate data on different folds
 
-            # top = None means all
-            expl = eli5.xgboost.explain_weights_xgboost(xgb_regressor, feature_names=inputs.x_columns, top=max_features, importance_type='gain')
+            # for each configuration, the aggregated mape
+            conf_hp_selection_mape = {}
 
-            # text version
-            expl_weights = eli5.format_as_text(expl)
+            # Hyperparameter search aggregating over different folds on same configuration
+            for conf in expconfs:
+                configuration = tuple(conf.get_signature()[4:])
+                if configuration not in conf_hp_selection_mape:
+                    conf_hp_selection_mape[configuration] = 0.0
+                conf_hp_selection_mape[configuration] = conf_hp_selection_mape[configuration] + conf.hp_selection_mape
 
-            self._logger.debug("XGBoost feature scores:\n%s", str(expl_weights))
+            # Select the best configuration (we did not divide by folds number since it does not change the best)
+            best_conf = None
+            best_conf_value = 0.0
+            for conf in conf_hp_selection_mape:
+                if not best_conf or best_conf_value > conf_hp_selection_mape[conf]:
+                    best_conf = conf
+                    best_conf_value = conf_hp_selection_mape[conf]
 
-            df = eli5.format_as_dataframe(expl)  # data frame version
+            example_conf = None
+            for conf in expconfs:
+                configuration = tuple(conf.get_signature()[4:])
+                if configuration == best_conf:
+                    example_conf = conf
+                    break
 
-            xgb_sorted_features = df['feature'].values.tolist()  # features list
+            assert example_conf
+            hyperparameters = example_conf.get_hyperparameters()
 
-            features_sig = df['weight'].values.tolist()  # significance score weights
-
-            cumulative_significance = 0
-
-            tolerance = self._campaign_configuration['FeatureSelection']['XGBoost_tolerance']
-
-            index = 0
-
-            while cumulative_significance < tolerance and index < len(features_sig):
-                cumulative_significance = cumulative_significance + features_sig[index]
-                index = index + 1
-
-            feat_res = xgb_sorted_features[0:index]
-
-            self._logger.debug("XGBoost selected features: %s", str(feat_res))
-
-            data = inputs
-            data.x_columns = feat_res
-
-            return data
+            best_conf = model_building.xgboost_experiment_configuration.XGBoostExperimentConfiguration(self._campaign_configuration, hyperparameters, inputs, self._prefix)
+            best_conf.train()
 
         else:
             self._logger.error("Unexpected hp selection in XGBoost feature selection: %s", hp_selection)
             sys.exit(1)
+
+        # best_conf is a XGBoost configuration exeperiment
+        xgb_regressor = best_conf.get_regressor()
+
+        # top = None means all
+        expl = eli5.xgboost.explain_weights_xgboost(xgb_regressor, feature_names=inputs.x_columns, top=max_features, importance_type='gain')
+
+        # text version
+        expl_weights = eli5.format_as_text(expl)
+
+        self._logger.debug("XGBoost feature scores:\n%s", str(expl_weights))
+
+        df = eli5.format_as_dataframe(expl)  # data frame version
+
+        xgb_sorted_features = df['feature'].values.tolist()  # features list
+
+        features_sig = df['weight'].values.tolist()  # significance score weights
+
+        cumulative_significance = 0
+
+        tolerance = self._campaign_configuration['FeatureSelection']['XGBoost_tolerance']
+
+        index = 0
+
+        while cumulative_significance < tolerance and index < len(features_sig):
+            cumulative_significance = cumulative_significance + features_sig[index]
+            index = index + 1
+
+        feat_res = xgb_sorted_features[0:index]
+
+        self._logger.info("XGBoost selected features: %s", str(feat_res))
+
+        data = inputs
+        data.x_columns = feat_res
+
+        return data

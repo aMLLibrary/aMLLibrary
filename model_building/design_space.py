@@ -17,13 +17,16 @@ limitations under the License.
 import abc
 import copy
 import itertools
-import logging
 import pprint
 import random
 import sys
 
+import custom_logger
+
 import data_preparation.normalization
 import data_preparation.random_splitting
+import data_preparation.xgboost_feature_selection
+
 import model_building.decision_tree_experiment_configuration as dt
 import model_building.experiment_configuration as ec
 import model_building.lr_ridge_experiment_configuration as lr
@@ -69,12 +72,10 @@ class ExpConfsGenerator(abc.ABC):
             The seed to be used to initialize the random generator
         """
 
-        # TODO: modify this constructor and all the other constructors which use it to pass the added attributes
-
         self._experiment_configurations = []
         self._campaign_configuration = campaign_configuration
         self._random_generator = random.Random(seed)
-        self._logger = logging.getLogger(__name__)
+        self._logger = custom_logger.getLogger(__name__)
 
     @abc.abstractmethod
     def generate_experiment_configurations(self, prefix, regression_inputs):
@@ -162,9 +163,7 @@ class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
         list
             a list of the experiment configurations to be evaluated
         """
-        self._logger.debug("Calling generate experiment_configurations in %s %s %s", str(id(self)), str(prefix),
-                           self.__class__.__name__)
-        self._logger.debug("Regression inputs is %s %s", str((id(regression_inputs))), str(regression_inputs))
+        self._logger.info("-->Generating experiments by MultiTechniquesExpConfsGenerator")
         return_list = []
         assert self._generators
 
@@ -175,6 +174,7 @@ class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
             return_list.extend(generator.generate_experiment_configurations(new_prefix, regression_inputs))
 
         assert return_list
+        self._logger.info("<--")
         return return_list
 
     def __deepcopy__(self, memo):
@@ -220,9 +220,7 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         list
             a list of the experiment configurations to be evaluated
         """
-        self._logger.debug("Calling generate_experiment_configurations in %s %s", self.__class__.__name__,
-                           str(id(self)))
-        self._logger.debug("Regression inputs is %s %s", str((id(regression_inputs))), str(regression_inputs))
+        self._logger.info("-->Generating experiments by TechniqueExpConfsGenerator %s", ec.enum_to_configuration_label[self._technique])
         assert prefix
         first_key = ""
         # We expect that hyperparameters for a technique are stored in campaign_configuration[first_key]
@@ -240,12 +238,11 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         hyperparams_names.append('dummy')
         hyperparams_values.append([0])
 
-        logging.debug("Computing set of hyperparameters combinations")
+        self._logger.debug("Computing set of hyperparameters combinations")
         for hyperparam in hyperparams:
             hyperparams_names.append(hyperparam)
             hyperparams_values.append(hyperparams[hyperparam])
 
-        self._logger.debug("I am %s", str(id(self)))
         assert not self._experiment_configurations
 
         # Cartesian product of parameters
@@ -282,6 +279,8 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
             self._experiment_configurations.append(point)
 
         assert self._experiment_configurations
+
+        self._logger.info("<--")
 
         return self._experiment_configurations
 
@@ -345,19 +344,19 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
         list
             a list of the experiment configurations to be evaluated
         """
-        self._logger.debug("Calling generate_experiment_configurations in %s %s", self.__class__.__name__,
-                           str(id(self)))
-
+        self._logger.info("-->Generating experiments by RepeatedExpConfsGenerator")
         return_list = []
         assert self._generators
 
         for key, generator in self._generators.items():
-            self._logger.debug("A000")
             new_prefix = prefix.copy()
             new_prefix.append(key)
+            self._logger.info("-->Generating experiments for run %s", str(key))
             return_list.extend(generator.generate_experiment_configurations(new_prefix, regression_inputs))
+            self._logger.info("<--")
 
         assert return_list
+        self._logger.info("<--")
         return return_list
 
     def __deepcopy__(self, memo):
@@ -366,7 +365,7 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
 
 class SelectionValidationExpConfsGenerator(ExpConfsGenerator):
     """
-    Base class for generator wrappers used to generate hy_selection or validation set
+    Base class for generator wrappers used to generate hp_selection or validation set
 
     Methods
     -------
@@ -423,6 +422,7 @@ class SelectionValidationExpConfsGenerator(ExpConfsGenerator):
         -------
         The generated instance
         """
+        logger = custom_logger.getLogger(__name__)
         if subclass_name == "All":
             return AllExpConfsGenerator(campaign_configuration, seed, wrapped_generator, is_validation)
 
@@ -431,7 +431,7 @@ class SelectionValidationExpConfsGenerator(ExpConfsGenerator):
                 # Split is performed as preprocessing step
                 return AllExpConfsGenerator(campaign_configuration, seed, wrapped_generator, is_validation)
             else:
-                logging.error("Extrapolation cannot be used to perform hp_selection")
+                logger.error("Extrapolation cannot be used to perform hp_selection")
                 sys.exit(1)
         elif subclass_name == "HoldOut":
             return HoldOutExpConfsGenerator(campaign_configuration, seed, wrapped_generator, is_validation)
@@ -439,7 +439,7 @@ class SelectionValidationExpConfsGenerator(ExpConfsGenerator):
             return KFoldExpConfsGenerator(campaign_configuration, seed, campaign_configuration['General']['folds'],
                                           wrapped_generator, is_validation)
         else:
-            logging.error("Unknown hp_selection/validation method %s", subclass_name)
+            logger.error("Unknown hp_selection/validation method %s", subclass_name)
             sys.exit(1)
 
     @staticmethod
@@ -500,6 +500,60 @@ class SelectionValidationExpConfsGenerator(ExpConfsGenerator):
         raise NotImplementedError()
 
 
+class XGBoostFeatureSelectionExpConfsGenerator(ExpConfsGenerator):
+    """
+    Wrapper class to perform feature selection based on XGBoost on training data
+
+    Methods
+    -------
+    generate_experiment_configurations()
+
+    Calls generate_experiment_configurations of the wrapped generator
+    """
+
+    def __init__(self, campaign_configuration, seed, wrapped_generator):
+        """
+        Parameters
+        ----------
+        campaign_configuration: dict of dict
+            The set of options specified by the user though command line and campaign configuration files
+
+        seed: integer
+            The seed to be used to initialize the random generator
+
+        wrapped_generator: ExpConfsGenerator
+            The wrapped generator to be duplicated and modified
+        """
+        assert campaign_configuration
+        self._wrapped_generator = wrapped_generator
+        super().__init__(campaign_configuration, seed)
+        assert self._campaign_configuration
+
+    def generate_experiment_configurations(self, prefix, regression_inputs):
+        """
+        Calls generate_experiment_configurations of the wrapped generator
+
+        Parameters
+        ----------
+        prefix: list of str
+            The prefix to be considered
+
+        regression_inputs
+            The regression inputs to be used with the wrapped generator
+        """
+        self._logger.info("-->Generating experiments by XGBoostFeatureSelectionExpConfsGenerator")
+        xgboost_feature_selection = data_preparation.xgboost_feature_selection.XGBoostFeatureSelection(self._campaign_configuration, prefix)
+        local_regression_inputs = copy.copy(regression_inputs)
+        local_regression_inputs = xgboost_feature_selection.process(local_regression_inputs)
+        ret_list = self._wrapped_generator.generate_experiment_configurations(prefix, local_regression_inputs)
+        self._logger.info("<--")
+        return ret_list
+
+    def __deepcopy__(self, memo):
+        assert self._campaign_configuration
+        return XGBoostFeatureSelectionExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), copy.deepcopy(self._wrapped_generator))
+
+
 class AllExpConfsGenerator(SelectionValidationExpConfsGenerator):
     """
     Wraps a generator and pass to it regression inputs without modification
@@ -542,8 +596,7 @@ class AllExpConfsGenerator(SelectionValidationExpConfsGenerator):
         regression_inputs
             The regression inputs to be used with the wrapped generator
         """
-        self._logger.debug("Calling generate_experiment_configurations in %s %s", self.__class__.__name__,
-                           str(id(self)))
+        self._logger.info("-->Generating experiments by AllExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("All")
         local_regression_inputs = copy.copy(regression_inputs)
@@ -554,9 +607,12 @@ class AllExpConfsGenerator(SelectionValidationExpConfsGenerator):
             local_regression_inputs.inputs_split["hp_selection"] = local_regression_inputs.inputs_split[
                 "training"].copy()
 
-        return self._wrapped_generator.generate_experiment_configurations(local_prefix, local_regression_inputs)
+        ret_list = self._wrapped_generator.generate_experiment_configurations(local_prefix, local_regression_inputs)
+        self._logger.info("<--")
+        return ret_list
 
     def __deepcopy__(self, memo):
+        assert self._campaign_configuration
         return AllExpConfsGenerator(self._campaign_configuration, self._random_generator.random(),
                                     copy.deepcopy(self._wrapped_generator), self._is_validation)
 
@@ -603,8 +659,7 @@ class HoldOutExpConfsGenerator(SelectionValidationExpConfsGenerator):
         regression_inputs
             The regression inputs to be used with the wrapped generator
         """
-        self._logger.debug("Calling generate_experiment_configurations in %s %s", self.__class__.__name__,
-                           str(id(self)))
+        self._logger.info("-->Generating experiments by HoldOutExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("HoldOut")
         local_regression_inputs = regression_inputs.copy()
@@ -613,7 +668,9 @@ class HoldOutExpConfsGenerator(SelectionValidationExpConfsGenerator):
                                                                      self._random_generator.random(), "training",
                                                                      destination_set)
         local_regression_inputs = splitter.process(local_regression_inputs)
-        return self._wrapped_generator.generate_experiment_configurations(local_prefix, local_regression_inputs)
+        ret_list = self._wrapped_generator.generate_experiment_configurations(local_prefix, local_regression_inputs)
+        self._logger.info("<--")
+        return ret_list
 
     def __deepcopy__(self, memo):
         return HoldOutExpConfsGenerator(self._campaign_configuration, self._random_generator.random(),
@@ -664,9 +721,6 @@ class KFoldExpConfsGenerator(SelectionValidationExpConfsGenerator):
 
         super().__init__(campaign_configuration, seed, is_validation)
 
-        for key, value in self._kfold_generators.items():
-            self._logger.debug("Wrapped %s is %s", str(key), str(id(value)))
-
     def generate_experiment_configurations(self, prefix, regression_inputs):
         """
         Generates the set of experiment configurations to be evaluated
@@ -676,9 +730,7 @@ class KFoldExpConfsGenerator(SelectionValidationExpConfsGenerator):
         list
             a list of the experiment configurations
         """
-        self._logger.debug("Calling generate experiment_configurations in %s %s %s", str(id(self)), str(prefix),
-                           self.__class__.__name__)
-        self._logger.debug("Regression inputs is %s %s", str((id(regression_inputs))), str(regression_inputs))
+        self._logger.info("-->Generating experiments by KFoldExpConfsGenerator")
         assert prefix
 
         if len(regression_inputs.inputs_split["training"]) < self._k:
@@ -692,6 +744,7 @@ class KFoldExpConfsGenerator(SelectionValidationExpConfsGenerator):
         remaining = set(all_training_idx)
 
         for fold in range(0, self._k):
+            self._logger.info("-->Generating experiments for fold %s", str(fold))
             assert prefix
             fold_prefix = copy.copy(prefix)
             assert fold_prefix
@@ -709,9 +762,10 @@ class KFoldExpConfsGenerator(SelectionValidationExpConfsGenerator):
             fold_regression_inputs.inputs_split["training"] = list(fold_training_idx)
             second_set = "validation" if self._is_validation else "hp_selection"
             fold_regression_inputs.inputs_split[second_set] = list(fold_testing_idx)
-            return_list.extend(
-                self._kfold_generators[fold].generate_experiment_configurations(fold_prefix, fold_regression_inputs))
+            return_list.extend(self._kfold_generators[fold].generate_experiment_configurations(fold_prefix, fold_regression_inputs))
+            self._logger.info("<--")
 
+        self._logger.info("<--")
         return return_list
 
     def __deepcopy__(self, memo):
@@ -758,16 +812,16 @@ class NormalizationExpConfsGenerator(ExpConfsGenerator):
         regression_inputs
             The regression inputs to be used with the wrapped generator
         """
-        self._logger.debug("Calling generate experiment_configurations in %s %s %s", str(id(self)), str(prefix),
-                           self.__class__.__name__)
-        self._logger.debug("Regression inputs is %s", str((id(regression_inputs))))
+        self._logger.info("-->Generating experiments by NormalizationExpConfsGenerator")
         normalizer = data_preparation.normalization.Normalization(self._campaign_configuration)
         local_regression_inputs = copy.copy(regression_inputs)
         local_regression_inputs = normalizer.process(local_regression_inputs)
-        return self._wrapped_generator.generate_experiment_configurations(prefix, local_regression_inputs)
+        ret_list = self._wrapped_generator.generate_experiment_configurations(prefix, local_regression_inputs)
+        self._logger.info("<--")
+        return ret_list
 
     def __deepcopy__(self, memo):
-        return NormalizationExpConfsGenerator(self._experiment_configurations, self._random_generator.random(),
+        return NormalizationExpConfsGenerator(self._campaign_configuration, self._random_generator.random(),
                                               copy.deepcopy(self._wrapped_generator))
 
 

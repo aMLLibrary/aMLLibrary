@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import logging
 import random
 
+import custom_logger
 import model_building.design_space as ds
 import model_building.experiment_configuration as ec
 import model_building.sequential_feature_selection
@@ -53,7 +53,7 @@ class GeneratorsFactory:
         """
         self._campaign_configuration = campaign_configuration
         self._random_generator = random.Random(seed)
-        self._logger = logging.getLogger(__name__)
+        self._logger = custom_logger.getLogger(__name__)
 
     def build(self):
         """
@@ -66,28 +66,39 @@ class GeneratorsFactory:
         generators = {}
 
         for technique in self._campaign_configuration['General']['techniques']:
-            self._logger.debug("Building technique generator for %s", technique)
+            self._logger.info("---Building technique generator for %s", technique)
             generators[technique] = ds.TechniqueExpConfsGenerator(self._campaign_configuration, None, string_techique_to_enum[technique])
         assert generators
 
         if 'FeatureSelection' in self._campaign_configuration and "method" in self._campaign_configuration['FeatureSelection'] and self._campaign_configuration['FeatureSelection']['method'] == 'SFS':
             feature_selection_generators = {}
+            self._logger.info("---Building SFS generator")
             for technique, generator in generators.items():
                 feature_selection_generators[technique] = model_building.sequential_feature_selection.SFSExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
             generators = feature_selection_generators
 
         # Wrap together different techniques
+        self._logger.info("---Building multi technique generator")
         generator = ds.MultiTechniquesExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), generators)
 
         # Add wrapper to perform normalization
+        self._logger.info("---Building normalization generator")
         generator = ds.NormalizationExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), generator)
 
         # Add wrapper to generate hp_selection
+        self._logger.info("---Building hp selection generator")
         generator = ds.SelectionValidationExpConfsGenerator.get_selection_generator(self._campaign_configuration, self._random_generator.random(), generator, self._campaign_configuration['General']['hp_selection'])
 
+        # Add wrapper to perform XGBoost feature selection
+        if 'FeatureSelection' in self._campaign_configuration and "method" in self._campaign_configuration['FeatureSelection'] and self._campaign_configuration['FeatureSelection']['method'] == 'XGBoost':
+            self._logger.info("---Building hp XGBoost preprocessing generator")
+            generator = ds.XGBoostFeatureSelectionExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), generator)
+
         # Add wrapper to generate validation
+        self._logger.info("---Building validation generator")
         generator = ds.SelectionValidationExpConfsGenerator.get_validation_generator(self._campaign_configuration, self._random_generator.random(), generator, self._campaign_configuration['General']['validation'])
 
         # Add wrapper to perform multiple runs
+        self._logger.info("---Building multirun generator")
         top_generator = ds.RepeatedExpConfsGenerator(self._campaign_configuration, self._random_generator.random(), self._campaign_configuration['General']['run_num'], generator)
         return top_generator

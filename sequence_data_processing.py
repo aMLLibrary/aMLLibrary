@@ -24,6 +24,7 @@ import shutil
 import sys
 import time
 
+import custom_logger
 import data_preparation.column_selection
 import data_preparation.data_loading
 import data_preparation.extrapolation
@@ -67,11 +68,11 @@ class SequenceDataProcessing:
             logging.basicConfig(level=logging.DEBUG)
         else:
             logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger(__name__)
+        self._logger = custom_logger.getLogger(__name__)
 
         # Check if the configuration file exists
         if not os.path.exists(configuration_file):
-            self.logger.error("%s does not exist", configuration_file)
+            self._logger.error("%s does not exist", configuration_file)
             sys.exit(-1)
 
         self.conf = cp.ConfigParser()
@@ -88,7 +89,7 @@ class SequenceDataProcessing:
 
         # Check if output path already exist
         if os.path.exists(args.output):
-            self.logger.error("%s already exists", args.output)
+            self._logger.error("%s already exists", args.output)
             sys.exit(1)
         os.mkdir(self.parameters['General']['output'])
         shutil.copyfile(args.configuration_file, os.path.join(args.output, 'configuration_file.ini'))
@@ -96,25 +97,25 @@ class SequenceDataProcessing:
 
         # Check that validation method has been specified
         if 'validation' not in self.parameters['General']:
-            self.logger.error("Validation not specified")
+            self._logger.error("Validation not specified")
             sys.exit(1)
 
         # Check that if HoldOut is selected, hold_out_ratio is specified
         if self.parameters['General']['validation'] == "HoldOut" or self.parameters['General']['hp_selection'] == "HoldOut":
             if "hold_out_ratio" not in self.parameters['General']:
-                self.logger.error("hold_out_ratio not set")
+                self._logger.error("hold_out_ratio not set")
                 sys.exit(1)
 
         # Check that if Extrapolation is selected, extrapolation_columns is specified
         if self.parameters['General']['validation'] == "Extrapolation":
             if "extrapolation_columns" not in self.parameters['General']:
-                self.logger.error("extrapolation_columns not set")
+                self._logger.error("extrapolation_columns not set")
                 sys.exit(1)
 
         # Check that if XGBoost is used for feature selection tolerance is specified
         if 'FeatureSelection' in self.parameters and self.parameters['FeatureSelection']['method'] == "XGBoost":
             if "XGBoost_tolerance" not in self.parameters['FeatureSelection']:
-                self.logger.error("XGBoost tolerance not set")
+                self._logger.error("XGBoost tolerance not set")
                 sys.exit(1)
 
         # Adding read on input to data preprocessing step
@@ -140,10 +141,6 @@ class SequenceDataProcessing:
         if 'product_max_degree' in self.parameters['DataPreparation'] and self.parameters['DataPreparation']['product_max_degree']:
             self._data_preprocessing_list.append(data_preparation.product.Product(self.parameters))
 
-        # Adding XGBoost preprocessing if required
-        if 'FeatureSelection' in self.parameters and self.parameters['FeatureSelection']['method'] == "XGBoost":
-            self._data_preprocessing_list.append(data_preparation.xgboost_feature_selection.XGBoostFeatureSelection(self.parameters))
-
         self._model_building = model_building.model_building.ModelBuilding(self.random_generator.random())
 
     def get_parameters(self, configuration_file):
@@ -166,16 +163,17 @@ class SequenceDataProcessing:
                 except (ValueError, SyntaxError):
                     self.parameters[section][item[0]] = item[1]
 
-        self.logger.debug(pprint.pformat(self.parameters, width=1))
+        self._logger.debug("Parameters configuration is:")
+        self._logger.debug("-->")
+        self._logger.debug(pprint.pformat(self.parameters, width=1))
+        self._logger.debug("<--")
 
     def process(self):
 
         """the main code"""
         start = time.time()
 
-        self.logger.info("Start of the algorithm")
-
-        self.logger.info("Starting experimental campaign")
+        self._logger.info("Starting experimental campaign")
         # performs reading data, drops irrelevant columns
         # initial_df = self.preliminary_data_processing.process(self.parameters)
         # logging.info("Loaded and cleaned data")
@@ -187,12 +185,15 @@ class SequenceDataProcessing:
         data_processing = None
 
         for data_preprocessing_step in self._data_preprocessing_list:
-            self.logger.info("Executing %s", data_preprocessing_step.get_name())
+            self._logger.info("-->Executing %s", data_preprocessing_step.get_name())
+            self._logger.info("-->")
             data_processing = data_preprocessing_step.process(data_processing)
-            self.logger.debug("Current data frame is:\n%s", str(data_processing))
+            self._logger.debug("Current data frame is:\n%s", str(data_processing))
+            self._logger.info("<--")
+            self._logger.info("<--")
 
         self._model_building.process(self.parameters, data_processing, int(self.conf['General']['j']))
 
         end = time.time()
         execution_time = str(end - start)
-        logging.info("Execution Time : %s", execution_time)
+        self._logger.info("<--Execution Time : %s", execution_time)

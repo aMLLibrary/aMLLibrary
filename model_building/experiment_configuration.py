@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 import abc
+import copy
 import logging
 import os
 from enum import Enum
@@ -25,6 +26,9 @@ import matplotlib
 matplotlib.use('Agg')
 # pylint: disable=wrong-import-position
 import matplotlib.pyplot as plt  # noqa: E402
+
+# pylint: disable=wrong-import-position
+import custom_logger  # noqa: E402
 
 
 class Technique(Enum):
@@ -56,7 +60,7 @@ class ExperimentConfiguration(abc.ABC):
     _campaign_configuration: dict of dict
         The set of options specified by the user though command line and campaign configuration files
 
-    _hyperparameters: dictionary
+    hyperparameters: dictionary
         The set of hyperparameters of this experiment configuration
 
     _regression_inputs: RegressionInputs
@@ -120,6 +124,9 @@ class ExperimentConfiguration(abc.ABC):
 
     get_technique()
         Return the technique associated with this experiment configuration
+
+    get_hyperparameters()
+        Return the values of the hyperparameters associated with this experiment configuration
     """
 
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
@@ -139,8 +146,7 @@ class ExperimentConfiguration(abc.ABC):
         self._hyperparameters = hyperparameters
         self._regression_inputs = regression_inputs
         self._signature = self._compute_signature(prefix)
-        self._logger = logging.getLogger(self.get_signature_string())
-        self._logger.debug("---")
+        self._logger = custom_logger.getLogger(self.get_signature_string())
         self.validation_mape = None
         self.hp_selection_mape = None
         self._regressor = None
@@ -153,7 +159,7 @@ class ExperimentConfiguration(abc.ABC):
         # pylint: disable=import-outside-toplevel
         import model_building.sfs_experiment_configuration
         if isinstance(self, model_building.sfs_experiment_configuration.SFSExperimentConfiguration) or 'FeatureSelection' not in self._campaign_configuration or 'method' not in self._campaign_configuration['FeatureSelection'] or self._campaign_configuration['FeatureSelection']['method'] != "SFS":
-            assert not os.path.exists(self._experiment_directory)
+            assert not os.path.exists(self._experiment_directory), self._experiment_directory
             os.makedirs(self._experiment_directory)
 
     def train(self):
@@ -320,7 +326,7 @@ class ExperimentConfiguration(abc.ABC):
         Auxilixiary function used by pickle. Ovverriden to avoid problems with logger lock
         """
         if '_logger' in temp_d:
-            temp_d['_logger'] = logging.getLogger(temp_d['_logger'])
+            temp_d['_logger'] = custom_logger.getLogger(temp_d['_logger'])
         self.__dict__.update(temp_d)
 
     def get_regressor(self):
@@ -328,3 +334,9 @@ class ExperimentConfiguration(abc.ABC):
         Return the regressor wrapped in this experiment configuration
         """
         return self._regressor
+
+    def get_hyperparameters(self):
+        """
+        Return the hyperparameters associated with this experiment
+        """
+        return copy.deepcopy(self._hyperparameters)

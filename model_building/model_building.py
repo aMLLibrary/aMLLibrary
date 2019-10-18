@@ -13,10 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
 import multiprocessing
 import random
+import tqdm
 
+import custom_logger
 import model_building.generators_factory as gf
 import results as re
 
@@ -52,7 +53,7 @@ class ModelBuilding:
             The seed to be used for the internal random generator
         """
         self._random_generator = random.Random(seed)
-        self._logger = logging.getLogger(__name__)
+        self._logger = custom_logger.getLogger(__name__)
 
     def process(self, campaign_configuration, regression_inputs, processes_number):
         """
@@ -66,24 +67,34 @@ class ModelBuilding:
         regression_inputs: RegressionInputs
             The input of the regression problem
         """
+        self._logger.info("-->Generate generators")
         factory = gf.GeneratorsFactory(campaign_configuration, self._random_generator.random())
         top_generator = factory.build()
+        self._logger.info("<--")
+        self._logger.info("-->Generate experiments")
         expconfs = top_generator.generate_experiment_configurations([], regression_inputs)
+        self._logger.info("<--")
 
         assert expconfs
         if processes_number == 1:
-            for exp in expconfs:
+            self._logger.info("-->Run experiments (sequentially)")
+            for exp in tqdm.tqdm(expconfs, dynamic_ncols=True):
                 exp.train()
+            self._logger.info("<--")
         else:
+            self._logger.info("-->Run experiments (in parallel)")
             pool = multiprocessing.Pool(processes_number)
-            expconfs = pool.map(process_wrapper, expconfs)
+            expconfs = list(tqdm.tqdm(pool.imap(process_wrapper, expconfs), total=len(expconfs)))
+            self._logger.info("<--")
 
+        self._logger.info("-->Collecting results")
         results = re.Results(campaign_configuration, expconfs)
         results.collect_data()
+        self._logger.info("<--")
 
         for metric, mapes in results.raw_results.items():
             for experiment_configuration, mape in mapes.items():
-                self._logger.info("%s of %s is %f", metric, experiment_configuration, mape)
+                self._logger.debug("%s of %s is %f", metric, experiment_configuration, mape)
 
         results.get_best_for_technique()
 
