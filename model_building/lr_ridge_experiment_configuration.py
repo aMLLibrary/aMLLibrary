@@ -37,6 +37,9 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
 
     compute_estimations()
         Compute the estimated values for a give set of data
+
+    print_model()
+        Prints the model
     """
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix: List[str]):
         """
@@ -82,3 +85,16 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         return self._regressor.predict(xdata)
+
+    def print_model(self):
+        """
+        Print the model
+        """
+        ret_string = ""
+        coefficients = self._regressor.coef_
+        for column, coefficient in zip(self._regression_inputs.x_columns, coefficients):
+            if ret_string != "":
+                ret_string = ret_string + " + "
+            ret_string = ret_string + "(" + str(coefficient) + "*" + column + ")"
+        ret_string = ret_string + " + (" + str(self._regressor.intercept_) + ")"
+        return ret_string

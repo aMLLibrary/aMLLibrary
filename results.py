@@ -115,7 +115,7 @@ class Results:
                     if not overall_best or temp.hp_selection_mape < overall_best.hp_selection_mape:
                         overall_best = temp
 
-                self._logger.info("<--Overall best result is %s - Validation MAPE is %f (HP Selection MAPE is %f", overall_best.get_signature()[3:], overall_best.validation_mape, overall_best.hp_selection_mape)
+                self._logger.info("<--Overall best result is %s - Validation MAPE is %f (HP Selection MAPE is %f) - %s", overall_best.get_signature()[3:], overall_best.validation_mape, overall_best.hp_selection_mape, overall_best.print_model())
 
         elif (validation, hp_selection) in {("KFold", "All"), ("KFold", "HoldOut")}:
             folds = float(self._campaign_configuration['General']['folds'])

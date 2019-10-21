@@ -22,9 +22,11 @@ import sklearn
 
 import model_building.experiment_configuration
 
+
 def mean_absolute_percentage_error(y_true, y_pred):
     y_true, y_pred = np.array(y_true), np.array(y_pred)
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+
 
 class SFSExperimentConfiguration(model_building.experiment_configuration.ExperimentConfiguration):
     """
@@ -45,6 +47,9 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
 
     compute_estimations()
         Compute the estimated values for a give set of data
+
+    print_model()
+        Prints the model
     """
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         """
@@ -81,7 +86,7 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
         self._sfs.fit(xdata, ydata)
         self._logger.debug("Selected features: %s", str(self._sfs.k_feature_names_))
 
-        ###Use the selected feature to retrain the regressor
+        # Use the selected feature to retrain the regressor
         filtered_xdata = self._sfs.transform(xdata)
         self._wrapped_experiment_configuration.get_regressor().fit(filtered_xdata, ydata)
 
@@ -95,3 +100,6 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
         self._logger.debug("Using regressor on %s: %s vs %s", str(filtered_xdata), str(ydata), str(ret))
 
         return ret
+
+    def print_model(self):
+        return self._wrapped_experiment_configuration.print_model()

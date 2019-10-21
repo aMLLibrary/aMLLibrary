@@ -127,6 +127,9 @@ class ExperimentConfiguration(abc.ABC):
 
     get_hyperparameters()
         Return the values of the hyperparameters associated with this experiment configuration
+
+    print_model()
+        Prints in readable form the trained model; at the moment is not pure virtual since not all the subclasses implement it
     """
 
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
@@ -340,3 +343,6 @@ class ExperimentConfiguration(abc.ABC):
         Return the hyperparameters associated with this experiment
         """
         return copy.deepcopy(self._hyperparameters)
+
+    def print_model(self):
+        return ""
