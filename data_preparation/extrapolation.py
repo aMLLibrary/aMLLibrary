@@ -16,6 +16,7 @@ limitations under the License.
 
 import data_preparation.data_preparation
 
+
 class Extrapolation(data_preparation.data_preparation.DataPreparation):
     """
     Step which prepares data for extrapolation
