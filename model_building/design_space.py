@@ -601,11 +601,8 @@ class AllExpConfsGenerator(SelectionValidationExpConfsGenerator):
         local_prefix.append("All")
         local_regression_inputs = copy.copy(regression_inputs)
 
-        if self._is_validation:
-            local_regression_inputs.inputs_split["validation"] = local_regression_inputs.inputs_split["training"].copy()
-        else:
-            local_regression_inputs.inputs_split["hp_selection"] = local_regression_inputs.inputs_split[
-                "training"].copy()
+        if not self._is_validation:
+            local_regression_inputs.inputs_split["hp_selection"] = local_regression_inputs.inputs_split["training"].copy()
 
         ret_list = self._wrapped_generator.generate_experiment_configurations(local_prefix, local_regression_inputs)
         self._logger.info("<--")
