@@ -429,7 +429,7 @@ class SelectionValidationExpConfsGenerator(ExpConfsGenerator):
         if subclass_name == "Extrapolation":
             if is_validation:
                 # Split is performed as preprocessing step
-                return AllExpConfsGenerator(campaign_configuration, seed, wrapped_generator, is_validation)
+                return ExtrapolationExpConfsGenerator(campaign_configuration, seed, wrapped_generator, is_validation)
             else:
                 logger.error("Extrapolation cannot be used to perform hp_selection")
                 sys.exit(1)
@@ -601,8 +601,70 @@ class AllExpConfsGenerator(SelectionValidationExpConfsGenerator):
         local_prefix.append("All")
         local_regression_inputs = copy.copy(regression_inputs)
 
-        if not self._is_validation:
+        if self._is_validation:
+            local_regression_inputs.inputs_split["validation"] = local_regression_inputs.inputs_split["training"].copy()
+        else:
             local_regression_inputs.inputs_split["hp_selection"] = local_regression_inputs.inputs_split["training"].copy()
+
+        ret_list = self._wrapped_generator.generate_experiment_configurations(local_prefix, local_regression_inputs)
+        self._logger.info("<--")
+        return ret_list
+
+    def __deepcopy__(self, memo):
+        assert self._campaign_configuration
+        return AllExpConfsGenerator(self._campaign_configuration, self._random_generator.random(),
+                                    copy.deepcopy(self._wrapped_generator), self._is_validation)
+
+
+class ExtrapolationExpConfsGenerator(SelectionValidationExpConfsGenerator):
+    """
+    Wraps a generator and pass to it regression inputs without modification
+
+    Methods
+    -------
+    generate_experiment_configurations()
+
+    Calls generate_experiment_configurations of the wrapped generator
+    """
+
+    def __init__(self, campaign_configuration, seed, wrapped_generator, is_validation):
+        """
+        Parameters
+        ----------
+        campaign_configuration: dict of dict
+            The set of options specified by the user though command line and campaign configuration files
+
+        seed: integer
+            The seed to be used to initialize the random generator
+
+        wrapped_generator: ExpConfsGenerator
+            The generator to be wrapped
+
+        is_validation: bool
+            True if the instance to be created is for validating, false if it is for hp selection
+        """
+        self._wrapped_generator = wrapped_generator
+        super().__init__(campaign_configuration, seed, is_validation)
+
+    def generate_experiment_configurations(self, prefix, regression_inputs):
+        """
+        Calls generate_experiment_configurations of the wrapped generator
+
+        Parameters
+        ----------
+        prefix: list of str
+            The prefix to be considered
+
+        regression_inputs
+            The regression inputs to be used with the wrapped generator
+        """
+        self._logger.info("-->Generating experiments by ExtrapolationExpConfsGenerator")
+        local_prefix = copy.copy(prefix)
+        local_prefix.append("Extrapolation")
+        local_regression_inputs = copy.copy(regression_inputs)
+
+        assert self._is_validation
+        # Do nothing: validation set has already been built by a preprocessing step
 
         ret_list = self._wrapped_generator.generate_experiment_configurations(local_prefix, local_regression_inputs)
         self._logger.info("<--")
