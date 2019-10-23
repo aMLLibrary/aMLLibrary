@@ -119,6 +119,9 @@ class ExperimentConfiguration(abc.ABC):
     stop_file_logger()
         Stop to log also to output file
 
+    set_training_data()
+        Set the training data overwritting current ones
+
     get_regressor()
         Return the regressor associated with this experiment configuration
 
@@ -127,6 +130,9 @@ class ExperimentConfiguration(abc.ABC):
 
     get_hyperparameters()
         Return the values of the hyperparameters associated with this experiment configuration
+
+    get_x_columns()
+        Return the columns used in the regression
 
     print_model()
         Prints in readable form the trained model; at the moment is not pure virtual since not all the subclasses implement it
@@ -344,5 +350,14 @@ class ExperimentConfiguration(abc.ABC):
         """
         return copy.deepcopy(self._hyperparameters)
 
+    def get_x_columns(self):
+        """
+        Return the columns used in the regression
+        """
+        return copy.deepcopy(self._regression_inputs.x_columns)
+
     def print_model(self):
         return ""
+
+    def set_training_data(self, new_training_data):
+        self._regression_inputs = new_training_data

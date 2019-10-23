@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+
 class RegressionInputs:
     """
     Data structure storing inputs information for a regression problem
@@ -96,7 +97,6 @@ class RegressionInputs:
             The specified subset of the data frame
         """
         return self.data.loc[rows, columns]
-
 
     def get_xy_data(self, rows):
         """

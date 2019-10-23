@@ -85,19 +85,21 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._sfs.fit(xdata, ydata)
         self._logger.debug("Selected features: %s", str(self._sfs.k_feature_names_))
+        print(str(id(self._regression_inputs)))
 
         # Use the selected feature to retrain the regressor
         filtered_xdata = self._sfs.transform(xdata)
+        self._regressor = self._wrapped_experiment_configuration.get_regressor()
         self._wrapped_experiment_configuration.get_regressor().fit(filtered_xdata, ydata)
+        self._regression_inputs.x_columns = list(self._sfs.k_feature_names_)
 
     def compute_estimations(self, rows):
         """
         Compute the estimations and the MAPE for runs in rows
         """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
-        filtered_xdata = self._sfs.transform(xdata)
-        ret = self._wrapped_experiment_configuration.get_regressor().predict(filtered_xdata)
-        self._logger.debug("Using regressor on %s: %s vs %s", str(filtered_xdata), str(ydata), str(ret))
+        ret = self._wrapped_experiment_configuration.get_regressor().predict(xdata)
+        self._logger.debug("Using regressor on %s: %s vs %s", str(xdata), str(ydata), str(ret))
 
         return ret
 

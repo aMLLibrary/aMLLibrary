@@ -16,7 +16,6 @@ limitations under the License.
 
 import copy
 import os
-import sys
 
 import eli5
 
@@ -62,8 +61,6 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
 
         max_features = self._campaign_configuration['FeatureSelection']['max_features']
 
-        model_building_var = model_building.model_building.ModelBuilding(0)
-
         # setting parameters for XGboost design space expoloration
         xgboost_parameters = copy.deepcopy(self._campaign_configuration)
 
@@ -78,6 +75,8 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
 
         del xgboost_parameters['FeatureSelection']
 
+        model_building_var = model_building.model_building.ModelBuilding(0)
+
         if 'XGBoost' not in xgboost_parameters:
             # default parameters if not provided in the ini file
             xgboost_parameters['XGBoost'] = {}
@@ -87,55 +86,7 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
             xgboost_parameters['XGBoost']['learning_rate'] = [0.01, 0.05, 0.1]
             xgboost_parameters['XGBoost']['max_depth'] = [1, 2, 3, 5, 9, 13]
 
-        expconfs = model_building_var.process(xgboost_parameters, inputs, int(self._campaign_configuration['General']['j']))
-
-        hp_selection = self._campaign_configuration['General']['hp_selection']
-
-        if hp_selection in {'All', 'HoldOut'}:
-            best_conf = None
-            # Hyperparameter search
-            for conf in expconfs:
-                if not best_conf or conf.hp_selection_mape < best_conf.hp_selection_mape:
-                    best_conf = conf
-
-        elif hp_selection == "KFold":
-
-            # Aggregate data on different folds
-
-            # for each configuration, the aggregated mape
-            conf_hp_selection_mape = {}
-
-            # Hyperparameter search aggregating over different folds on same configuration
-            for conf in expconfs:
-                configuration = tuple(conf.get_signature()[4:])
-                if configuration not in conf_hp_selection_mape:
-                    conf_hp_selection_mape[configuration] = 0.0
-                conf_hp_selection_mape[configuration] = conf_hp_selection_mape[configuration] + conf.hp_selection_mape
-
-            # Select the best configuration (we did not divide by folds number since it does not change the best)
-            best_conf = None
-            best_conf_value = 0.0
-            for conf in conf_hp_selection_mape:
-                if not best_conf or best_conf_value > conf_hp_selection_mape[conf]:
-                    best_conf = conf
-                    best_conf_value = conf_hp_selection_mape[conf]
-
-            example_conf = None
-            for conf in expconfs:
-                configuration = tuple(conf.get_signature()[4:])
-                if configuration == best_conf:
-                    example_conf = conf
-                    break
-
-            assert example_conf
-            hyperparameters = example_conf.get_hyperparameters()
-
-            best_conf = model_building.xgboost_experiment_configuration.XGBoostExperimentConfiguration(self._campaign_configuration, hyperparameters, inputs, self._prefix)
-            best_conf.train()
-
-        else:
-            self._logger.error("Unexpected hp selection in XGBoost feature selection: %s", hp_selection)
-            sys.exit(1)
+        best_conf = model_building_var.process(xgboost_parameters, inputs, int(self._campaign_configuration['General']['j']))
 
         # best_conf is a XGBoost configuration exeperiment
         xgb_regressor = best_conf.get_regressor()

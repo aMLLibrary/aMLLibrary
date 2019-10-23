@@ -30,11 +30,12 @@ def main():
     parser.add_argument('-o', "--output", help="The output where all the models will be stored", default="output")
     parser.add_argument('-j', help="The number of processes to be used", default=1)
     parser.add_argument('-g', "--generate-plots", help="Generate plots", default=False, action="store_true")
+    parser.add_argument('-t', "--self-check", help="Predict the input data with the generate regressor", default=False, action="store_true")
     args = parser.parse_args()
 
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-    sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args)
+    sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args.configuration_file, debug=args.debug, seed=args.seed, output=args.output, j=args.j, generate_plots=args.generate_plots, self_check=args.self_check)
     sequence_data_processor.process()
 
 
