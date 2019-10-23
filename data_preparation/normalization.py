@@ -21,6 +21,7 @@ import sklearn.preprocessing
 
 import data_preparation.data_preparation as dp
 
+
 class Normalization(dp.DataPreparation):
     """
     Step which normalizes input data
@@ -65,9 +66,9 @@ class Normalization(dp.DataPreparation):
         to_be_normalized.append(inputs.y_column)
 
         filtered_data = inputs.data.iloc[inputs.inputs_split["training"], :]
-        #filtered_data = inputs.data
+        # filtered_data = inputs.data
 
-        #Extract the columns which have to be normalized
+        # Extract the columns which have to be normalized
         for column in to_be_normalized:
             data.scaled_columns.append(column)
 
@@ -79,7 +80,6 @@ class Normalization(dp.DataPreparation):
             data_to_be_normalized = numpy.reshape(data_to_be_normalized, (-1, 1))
             normalized_data = data.scalers[column].transform(data_to_be_normalized)
             data.data["original_" + column] = data.data[column]
-            self._logger.debug(str(len(column)))
             data.data[column] = normalized_data
 
         return data
