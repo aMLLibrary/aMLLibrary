@@ -104,8 +104,10 @@ class ModelBuilding:
         # Create a shadow copy
         all_data = regression_inputs.copy()
 
-        # Set training set equal to whole input set
+        # Set all sets equal to whole input set
         all_data.inputs_split["training"] = all_data.inputs_split["all"]
+        all_data.inputs_split["validation"] = all_data.inputs_split["all"]
+        all_data.inputs_split["hp_selection"] = all_data.inputs_split["all"]
 
         # Get information about the used x_columns
         all_data.x_columns = best_conf.get_x_columns()
@@ -114,8 +116,7 @@ class ModelBuilding:
             # Restore non-normalized columns
             for column in all_data.scaled_columns:
                 all_data.data[column] = all_data.data["original_" + column]
-
-            all_data.data.drop(columns=all_data.scaled_columns)
+                all_data.data = all_data.data.drop(columns=["original_" + column])
 
             all_data.scaled_columns = []
             self._logger.debug("Denormalized inputs are:%s\n", str(all_data))
@@ -129,6 +130,8 @@ class ModelBuilding:
 
         # Train
         best_conf.train()
+        best_conf.evaluate()
+        self._logger.info("Validation MAPE on full dataset: %s", str(best_conf.validation_mape))
 
         # Build the regressor
         best_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)
