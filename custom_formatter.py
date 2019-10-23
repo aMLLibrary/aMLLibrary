@@ -31,18 +31,19 @@ class CustomFormatter(logging.Formatter):
     """
     def format(self, record):
         if record.msg.startswith("-->"):
-            self.indentation_level[0] = self.indentation_level[0] + 3
             if record.msg == "-->":
+                self.indentation_level[0] = self.indentation_level[0] + 3
                 return ""
             record.msg = " " * self.indentation_level[0] + record.msg[3:]
+            self.indentation_level[0] = self.indentation_level[0] + 3
         elif record.msg.startswith("---"):
             record.msg = " " * (self.indentation_level[0] + 3) + record.msg[3:]
         elif record.msg == "<--":
             self.indentation_level[0] = self.indentation_level[0] - 3
             return ""
         elif record.msg.startswith("<--"):
-            record.msg = " " * self.indentation_level[0] + record.msg[3:]
             self.indentation_level[0] = self.indentation_level[0] - 3
+            record.msg = " " * self.indentation_level[0] + record.msg[3:]
         else:
             record.msg = " " * self.indentation_level[0] + record.msg
         ret = super(CustomFormatter, self).format(record)
