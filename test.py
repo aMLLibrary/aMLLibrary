@@ -20,16 +20,17 @@ import os
 import subprocess
 import sys
 
+
 def main():
     parser = argparse.ArgumentParser(description="Performs regression tests")
     parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
     parser.add_argument('-j', help="The number of processes to be used", default=1)
     args = parser.parse_args()
 
-    #The absolute path of the current script
+    # The absolute path of the current script
     abs_script = os.path.abspath(sys.argv[0])
 
-    #The root directory of the script
+    # The root directory of the script
     abs_root = os.path.dirname(abs_script)
 
     for file in os.listdir(os.path.join(abs_root, "example_configurations")):
@@ -38,13 +39,14 @@ def main():
         extra_options = ""
         if args.debug:
             extra_options = extra_options + " -d"
-        extra_options = extra_options +  " -j" + str(args.j)
-        command = os.path.join(abs_root, "run.py") + " -c " + os.path.join(abs_root, "example_configurations", file) + " -o output_" + file + extra_options
+        extra_options = extra_options + " -j" + str(args.j)
+        command = os.path.join(abs_root, "run.py") + " -t -c " + os.path.join(abs_root, "example_configurations", file) + " -o output_" + file + extra_options
         print("Running " + command)
         ret_program = subprocess.call(command, shell=True, executable="/bin/bash")
         if ret_program:
             print("Error in running " + file)
             sys.exit(1)
+
 
 if __name__ == '__main__':
     main()
