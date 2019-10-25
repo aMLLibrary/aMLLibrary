@@ -1,11 +1,21 @@
-For the scripts Python 3.6.4 was used.
-See the example usage of the library in the examples/run\_library.py file
+Library for the generation of regression models.
+The main script of the library is run.py:
 
-To change the parameters of the algorithms, use configuration\_file/parameters.ini file. parameters\_analtyical.ini is used for the hybrid analyses with fixed hyper-parameters. In run\_library.file, the data sizes and number of cores for the train and test sets are setted.
+usage: run.py [-h] -c CONFIGURATION_FILE [-d] [-s SEED] [-o OUTPUT] [-j J]
+              [-g] [-t]
 
-You can run the example file by the following command:
-	python run_library.py
+Perform exploration of regression techniques
 
-To just use the library run (for seed provide a number):
-	python run.py seed -i "input_file_path" -c "configuration_file_path"
+optional arguments:
+  -h, --help            show this help message and exit
+  -c CONFIGURATION_FILE, --configuration-file CONFIGURATION_FILE
+                        The configuration file for the infrastructure
+  -d, --debug           Enable debug messages
+  -s SEED, --seed SEED  The seed
+  -o OUTPUT, --output OUTPUT
+                        The output where all the models will be stored
+  -j J                  The number of processes to be used
+  -g, --generate-plots  Generate plots
+  -t, --self-check      Predict the input data with the generate regressor
 
+Example of configuration files can be found under example_configurations directory
