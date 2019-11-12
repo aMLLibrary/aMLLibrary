@@ -28,6 +28,7 @@ import numpy
 
 import custom_logger
 import data_preparation.column_selection
+import data_preparation.data_check
 import data_preparation.data_loading
 import data_preparation.extrapolation
 import data_preparation.inversion
@@ -161,6 +162,9 @@ class SequenceDataProcessing:
         # Adding product features if required
         if 'product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree']:
             self._data_preprocessing_list.append(data_preparation.product.Product(self._campaign_configuration))
+
+        # Adding data check
+        self._data_preprocessing_list.append(data_preparation.data_check.DataCheck(self._campaign_configuration))
 
         self._model_building = model_building.model_building.ModelBuilding(self.random_generator.random())
 
