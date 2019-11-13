@@ -109,13 +109,13 @@ class Results:
                 # Print data of single techniques
                 for technique in run_tec_best_conf[run]:
                     temp = run_tec_best_conf[run][technique]
-                    self._logger.info("---Best result for %s - Configuration is %s - Validation MAPE is %f (HP Selection MAPE is %f", technique, temp.get_signature()[4:], temp.validation_mape, temp.hp_selection_mape)
+                    self._logger.info("---Best result for %s - Configuration is %s - (HP Selection MAPE is %f) - Validation MAPE is %f", technique, temp.get_signature()[4:], temp.hp_selection_mape, temp.validation_mape)
 
                     # Compute which is the best technique
                     if not overall_run_best or temp.hp_selection_mape < overall_run_best.hp_selection_mape:
                         overall_run_best = temp
-
-                self._logger.info("<--Overall best result is %s - Validation MAPE is %f (HP Selection MAPE is %f) - %s", overall_run_best.get_signature()[3:], overall_run_best.validation_mape, overall_run_best.hp_selection_mape, overall_run_best.print_model())
+                best_model_description = overall_run_best.print_model()
+                self._logger.info("<--Overall best result is %s %s - (HP Selection MAPE is %f) - Validation MAPE is %f", overall_run_best.get_signature()[3:], "(" + best_model_description + ")" if best_model_description else "", overall_run_best.hp_selection_mape, overall_run_best.validation_mape)
             best_conf = overall_run_best
 
         elif (validation, hp_selection) in {("KFold", "All"), ("KFold", "HoldOut")}:
