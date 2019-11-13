@@ -15,9 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
-
-
 import sklearn.linear_model as lm
 
 import model_building.experiment_configuration as ec
@@ -53,8 +50,9 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.NNLS
-        self._regressor = lm.Lasso()
-
+        self._regressor = lm.Lasso(fit_intercept=self._hyperparameters['fit_intercept'],
+                                   alpha=0.001,
+                                   positive=True)
 
     def _compute_signature(self, prefix):
         """
@@ -63,8 +61,6 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         signature = prefix.copy()
         signature.append("fit_intercept_" + str(self._hyperparameters['fit_intercept']))
 
-
-
         return signature
 
     def _train(self):
@@ -72,18 +68,12 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
-        self._regressor = lm.Lasso(fit_intercept=self._hyperparameters['fit_intercept'],
-                                   alpha=0.001,
-                                   positive=True)
-
-
-
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
 
-        #for idx, col_name in enumerate(self._regression_inputs.x_columns):
+        # for idx, col_name in enumerate(self._regression_inputs.x_columns):
         #    self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])
 
     def compute_estimations(self, rows):

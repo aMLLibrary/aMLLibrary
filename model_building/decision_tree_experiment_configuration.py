@@ -52,7 +52,11 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.DT
-        self._regressor = dt.DecisionTreeRegressor()
+        self._regressor = dt.DecisionTreeRegressor(criterion=self._hyperparameters['criterion'],
+                                                   max_depth=self._hyperparameters['max_depth'],
+                                                   max_features=self._hyperparameters['max_features'],
+                                                   min_samples_split=self._hyperparameters['min_samples_split'],
+                                                   min_samples_leaf=self._hyperparameters['min_samples_leaf'])
 
     def _compute_signature(self, prefix):
         """
@@ -72,11 +76,6 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
-        self._regressor = dt.DecisionTreeRegressor(criterion=self._hyperparameters['criterion'],
-                                                   max_depth=self._hyperparameters['max_depth'],
-                                                   max_features=self._hyperparameters['max_features'],
-                                                   min_samples_split=self._hyperparameters['min_samples_split'],
-                                                   min_samples_leaf=self._hyperparameters['min_samples_leaf'])
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)

@@ -19,6 +19,7 @@ import copy
 import model_building.design_space
 import model_building.sfs_experiment_configuration
 
+
 class SFSExpConfsGenerator(model_building.design_space.ExpConfsGenerator):
     """
     Abstract superclass for feature selector methods which exploits regressors
@@ -60,10 +61,12 @@ class SFSExpConfsGenerator(model_building.design_space.ExpConfsGenerator):
         list
             a list of the experiment configurations
         """
+        self._logger.info("-->Generating experiments by SFSExpConfsGenerator")
         internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
         ret_list = []
         for wrapped_point in internal_list:
-            ret_list.append(model_building.sfs_experiment_configuration.SFSExperimentConfiguration(self._campaign_configuration, regression_inputs, prefix, wrapped_point))
+            ret_list.append(model_building.sfs_experiment_configuration.SFSExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
+        self._logger.info("<--")
         return ret_list
 
     def __deepcopy__(self, memo):
