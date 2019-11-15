@@ -55,7 +55,7 @@ class SequenceDataProcessing:
         The random generator used in the whole application
     """
 
-    def __init__(self, configuration_file, debug=False, seed=0, output="output", j=1, generate_plots=False, self_check=True):
+    def __init__(self, configuration_file, debug=False, seed=0, output="output", j=1, generate_plots=False, self_check=True, details=False):
         """
         Parameters
         ----------
@@ -79,6 +79,9 @@ class SequenceDataProcessing:
 
         self_check: bool
             True if the generated regressor should be tested
+
+        details: bool
+            True if the results of the single experiments should be added
         """
         self._data_preprocessing_list = []
 
@@ -106,6 +109,7 @@ class SequenceDataProcessing:
         self.conf['General']['j'] = str(j)
         self.conf['General']['debug'] = str(debug)
         self.conf['General']['generate_plots'] = str(generate_plots)
+        self.conf['General']['details'] = str(details)
         self._campaign_configuration = {}
         self.get__campaign_configuration(configuration_file)
 

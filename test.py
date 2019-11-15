@@ -40,7 +40,7 @@ def main():
         if args.debug:
             extra_options = extra_options + " -d"
         extra_options = extra_options + " -j" + str(args.j)
-        command = os.path.join(abs_root, "run.py") + " -t -c " + os.path.join(abs_root, "example_configurations", file) + " -o output_" + file + extra_options
+        command = os.path.join(abs_root, "run.py") + " -l -t -c " + os.path.join(abs_root, "example_configurations", file) + " -o output_" + file + extra_options
         print("Running " + command)
         ret_program = subprocess.call(command, shell=True, executable="/bin/bash")
         if ret_program:

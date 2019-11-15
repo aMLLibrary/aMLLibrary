@@ -15,6 +15,8 @@ limitations under the License.
 """
 
 import collections
+import logging
+import os
 import sys
 
 from typing import Dict
@@ -67,6 +69,10 @@ class Results:
         self.raw_results: Dict[str, Dict] = {}
         self._logger = custom_logger.getLogger(__name__)
 
+        # Logger writes to stdout and file
+        file_handler = logging.FileHandler(os.path.join(self._campaign_configuration['General']['output'], 'results'), 'a+')
+        self._logger.addHandler(file_handler)
+
     def collect_data(self):
         """
         Collect the data of all the performed experiments
@@ -88,6 +94,7 @@ class Results:
         Returns
         -------
         """
+        run_tec_conf_set = recursivedict()
         validation = self._campaign_configuration['General']['validation']
         hp_selection = self._campaign_configuration['General']['hp_selection']
         if (validation, hp_selection) in {("All", "All"), ("Extrapolation", "All"), ("All", "HoldOut"), ("HoldOut", "All"), ("HoldOut", "HoldOut")}:
@@ -98,6 +105,8 @@ class Results:
             for conf in self._exp_confs:
                 run = int(conf.get_signature()[0].replace("run_", ""))
                 technique = conf.technique
+                run_tec_conf_set[run][technique][str(conf.get_signature()[4:])]["hp_selection"] = conf.hp_selection_mape
+                run_tec_conf_set[run][technique][str(conf.get_signature()[4:])]["validation"] = conf.validation_mape
                 # First experiment for this technique or better than the current best
                 if technique not in run_tec_best_conf[run] or conf.hp_selection_mape < run_tec_best_conf[run][technique].hp_selection_mape:
                     run_tec_best_conf[run][technique] = conf
@@ -128,6 +137,11 @@ class Results:
                 run = int(conf.get_signature()[0].replace("run_", ""))
                 fold = int(conf.get_signature()[1].replace("f", ""))
                 technique = conf.technique
+                if "hp_selection" not in run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]:
+                    run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["hp_selection"] = 0
+                    run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["validation"] = 0
+                run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["hp_selection"] = run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["hp_selection"] + conf.hp_selection_mape / folds
+                run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["validation"] = run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["validation"] + conf.validation_mape / folds
                 # First experiment for this fold+technique or better than the current best
                 if technique not in run_fold_tec_best_conf[run][fold] or conf.hp_selection_mape < run_fold_tec_best_conf[run][fold][technique].hp_selection_mape:
                     run_fold_tec_best_conf[run][fold][technique] = conf
@@ -176,6 +190,11 @@ class Results:
                 fold = int(conf.get_signature()[2].replace("f", ""))
                 technique = conf.technique
                 configuration = tuple(conf.get_signature()[4:])
+                if "hp_selection" not in run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]:
+                    run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["hp_selection"] = 0
+                    run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["validation"] = 0
+                run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["hp_selection"] = run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["hp_selection"] + conf.hp_selection_mape / folds
+                run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["validation"] = run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["validation"] + conf.validation_mape / folds
                 if configuration not in run_tec_conf_validation_mape[run][technique]:
                     run_tec_conf_validation_mape[run][technique][configuration] = 0
                     run_tec_conf_hp_selection_mape[run][technique][configuration] = 0
@@ -224,6 +243,11 @@ class Results:
                 ext_fold = int(conf.get_signature()[2].replace("f", ""))
                 technique = conf.technique
                 configuration = str(tuple(conf.get_signature()[4:]))
+                if "hp_selection" not in run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]:
+                    run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["hp_selection"] = 0
+                    run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["validation"] = 0
+                run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["hp_selection"] = run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["hp_selection"] + conf.hp_selection_mape / (folds * folds)
+                run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["validation"] = run_tec_conf_set[run][technique][str(conf.get_signature_string()[4:])]["validation"] + conf.hp_selection_mape / (folds * folds)
                 if configuration not in run_efold_tec_conf_validation_mape[run][ext_fold][technique]:
                     run_efold_tec_conf_validation_mape[run][ext_fold][technique][configuration] = 0
                     run_efold_tec_conf_hp_selection_mape[run][ext_fold][technique][configuration] = 0
@@ -284,6 +308,13 @@ class Results:
         for conf in self._exp_confs:
             if not best_conf or conf.validation_mape < best_conf.validation_mape:
                 best_conf = conf
+        if bool(self._campaign_configuration['General']['details']):
+            for run in run_tec_conf_set:
+                for tec in run_tec_conf_set[run]:
+                    for conf in run_tec_conf_set[run][tec]:
+                        assert "hp_selection" in run_tec_conf_set[run][tec][conf]
+                        assert "validation" in run_tec_conf_set[run][tec][conf], "training MAPE not found for " + str(run) + str(tec) + str(conf)
+                        self._logger.info("Run %s - Technique %s - Conf %s - Training MAPE %f - Test MAPE %f", str(run), ec.enum_to_configuration_label[tec], str(conf), run_tec_conf_set[run][tec][conf]["hp_selection"], run_tec_conf_set[run][tec][conf]["validation"])
         assert best_conf
         assert best_conf.get_regressor()
         return best_conf
