@@ -251,9 +251,11 @@ class ExperimentConfiguration(abc.ABC):
         if self._campaign_configuration['General']['validation'] == "Extrapolation" and len(self._campaign_configuration['General']['extrapolation_columns']) == 1:
             plt.figure()
             extrapolation_column = next(iter(self._campaign_configuration['General']['extrapolation_columns']))
+            normalization = 'normalization' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['normalization']
+            column_label = "original_" + extrapolation_column if normalization else extrapolation_column
 
-            x_training_values = self._regression_inputs.data.loc[self._regression_inputs.inputs_split["training"], extrapolation_column]
-            x_validation_values = self._regression_inputs.data.loc[self._regression_inputs.inputs_split["validation"], extrapolation_column]
+            x_training_values = self._regression_inputs.data.loc[self._regression_inputs.inputs_split["training"], column_label]
+            x_validation_values = self._regression_inputs.data.loc[self._regression_inputs.inputs_split["validation"], column_label]
 
             training_error = np.multiply(np.divide(real_training_y - predicted_training_y, real_training_y), 100)
             validation_error = np.multiply(np.divide(real_validation_y - predicted_validation_y, real_validation_y), 100)
