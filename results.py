@@ -97,7 +97,7 @@ class Results:
         run_tec_conf_set = recursivedict()
         validation = self._campaign_configuration['General']['validation']
         hp_selection = self._campaign_configuration['General']['hp_selection']
-        if (validation, hp_selection) in {("All", "All"), ("Extrapolation", "All"), ("All", "HoldOut"), ("HoldOut", "All"), ("HoldOut", "HoldOut")}:
+        if (validation, hp_selection) in {("All", "All"), ("Extrapolation", "All"), ("All", "HoldOut"), ("HoldOut", "All"), ("HoldOut", "HoldOut"), ("Extrapolation", "HoldOut")}:
             # For each run, for each technique the best configuration
             run_tec_best_conf = recursivedict()
 
@@ -177,7 +177,7 @@ class Results:
 
             # Overall best will contain as first argument the technique with the best (across runs) average (across folds) mape on validation; now we consider on all the runs and on all the folds the configuraiton of this technique with best validation mape
 
-        elif (validation, hp_selection) in {("All", "KFold"), ("HoldOut", "KFold")}:
+        elif (validation, hp_selection) in {("All", "KFold"), ("HoldOut", "KFold"), ("Extrapolation", "KFold")}:
             folds = float(self._campaign_configuration['General']['folds'])
             # For each run, for each technique, for each configuration, the aggregated mape
             run_tec_conf_validation_mape = recursivedict()
