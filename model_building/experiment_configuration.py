@@ -75,11 +75,8 @@ class ExperimentConfiguration(abc.ABC):
     _signature: str
         The signature associated with this experiment configuration
 
-    hp_selection_mape: float
-        The MAPE obtained on the hp_selection data
-
-    validation_mape: float
-        The MAPE obtained on the validation data
+    mapes: dict of float
+        The MAPE obtained on the different sets
 
     _experiment_directory: str
         The directory where output of this experiment has to be stored
@@ -156,8 +153,7 @@ class ExperimentConfiguration(abc.ABC):
         self._regression_inputs = regression_inputs
         self._signature = self._compute_signature(prefix)
         self._logger = custom_logger.getLogger(self.get_signature_string())
-        self.validation_mape = None
-        self.hp_selection_mape = None
+        self.mapes = {}
         self._regressor = None
 
         # Create experiment directory
@@ -187,35 +183,23 @@ class ExperimentConfiguration(abc.ABC):
 
     def evaluate(self):
         """
-        Validate the model, i.e., compute the MAPE on the validation set
+        Validate the model, i.e., compute the MAPE on the validation set, hp selection, training
         """
         self._start_file_logger()
 
-        validation_rows = self._regression_inputs.inputs_split["validation"]
-        self._logger.debug("Validating model")
-        predicted_y = self.compute_estimations(validation_rows)
-        real_y = self._regression_inputs.data.loc[validation_rows, self._regression_inputs.y_column].values.astype(np.float64)
-        if self._regression_inputs.y_column in self._regression_inputs.scalers:
-            y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
-            predicted_y = y_scaler.inverse_transform(predicted_y)
-            real_y = y_scaler.inverse_transform(real_y)
-        difference = real_y - predicted_y
-        self.validation_mape = np.mean(np.abs(np.divide(difference, real_y)))
-        self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
-        self._logger.debug("MAPE on validation set is %f", self.validation_mape)
-
-        hp_selection_rows = self._regression_inputs.inputs_split["hp_selection"]
-        self._logger.debug("Validating model")
-        predicted_y = self.compute_estimations(hp_selection_rows)
-        real_y = self._regression_inputs.data.loc[hp_selection_rows, self._regression_inputs.y_column].values.astype(np.float64)
-        if self._regression_inputs.y_column in self._regression_inputs.scalers:
-            y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
-            predicted_y = y_scaler.inverse_transform(predicted_y)
-            real_y = y_scaler.inverse_transform(real_y)
-        difference = real_y - predicted_y
-        self.hp_selection_mape = np.mean(np.abs(np.divide(difference, real_y)))
-        self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
-        self._logger.debug("MAPE on hp_selection set is %f", self.hp_selection_mape)
+        for set_name in ["validation", "hp_selection", "training"]:
+            rows = self._regression_inputs.inputs_split[set_name]
+            self._logger.debug("Computing MAPE on %s set", set_name)
+            predicted_y = self.compute_estimations(rows)
+            real_y = self._regression_inputs.data.loc[rows, self._regression_inputs.y_column].values.astype(np.float64)
+            if self._regression_inputs.y_column in self._regression_inputs.scalers:
+                y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
+                predicted_y = y_scaler.inverse_transform(predicted_y)
+                real_y = y_scaler.inverse_transform(real_y)
+            difference = real_y - predicted_y
+            self.mapes[set_name] = np.mean(np.abs(np.divide(difference, real_y)))
+            self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
+            self._logger.debug("MAPE on %s set is %f", set_name, self.mapes[set_name])
 
         self._stop_file_logger()
 
