@@ -197,7 +197,7 @@ class Results:
 
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
-                self._logger.info("Printing results for run %d")
+                self._logger.info("Printing results for run %s", run)
                 overall_run_best = ()  # (technique, configuration, mapes)
                 # Print data of single techniques
                 for technique in run_tec_best_conf[run]:
@@ -254,7 +254,7 @@ class Results:
 
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
-                self._logger.info("Printing results for run %d")
+                self._logger.info("Printing results for run %s", run)
                 overall_run_best = ()
                 # Print data of single techniques
                 for technique in run_tec_set[run]:
