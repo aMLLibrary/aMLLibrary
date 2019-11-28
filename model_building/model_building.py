@@ -131,7 +131,7 @@ class ModelBuilding:
         # Train
         best_conf.train()
         best_conf.evaluate()
-        self._logger.info("Validation MAPE on full dataset: %s", str(best_conf.validation_mape))
+        self._logger.info("Validation MAPE on full dataset: %s", str(best_conf.mapes["validation"]))
 
         # Build the regressor
         best_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)

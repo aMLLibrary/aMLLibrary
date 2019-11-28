@@ -85,7 +85,6 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._sfs.fit(xdata, ydata)
         self._logger.debug("Selected features: %s", str(self._sfs.k_feature_names_))
-        print(str(id(self._regression_inputs)))
 
         # Use the selected feature to retrain the regressor
         filtered_xdata = self._sfs.transform(xdata)

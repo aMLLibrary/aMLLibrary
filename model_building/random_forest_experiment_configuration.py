@@ -15,9 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
-
-
 import sklearn.ensemble as rf
 
 import model_building.experiment_configuration as ec
@@ -53,8 +50,13 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.RF
-        self._regressor = rf.RandomForestRegressor()
-
+        self._regressor = rf.RandomForestRegressor(
+            n_estimators=self._hyperparameters['n_estimators'],
+            criterion=self._hyperparameters['criterion'],
+            max_depth=self._hyperparameters['max_depth'],
+            max_features=self._hyperparameters['max_features'],
+            min_samples_split=self._hyperparameters['min_samples_split'],
+            min_samples_leaf=self._hyperparameters['min_samples_leaf'])
 
     def _compute_signature(self, prefix):
         """
@@ -68,7 +70,6 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
         signature.append("min_samples_split_" + str(self._hyperparameters['min_samples_split']))
         signature.append("min_samples_leaf_" + str(self._hyperparameters['min_samples_leaf']))
 
-
         return signature
 
     def _train(self):
@@ -76,19 +77,12 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
-        self._regressor = rf.RandomForestRegressor(
-            n_estimators=self._hyperparameters['n_estimators'],
-            criterion=self._hyperparameters['criterion'],
-            max_depth=self._hyperparameters['max_depth'],
-            max_features=self._hyperparameters['max_features'],
-            min_samples_split=self._hyperparameters['min_samples_split'],
-            min_samples_leaf=self._hyperparameters['min_samples_leaf'])
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
 
-        #for idx, col_name in enumerate(self._regression_inputs.x_columns):
+        # for idx, col_name in enumerate(self._regression_inputs.x_columns):
         #    self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])
 
     def compute_estimations(self, rows):

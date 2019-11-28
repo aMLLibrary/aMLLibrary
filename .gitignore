@@ -1,2 +1,8 @@
-__pycache__
-__init__.py
+*swp
+*__pycache__
+log
+output
+output_*
+/.idea/
+.mypy_cache/
+*orig

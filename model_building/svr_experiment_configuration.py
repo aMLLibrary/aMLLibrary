@@ -51,6 +51,9 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.SVR
+        self._regressor = svm.SVR(C=self._hyperparameters['C'], epsilon=self._hyperparameters['epsilon'],
+                                  gamma=self._hyperparameters['gamma'], kernel=self._hyperparameters['kernel'],
+                                  degree=self._hyperparameters['degree'])
 
     def _compute_signature(self, prefix):
         """
@@ -70,10 +73,6 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
-        self._regressor = svm.SVR(C=self._hyperparameters['C'], epsilon=self._hyperparameters['epsilon'],
-                                  gamma=self._hyperparameters['gamma'], kernel=self._hyperparameters['kernel'],
-                                  degree=self._hyperparameters['degree'])
-
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)

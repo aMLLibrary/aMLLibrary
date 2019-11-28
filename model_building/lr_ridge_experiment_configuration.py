@@ -55,7 +55,7 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         assert prefix
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.LR_RIDGE
-        self._regressor = lr.Ridge()
+        self._regressor = lr.Ridge(alpha=self._hyperparameters['alpha'])
 
     def _compute_signature(self, prefix):
         """
@@ -71,7 +71,6 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
-        self._regressor = lr.Ridge(alpha=self._hyperparameters['alpha'])
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
