@@ -30,6 +30,7 @@ import custom_logger
 import data_preparation.column_selection
 import data_preparation.data_check
 import data_preparation.data_loading
+import data_preparation.ernest
 import data_preparation.extrapolation
 import data_preparation.inversion
 import data_preparation.product
@@ -144,6 +145,21 @@ class SequenceDataProcessing:
                 self._logger.error("XGBoost tolerance not set")
                 sys.exit(1)
 
+        # Check that if ernest is used, normalization, product, column_selection, and inversion are disabled
+        if 'ernest' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['ernest']:
+            if 'use_columns' in self._campaign_configuration['DataPreparation'] or "skip_columns" in self._campaign_configuration['DataPreparation']:
+                logging.error("use_columns and skip_columns cannot be used with ernest")
+                sys.exit(1)
+            if 'inverse' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['inverse']:
+                logging.error("inverse cannot be used with ernest")
+                sys.exit(1)
+            if 'product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree']:
+                logging.error("product cannot be used with ernest")
+                sys.exit(1)
+            if 'normalization' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['normalization']:
+                logging.error("normalization cannot be used with ernest")
+                sys.exit(1)
+
         # Adding read on input to data preprocessing step
         self._data_preprocessing_list.append(data_preparation.data_loading.DataLoading(self._campaign_configuration))
 
@@ -166,6 +182,10 @@ class SequenceDataProcessing:
         # Adding product features if required
         if 'product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree']:
             self._data_preprocessing_list.append(data_preparation.product.Product(self._campaign_configuration))
+
+        # Create ernest features if required
+        if 'ernest' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['ernest']:
+            self._data_preprocessing_list.append(data_preparation.ernest.Ernest(self._campaign_configuration))
 
         # Adding data check
         self._data_preprocessing_list.append(data_preparation.data_check.DataCheck(self._campaign_configuration))
