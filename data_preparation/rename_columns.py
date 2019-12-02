@@ -16,6 +16,7 @@ limitations under the License.
 
 import data_preparation.data_preparation
 
+
 class RenameColumns(data_preparation.data_preparation.DataPreparation):
     """
     Step which renames columns
