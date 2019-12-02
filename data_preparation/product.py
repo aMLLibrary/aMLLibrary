@@ -20,6 +20,7 @@ import numpy as np
 
 import data_preparation.data_preparation
 
+
 class Product(data_preparation.data_preparation.DataPreparation):
     """
     Step which load data from csv
@@ -61,7 +62,7 @@ class Product(data_preparation.data_preparation.DataPreparation):
             for combination in combinations:
                 if data_preparation.inversion.Inversion.check_reciprocal(combination):
                     continue
-                #Compute the string for combination[:-2]
+                # Compute the string for combination[:-2]
                 base = self._compute_column_name(combination[:-1])
                 new_column = np.array(outputs.data[base]) * np.array(outputs.data[combination[-1]])
                 new_feature_name = self._compute_column_name(combination)
