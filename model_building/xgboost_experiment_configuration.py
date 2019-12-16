@@ -53,7 +53,7 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.XGBOOST
-        self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror')
+        self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', n_jobs=1)
 
     def _compute_signature(self, prefix):
         """
@@ -97,4 +97,6 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         Compute the estimations and the MAPE for runs in rows
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
+        self._regressor.set_params(nthread=1)
+        self._regressor._Booster.set_param('nthread', 1)
         return self._regressor.predict(xdata)
