@@ -90,7 +90,8 @@ class Results:
         Collect the data of all the performed experiments
         """
         exp_conf: ec.ExperimentConfiguration
-        processes_number = self._campaign_configuration['General']['j']
+        # Disabled multiprocess run because of huge memory usage
+        processes_number = 1  # self._campaign_configuration['General']['j']
         if processes_number == 1:
             self._logger.info("-->Evaluate experiments (sequentially)")
             for exp_conf in tqdm.tqdm(self._exp_confs, dynamic_ncols=True):
