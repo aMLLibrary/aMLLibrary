@@ -16,14 +16,26 @@ limitations under the License.
 
 import collections
 import logging
+import multiprocessing
 import os
 import sys
+import tqdm
 
 from typing import Dict
 from typing import List
 
 import custom_logger
 import model_building.experiment_configuration as ec
+
+
+def evaluate_wrapper(experiment_configuration):
+    experiment_configuration.evaluate()
+    return experiment_configuration
+
+
+def plot_wrapper(experiment_configuration):
+    experiment_configuration.generate_plots()
+    return experiment_configuration
 
 
 def recursivedict():
@@ -78,11 +90,25 @@ class Results:
         Collect the data of all the performed experiments
         """
         exp_conf: ec.ExperimentConfiguration
+        processes_number = self._campaign_configuration['General']['j']
+        if processes_number == 1:
+            self._logger.info("-->Evaluate experiments (sequentially)")
+            for exp_conf in tqdm.tqdm(self._exp_confs, dynamic_ncols=True):
+                exp_conf.evaluate()
+                if bool(self._campaign_configuration['General']['generate_plots']):
+                    exp_conf.generate_plots()
+            self._logger.info("<--")
+        else:
+            self._logger.info("-->Evaluate experiments (in parallel)")
+            pool = multiprocessing.Pool(processes_number)
+            self._exp_confs = list(tqdm.tqdm(pool.imap(evaluate_wrapper, self._exp_confs), total=len(self._exp_confs)))
+            if bool(self._campaign_configuration['General']['generate_plots']):
+                pool = multiprocessing.Pool(processes_number)
+                self._exp_confs = list(tqdm.tqdm(pool.imap(plot_wrapper, self._exp_confs), total=len(self._exp_confs)))
+            self._logger.info("<--")
+
         self.raw_results = {}
         for exp_conf in self._exp_confs:
-            exp_conf.evaluate()
-            if bool(self._campaign_configuration['General']['generate_plots']):
-                exp_conf.generate_plots()
             self.raw_results[tuple(exp_conf.get_signature())] = exp_conf.mapes
 
     def get_best(self):
@@ -205,7 +231,7 @@ class Results:
                     self._logger.info("---Best result for %s - Configuration is %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", technique, temp[0], temp[1]["training"], temp[1]["hp_selection"], temp[1]["validation"])
 
                     # Compute which is the best technique
-                    if not overall_run_best or temp[1] < overall_run_best[2]:
+                    if not overall_run_best or temp[1]["hp_selection"] < overall_run_best[2]["hp_selection"]:
                         overall_run_best = (technique, temp[0], temp[1])
 
                 self._logger.info("---Overall best result is %s %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", overall_run_best[0], overall_run_best[1], overall_run_best[2]["training"], overall_run_best[2]["hp_selection"], overall_run_best[2]["validation"])

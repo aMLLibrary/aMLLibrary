@@ -33,6 +33,7 @@ import data_preparation.data_loading
 import data_preparation.ernest
 import data_preparation.extrapolation
 import data_preparation.inversion
+import data_preparation.onehot_encoding
 import data_preparation.product
 import data_preparation.rename_columns
 import data_preparation.xgboost_feature_selection
@@ -171,6 +172,9 @@ class SequenceDataProcessing:
         if 'use_columns' in self._campaign_configuration['DataPreparation'] or "skip_columns" in self._campaign_configuration['DataPreparation']:
             self._data_preprocessing_list.append(data_preparation.column_selection.ColumnSelection(self._campaign_configuration))
 
+        # Transform categorical features in onehot encoding
+        self._data_preprocessing_list.append(data_preparation.onehot_encoding.OnehotEncoding(self._campaign_configuration))
+
         # Split according to extrapolation values if required
         if self._campaign_configuration['General']['validation'] == "Extrapolation":
             self._data_preprocessing_list.append(data_preparation.extrapolation.Extrapolation(self._campaign_configuration))
@@ -219,6 +223,8 @@ class SequenceDataProcessing:
 
     def process(self):
 
+        os.environ["OMP_NUM_THREADS"] = "1"
+
         """the main code"""
         start = time.time()
 
@@ -238,6 +244,8 @@ class SequenceDataProcessing:
             data_processing = data_preprocessing_step.process(data_processing)
             self._logger.debug("Current data frame is:\n%s", str(data_processing))
             self._logger.info("<--")
+
+        data_processing.data.to_csv(os.path.join(self.conf['General']['output'], "preprocessed.csv"))
 
         regressor = self._model_building.process(self._campaign_configuration, data_processing, int(self.conf['General']['j']))
 

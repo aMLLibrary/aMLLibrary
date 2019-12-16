@@ -19,6 +19,7 @@ import numpy as np
 
 import data_preparation.data_preparation
 
+
 class Inversion(data_preparation.data_preparation.DataPreparation):
     """
     Step which load data from csv
@@ -51,6 +52,8 @@ class Inversion(data_preparation.data_preparation.DataPreparation):
             to_be_inv_list = inputs.x_columns.copy()
 
         for column in to_be_inv_list:
+            if inputs.data[column].dtype == bool:
+                continue
             if inputs.data[column].dtype == object:
                 self._logger.error("Trying to invert a string column: %s", column)
                 sys.exit(-1)
