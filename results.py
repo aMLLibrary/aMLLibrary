@@ -219,7 +219,7 @@ class Results:
             for run in run_tec_conf_set:
                 for tec in run_tec_conf_set[run]:
                     for conf in run_tec_conf_set[run][tec]:
-                        if conf not in run_tec_best_conf[run][tec] or run_tec_conf_set[run][tec][conf]["hp_selection"] < run_tec_best_conf[run][tec][1]["hp_selection"]:
+                        if tec not in run_tec_best_conf[run] or run_tec_conf_set[run][tec][conf]["hp_selection"] < run_tec_best_conf[run][tec][1]["hp_selection"]:
                             run_tec_best_conf[run][tec] = (conf, run_tec_conf_set[run][tec][conf])
 
             # Print results for each run
