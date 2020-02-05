@@ -222,10 +222,12 @@ class SequenceDataProcessing:
         self._logger.debug("<--")
 
     def process(self):
+        """
+        the main code
+        """
 
         os.environ["OMP_NUM_THREADS"] = "1"
 
-        """the main code"""
         start = time.time()
 
         self._logger.info("-->Starting experimental campaign")
