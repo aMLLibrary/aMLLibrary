@@ -19,10 +19,10 @@ import logging
 import multiprocessing
 import os
 import sys
-import tqdm
-
 from typing import Dict
 from typing import List
+
+import tqdm
 
 import custom_logger
 import model_building.experiment_configuration as ec
@@ -63,7 +63,7 @@ class Results:
     collect_data()
         Collect the data of all the considered experiment configurations
 
-    get_best()
+    get_bests()
         Compute the best overall method
     """
     def __init__(self, campaign_configuration, exp_confs: List[ec.ExperimentConfiguration]):
@@ -112,7 +112,7 @@ class Results:
         for exp_conf in self._exp_confs:
             self.raw_results[tuple(exp_conf.get_signature())] = exp_conf.mapes
 
-    def get_best(self):
+    def get_bests(self):
         """
         Identify for each considered technique, the configuration with the best validation MAPE
 
@@ -150,7 +150,6 @@ class Results:
                         overall_run_best = temp
                 best_model_description = overall_run_best.print_model()
                 self._logger.info("<--Overall best result is %s %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", overall_run_best.get_signature()[3:], "(" + best_model_description + ")" if best_model_description else "", overall_run_best.mapes["training"], overall_run_best.mapes["hp_selection"], overall_run_best.mapes["validation"])
-            best_conf = overall_run_best
 
         elif (validation, hp_selection) in {("KFold", "All"), ("KFold", "HoldOut")}:
             folds = float(self._campaign_configuration['General']['folds'])
@@ -296,10 +295,15 @@ class Results:
         else:
             self._logger.error("Unexpected combination: %s", str((validation, hp_selection)))
             sys.exit(1)
-        best_conf = None
+        best_confs = {}
+        best_technique = None
         for conf in self._exp_confs:
-            if not best_conf or conf.mapes["validation"] < best_conf.mapes["validation"]:
-                best_conf = conf
+            technique = conf.technique
+            if technique not in best_confs or conf.mapes["validation"] < best_confs[technique].mapes["validation"]:
+                best_confs[technique] = conf
+        for technique in best_confs:
+            if not best_technique or best_confs[technique].mapes["validation"] < best_confs[best_technique].mapes["validation"]:
+                best_technique = technique
         if bool(self._campaign_configuration['General']['details']):
             for run in run_tec_conf_set:
                 for tec in run_tec_conf_set[run]:
@@ -307,6 +311,4 @@ class Results:
                         assert "hp_selection" in run_tec_conf_set[run][tec][conf]
                         assert "validation" in run_tec_conf_set[run][tec][conf], "training MAPE not found for " + str(run) + str(tec) + str(conf)
                         self._logger.info("Run %s - Technique %s - Conf %s - Training MAPE %f - Test MAPE %f", str(run), ec.enum_to_configuration_label[tec], str(conf), run_tec_conf_set[run][tec][conf]["hp_selection"], run_tec_conf_set[run][tec][conf]["validation"])
-        assert best_conf
-        assert best_conf.get_regressor()
-        return best_conf
+        return best_confs, best_technique
