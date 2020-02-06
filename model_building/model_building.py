@@ -14,11 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import multiprocessing
+import os
+import pickle
 import random
 import tqdm
 
 import custom_logger
 import data_preparation.normalization
+import model_building.experiment_configuration as ec
 import model_building.generators_factory as gf
 import regressor
 import results as re
@@ -138,6 +141,10 @@ class ModelBuilding:
 
             # Build the regressor
             best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)
+            pickle_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + ".pickle")
+            pickle_file = open(pickle_file_name, "wb")
+            pickle.dump(best_regressors[technique], pickle_file)
+            pickle_file.close()
         self._logger.info("<--Built the final regressors")
 
         # Return the regressor

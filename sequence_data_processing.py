@@ -18,6 +18,7 @@ import ast
 import configparser as cp
 import logging
 import os
+import pickle
 import pprint
 import random
 import shutil
@@ -263,10 +264,16 @@ class SequenceDataProcessing:
             check_data = check_data.data
             real_y = check_data[self._campaign_configuration['General']['y']]
             check_data = check_data.drop(columns=[self._campaign_configuration['General']['y']])
-            predicted_y = regressor.predict(check_data)
-            difference = real_y - predicted_y
-            mape = numpy.mean(numpy.abs(numpy.divide(difference, real_y)))
+            for technique in self._campaign_configuration['General']['techniques']:
+                pickle_file_name = os.path.join(self._campaign_configuration['General']['output'], technique + ".pickle")
+                pickle_file = open(pickle_file_name, "rb")
+                regressor = pickle.load(pickle_file)
+                pickle_file.close()
+                predicted_y = regressor.predict(check_data)
+                difference = real_y - predicted_y
+                mape = numpy.mean(numpy.abs(numpy.divide(difference, real_y)))
+                self._logger.info("---MAPE of %s: %s", technique, str(mape))
 
-            self._logger.info("<--Performed self check. MAPE: %f", mape)
+            self._logger.info("<--Performed self check")
 
         return regressor
