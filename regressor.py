@@ -85,6 +85,9 @@ class Regressor:
             data = column_selection_step.process(data)
             self._logger.debug("Performed column selection")
 
+        onehot_encoding_step = data_preparation.onehot_encoding.OnehotEncoding(self._campaign_configuration)
+        data = onehot_encoding_step.process(data)
+
         # Compute inverse
         if 'inverse' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['inverse']:
             inversion_step = data_preparation.inversion.Inversion(self._campaign_configuration)
