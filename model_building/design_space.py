@@ -672,7 +672,7 @@ class ExtrapolationExpConfsGenerator(SelectionValidationExpConfsGenerator):
 
     def __deepcopy__(self, memo):
         assert self._campaign_configuration
-        return AllExpConfsGenerator(self._campaign_configuration, self._random_generator.random(),
+        return ExtrapolationExpConfsGenerator(self._campaign_configuration, self._random_generator.random(),
                                     copy.deepcopy(self._wrapped_generator), self._is_validation)
 
 

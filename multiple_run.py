@@ -22,7 +22,8 @@ import sys
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Performs regression tests")
+    parser = argparse.ArgumentParser(description="Performs multiple experiments")
+    parser.add_argument("root_directory", help="The root directory containing the ini files of the experiments")
     parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
     parser.add_argument('-j', help="The number of processes to be used", default=1)
     args = parser.parse_args()
@@ -33,19 +34,16 @@ def main():
     # The root directory of the script
     abs_root = os.path.dirname(abs_script)
 
-    for file in os.listdir(os.path.join(abs_root, "example_configurations")):
+    for file in os.listdir(args.root_directory):
         if not file.endswith(".ini"):
             continue
         extra_options = ""
         if args.debug:
             extra_options = extra_options + " -d"
         extra_options = extra_options + " -j" + str(args.j)
-        command = os.path.join(abs_root, "run.py") + " -l -t -c " + os.path.join(abs_root, "example_configurations", file) + " -o output_" + file + extra_options
+        command = os.path.join(abs_root, "run.py") + " -t -c " + os.path.join(args.root_directory, file) + " -o output_" + file + extra_options + " 2>&1 | tee log_" + file.replace(".ini", "")
         print("Running " + command)
-        ret_program = subprocess.call(command, shell=True, executable="/bin/bash")
-        if ret_program:
-            print("Error in running " + file)
-            sys.exit(1)
+        subprocess.call(command, shell=True, executable="/bin/bash")
 
 
 if __name__ == '__main__':

@@ -14,11 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import multiprocessing
+import os
+import pickle
 import random
 import tqdm
 
 import custom_logger
 import data_preparation.normalization
+import model_building.experiment_configuration as ec
 import model_building.generators_factory as gf
 import regressor
 import results as re
@@ -98,8 +101,9 @@ class ModelBuilding:
             for experiment_configuration, mape in mapes.items():
                 self._logger.debug("%s of %s is %f", metric, experiment_configuration, mape)
 
-        best_conf = results.get_best()
-        self._logger.info("-->Building the final regressor")
+        best_confs, best_technique = results.get_bests()
+        best_regressors = {}
+        self._logger.info("-->Building the final regressors")
 
         # Create a shadow copy
         all_data = regression_inputs.copy()
@@ -109,33 +113,39 @@ class ModelBuilding:
         all_data.inputs_split["validation"] = all_data.inputs_split["all"]
         all_data.inputs_split["hp_selection"] = all_data.inputs_split["all"]
 
-        # Get information about the used x_columns
-        all_data.x_columns = best_conf.get_x_columns()
+        for technique in best_confs:
+            best_conf = best_confs[technique]
+            # Get information about the used x_columns
+            all_data.x_columns = best_conf.get_x_columns()
 
-        if 'normalization' in campaign_configuration['DataPreparation'] and campaign_configuration['DataPreparation']['normalization']:
-            # Restore non-normalized columns
-            for column in all_data.scaled_columns:
-                all_data.data[column] = all_data.data["original_" + column]
-                all_data.data = all_data.data.drop(columns=["original_" + column])
+            if 'normalization' in campaign_configuration['DataPreparation'] and campaign_configuration['DataPreparation']['normalization']:
+                # Restore non-normalized columns
+                for column in all_data.scaled_columns:
+                    all_data.data[column] = all_data.data["original_" + column]
+                    all_data.data = all_data.data.drop(columns=["original_" + column])
 
-            all_data.scaled_columns = []
-            self._logger.debug("Denormalized inputs are:%s\n", str(all_data))
+                all_data.scaled_columns = []
+                self._logger.debug("Denormalized inputs are:%s\n", str(all_data))
 
-            # Normalize
-            normalizer = data_preparation.normalization.Normalization(campaign_configuration)
-            all_data = normalizer.process(all_data)
+                # Normalize
+                normalizer = data_preparation.normalization.Normalization(campaign_configuration)
+                all_data = normalizer.process(all_data)
 
-        # Set training set
-        best_conf.set_training_data(all_data)
+            # Set training set
+            best_conf.set_training_data(all_data)
 
-        # Train
-        best_conf.train()
-        best_conf.evaluate()
-        self._logger.info("Validation MAPE on full dataset: %s", str(best_conf.mapes["validation"]))
+            # Train
+            best_conf.train()
+            best_conf.evaluate()
+            self._logger.info("Validation MAPE on full dataset for %s: %s", technique, str(best_conf.mapes["validation"]))
 
-        # Build the regressor
-        best_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)
-        self._logger.info("<--Built the final regressor")
+            # Build the regressor
+            best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)
+            pickle_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + ".pickle")
+            pickle_file = open(pickle_file_name, "wb")
+            pickle.dump(best_regressors[technique], pickle_file)
+            pickle_file.close()
+        self._logger.info("<--Built the final regressors")
 
         # Return the regressor
-        return best_regressor
+        return best_regressors[best_technique]

@@ -1,4 +1,6 @@
 """
+Main module of the library
+
 Copyright 2019 Marjan Hosseini
 Copyright 2019 Marco Lattuada
 
@@ -13,11 +15,14 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+This module defines the SequenceDataProcessing class which is the only class that has to be accessed to generate regressors
 """
 import ast
 import configparser as cp
 import logging
 import os
+import pickle
 import pprint
 import random
 import shutil
@@ -28,9 +33,12 @@ import numpy
 
 import custom_logger
 import data_preparation.column_selection
+import data_preparation.data_check
 import data_preparation.data_loading
+import data_preparation.ernest
 import data_preparation.extrapolation
 import data_preparation.inversion
+import data_preparation.onehot_encoding
 import data_preparation.product
 import data_preparation.rename_columns
 import data_preparation.xgboost_feature_selection
@@ -40,45 +48,55 @@ import model_building.model_building
 
 class SequenceDataProcessing:
     """
-    main class
+    main class which performs the whole design space exploration and builds the regressors
 
     Attributes
     ----------
-    _data_preprocessing_list: list of DataPreparation
+    _data_preprocessing_list: List[DataPreparation]
         The list of steps to be executed for data preparation
 
     _model_building: ModelBuilding
-        The object which performs the actual model buidling
+        The object which performs the actual model building
 
     _random_generator: RandomGenerator
-        The random generator used in the whole application
+        The random generator used in the whole application both to generate random numbers and to initialize other random generators
     """
 
-    def __init__(self, configuration_file, debug=False, seed=0, output="output", j=1, generate_plots=False, self_check=True):
+    def __init__(self, configuration_file, debug=False, seed=0, output="output", j=1, generate_plots=False, self_check=True, details=False):
         """
+        Constructor of the class
+
+        - Copy the parameters to member variables
+        - Initialize the logger
+        - Build the data preparation flow adding or not data preparation steps on the basis of the content of the loaded configuration file
+
         Parameters
         ----------
         configuration_file: str
             The configuration file describing the experimental campaign to be performed
 
         debug: bool
-            True if debug messsages should be printed
+            True if debug messages should be printed
 
         seed: integer
             The seed to be used to initialize the random generator engine
 
         output: str
-            The directory where all the outputs will be written
+            The directory where all the outputs will be written; it is created by this library and cannot exist before using this module
 
         j: integer
             The number of processes to be used in the grid search
 
         generate_plots: bool
-            True if polots have to be used
+            True if plots have to be used
 
         self_check: bool
             True if the generated regressor should be tested
+
+        details: bool
+            True if the results of the single experiments should be added
         """
+
         self._data_preprocessing_list = []
 
         self.random_generator = random.Random(seed)
@@ -105,8 +123,9 @@ class SequenceDataProcessing:
         self.conf['General']['j'] = str(j)
         self.conf['General']['debug'] = str(debug)
         self.conf['General']['generate_plots'] = str(generate_plots)
+        self.conf['General']['details'] = str(details)
         self._campaign_configuration = {}
-        self.get__campaign_configuration(configuration_file)
+        self.load_campaign_configuration(configuration_file)
 
         # Check if output path already exist
         if os.path.exists(output):
@@ -139,6 +158,21 @@ class SequenceDataProcessing:
                 self._logger.error("XGBoost tolerance not set")
                 sys.exit(1)
 
+        # Check that if ernest is used, normalization, product, column_selection, and inversion are disabled
+        if 'ernest' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['ernest']:
+            if 'use_columns' in self._campaign_configuration['DataPreparation'] or "skip_columns" in self._campaign_configuration['DataPreparation']:
+                logging.error("use_columns and skip_columns cannot be used with ernest")
+                sys.exit(1)
+            if 'inverse' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['inverse']:
+                logging.error("inverse cannot be used with ernest")
+                sys.exit(1)
+            if 'product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree']:
+                logging.error("product cannot be used with ernest")
+                sys.exit(1)
+            if 'normalization' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['normalization']:
+                logging.error("normalization cannot be used with ernest")
+                sys.exit(1)
+
         # Adding read on input to data preprocessing step
         self._data_preprocessing_list.append(data_preparation.data_loading.DataLoading(self._campaign_configuration))
 
@@ -149,6 +183,9 @@ class SequenceDataProcessing:
         # Adding column selection if required
         if 'use_columns' in self._campaign_configuration['DataPreparation'] or "skip_columns" in self._campaign_configuration['DataPreparation']:
             self._data_preprocessing_list.append(data_preparation.column_selection.ColumnSelection(self._campaign_configuration))
+
+        # Transform categorical features in onehot encoding
+        self._data_preprocessing_list.append(data_preparation.onehot_encoding.OnehotEncoding(self._campaign_configuration))
 
         # Split according to extrapolation values if required
         if self._campaign_configuration['General']['validation'] == "Extrapolation":
@@ -162,18 +199,25 @@ class SequenceDataProcessing:
         if 'product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree']:
             self._data_preprocessing_list.append(data_preparation.product.Product(self._campaign_configuration))
 
+        # Create ernest features if required
+        if 'ernest' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['ernest']:
+            self._data_preprocessing_list.append(data_preparation.ernest.Ernest(self._campaign_configuration))
+
+        # Adding data check
+        self._data_preprocessing_list.append(data_preparation.data_check.DataCheck(self._campaign_configuration))
+
         self._model_building = model_building.model_building.ModelBuilding(self.random_generator.random())
 
-    def get__campaign_configuration(self, configuration_file):
+    def load_campaign_configuration(self, configuration_file):
         """
-        Gets the _campaign_configuration from the config file named _campaign_configuration.ini and put them into a dictionary
-        named _campaign_configuration
+        Load the campaign configuration from config file named _campaign_configuration.ini and put all the information into a dictionary
 
         Parameters
         ----------
-        configuration_file : string
+        configuration_file : str
             The name of the file containing the configuration
         """
+
         self._campaign_configuration = {}
 
         for section in self.conf.sections():
@@ -190,8 +234,25 @@ class SequenceDataProcessing:
         self._logger.debug("<--")
 
     def process(self):
+        """
+        the main code which actually performs the design space exploration of models
 
-        """the main code"""
+        Only a single regressor is returned: the best model of the best technique.
+
+        These are the main steps:
+        - data are preprocessed and dumped to preprocessed.csv
+        - design space exploration of the required models (i.e., the models specified in the configuration file) is performed
+        - eventually, best model is used to predict all the data
+        - best model is returned
+
+        Returns
+        -------
+        Regressor
+            The regressor containing the overall best model and the preprocessing steps used to preprocess the input data
+        """
+
+        os.environ["OMP_NUM_THREADS"] = "1"
+
         start = time.time()
 
         self._logger.info("-->Starting experimental campaign")
@@ -211,6 +272,8 @@ class SequenceDataProcessing:
             self._logger.debug("Current data frame is:\n%s", str(data_processing))
             self._logger.info("<--")
 
+        data_processing.data.to_csv(os.path.join(self.conf['General']['output'], "preprocessed.csv"))
+
         regressor = self._model_building.process(self._campaign_configuration, data_processing, int(self.conf['General']['j']))
 
         end = time.time()
@@ -225,10 +288,16 @@ class SequenceDataProcessing:
             check_data = check_data.data
             real_y = check_data[self._campaign_configuration['General']['y']]
             check_data = check_data.drop(columns=[self._campaign_configuration['General']['y']])
-            predicted_y = regressor.predict(check_data)
-            difference = real_y - predicted_y
-            mape = numpy.mean(numpy.abs(numpy.divide(difference, real_y)))
+            for technique in self._campaign_configuration['General']['techniques']:
+                pickle_file_name = os.path.join(self._campaign_configuration['General']['output'], technique + ".pickle")
+                pickle_file = open(pickle_file_name, "rb")
+                regressor = pickle.load(pickle_file)
+                pickle_file.close()
+                predicted_y = regressor.predict(check_data)
+                difference = real_y - predicted_y
+                mape = numpy.mean(numpy.abs(numpy.divide(difference, real_y)))
+                self._logger.info("---MAPE of %s: %s", technique, str(mape))
 
-            self._logger.info("<--Performed self check. MAPE: %f", mape)
+            self._logger.info("<--Performed self check")
 
         return regressor

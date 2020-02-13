@@ -14,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import sys
+import warnings
 
 import numpy as np
 
 import data_preparation.data_preparation
+
 
 class Inversion(data_preparation.data_preparation.DataPreparation):
     """
@@ -44,6 +46,8 @@ class Inversion(data_preparation.data_preparation.DataPreparation):
 
     def process(self, inputs):
 
+        warnings.filterwarnings('error')
+        np.seterr(all='warn')
         outputs = inputs
 
         to_be_inv_list = self._campaign_configuration['DataPreparation']['inverse']
@@ -51,10 +55,16 @@ class Inversion(data_preparation.data_preparation.DataPreparation):
             to_be_inv_list = inputs.x_columns.copy()
 
         for column in to_be_inv_list:
+            if inputs.data[column].dtype == bool:
+                continue
             if inputs.data[column].dtype == object:
                 self._logger.error("Trying to invert a string column: %s", column)
                 sys.exit(-1)
-            new_column = 1 / np.array(inputs.data[column])
+            try:
+                new_column = 1 / np.array(inputs.data[column])
+            except Warning:
+                self._logger.error("Error in inverting %s", column)
+                sys.exit(1)
             new_feature_name = 'inverse_' + column
             outputs.data[new_feature_name] = new_column
             outputs.x_columns.append(new_feature_name)

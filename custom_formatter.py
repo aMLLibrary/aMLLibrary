@@ -19,16 +19,22 @@ import logging
 
 class CustomFormatter(logging.Formatter):
 
-    indentation_level = [0]
-
     """
-    custom formatter used to manage indentation in logging
+    Custom formatter used to manage indentation in logging; it is used coupled with the CustomLogger
+
+    Indentation of produced output can be controlled by adding special sequences of characters at the beginning of the message to be printed. The sequences which can be used are>
+    -->Add a level of indentation and then print the message
+    ---Add a level of indentation only for the currently printed message
+    <--Print the message and then decreases the indentation by one level
 
     Attributes
     ----------
     _indentation_level : integer
-        Current level of indentation
+        Current level of indentation; since it is a static variable is shared across all the instances of the logger
     """
+
+    indentation_level = [0]
+
     def format(self, record):
         if record.msg.startswith("-->"):
             if record.msg == "-->":

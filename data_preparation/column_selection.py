@@ -18,6 +18,7 @@ import sys
 
 import data_preparation.data_preparation
 
+
 class ColumnSelection(data_preparation.data_preparation.DataPreparation):
     """
     Step which filters input data according to column names
@@ -44,7 +45,11 @@ class ColumnSelection(data_preparation.data_preparation.DataPreparation):
     def process(self, inputs):
         data = inputs
         if "use_columns" in self._campaign_configuration['DataPreparation']:
-            data.x_columns = self._campaign_configuration['DataPreparation']['use_columns']
+            data.x_columns = self._campaign_configuration['DataPreparation']['use_columns'].copy()
+            for column in data.x_columns:
+                if column not in data.data:
+                    self._logger.error("Column %s not found", column)
+                    sys.exit(-1)
         elif "skip_columns" in self._campaign_configuration['DataPreparation']:
             columns_to_be_analyzed = data.x_columns.copy()
             data.x_columns = []

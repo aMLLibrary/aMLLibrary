@@ -18,6 +18,7 @@ import numpy
 
 import custom_logger
 import data_preparation.column_selection
+import data_preparation.ernest
 import data_preparation.inversion
 import data_preparation.product
 import data_preparation.rename_columns
@@ -84,6 +85,9 @@ class Regressor:
             data = column_selection_step.process(data)
             self._logger.debug("Performed column selection")
 
+        onehot_encoding_step = data_preparation.onehot_encoding.OnehotEncoding(self._campaign_configuration)
+        data = onehot_encoding_step.process(data)
+
         # Compute inverse
         if 'inverse' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['inverse']:
             inversion_step = data_preparation.inversion.Inversion(self._campaign_configuration)
@@ -95,6 +99,12 @@ class Regressor:
             inversion_step = data_preparation.product.Product(self._campaign_configuration)
             data = inversion_step.process(data)
             self._logger.debug("Performed product")
+
+        # Create ernest features if required
+        if 'ernest' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['ernest']:
+            ernest_step = data_preparation.ernest.Ernest(self._campaign_configuration)
+            data = ernest_step.process(data)
+            self._logger.debug("Performed ernest feature computation")
 
         raw_data = data.data
 
