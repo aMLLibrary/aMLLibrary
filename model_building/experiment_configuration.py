@@ -55,34 +55,40 @@ class ExperimentConfiguration(abc.ABC):
     """
     Abstract class representing a single experiment configuration to be performed
 
+    Each experiment configuration describes the building of a single regressor and it is characterized by:
+        - technique
+        - combination of hyperparameter
+        - training set
+        - hp selection set
+        - validation set
+
+    Each experiment configuration is described univocally by its signature which consists of a list of strings
+
     Attributes
     ----------
-    _campaign_configuration: dict of dict
+    _campaign_configuration: dict of str: dict of str: str
         The set of options specified by the user though command line and campaign configuration files
 
-    hyperparameters: dictionary
-        The set of hyperparameters of this experiment configuration
+    hyperparameters: dict of str: object
+        The combination of hyperparameters of this experiment configuration (key is the name of the hyperparameter, value is the value in this configuration)
 
     _regression_inputs: RegressionInputs
         The input of the regression problem to be solved
 
-    _local_folder: Path
-        The path where all the results related to this experiment configuration will be stored
-
     _logger: Logger
-        The logger associated with this class and its descendents
+        The logger associated with this instance
 
     _signature: str
-        The signature associated with this experiment configuration
+        The string signature associated with this experiment configuration
 
-    mapes: dict of float
+    mapes: dict of str: float
         The MAPE obtained on the different sets
 
     _experiment_directory: str
         The directory where output of this experiment has to be stored
 
     _regressor
-        The actual object performing the regression
+        The actual object performing the regression; it is intialized by the subclasses and its type depends on the particular technique
 
     Methods
     -------
@@ -90,10 +96,10 @@ class ExperimentConfiguration(abc.ABC):
         Build the model starting from training data
 
     _train()
-        Actual implementation of train
+        Actual internal implementation of the training process
 
     evaluate()
-        Compute the MAPE on the hp_selection and set and on the validation set
+        Compute the MAPE on the different input dataset
 
     generate_plots()
         Generate plots about real vs. predicted
@@ -137,14 +143,17 @@ class ExperimentConfiguration(abc.ABC):
 
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
-        campaign_configuration: dict of dict:
+        campaign_configuration: dict of str: dict of str: str
             The set of options specified by the user though command line and campaign configuration files
 
-        hyperparameters: dictionary
+        hyperparameters: dict of str: object
             The set of hyperparameters of this experiment configuration
 
         regression_inputs: RegressionInputs
             The input of the regression problem to be solved
+
+        prefix: list of str
+            The prefix to be used in the computation of the signature of this experiment configuration
         """
 
         # Initialized attributes
@@ -169,7 +178,9 @@ class ExperimentConfiguration(abc.ABC):
 
     def train(self):
         """
-        Build the model with the experiment configuration represented by this object
+        Builid the model with the experiment configuration represented by this object
+
+        This public method wraps the private method which performs the actual work. In doing this it controls the start/stop of logging on file
         """
         self._start_file_logger()
         self._train()
@@ -179,6 +190,8 @@ class ExperimentConfiguration(abc.ABC):
     def _train(self):
         """
         Build the model with the experiment configuration represented by this object
+
+        The actual implementation is demanded to the subclasses
         """
 
     def evaluate(self):
@@ -204,6 +217,9 @@ class ExperimentConfiguration(abc.ABC):
         self._stop_file_logger()
 
     def generate_plots(self):
+        """
+        Generate the plots in the experiment output directory which compare predicted values vs. real ones
+        """
         self._start_file_logger()
         if self._campaign_configuration['General']['validation'] in {"Extrapolation", "HoldOut"}:
             training_rows = self._regression_inputs.inputs_split["training"]
@@ -265,6 +281,11 @@ class ExperimentConfiguration(abc.ABC):
     def _compute_signature(self, prefix):
         """
         Compute the signature associated with this experiment configuration
+
+        Parameters
+        ----------
+        prefix: list of str
+            The prefix which has to be added at the beginning of the signature.
         """
 
     @abc.abstractmethod
@@ -280,19 +301,25 @@ class ExperimentConfiguration(abc.ABC):
 
     def get_signature(self):
         """
-        Return the signature of this experiment
+        Return
+        ------
+        list of str
+            The signature of this experiment
         """
         return self._signature
 
     def get_signature_string(self):
         """
-        Return the signature of this experiment as string
+        Return
+        ------
+        str
+            The signature of this experiment as string
         """
         return "_".join(self._signature)
 
     def _start_file_logger(self):
         """
-        Add the file handler to the logger
+        Add the file handler to the logger to save the log of this experiment on file
         """
         # Logger writes to stdout and file
         file_handler = logging.FileHandler(os.path.join(self._experiment_directory, 'log'), 'a+')
@@ -326,24 +353,38 @@ class ExperimentConfiguration(abc.ABC):
 
     def get_regressor(self):
         """
-        Return the regressor wrapped in this experiment configuration
+        Return
+        ------
+        The regressor wrapped in this experiment configuration
         """
         return self._regressor
 
     def get_hyperparameters(self):
         """
-        Return the hyperparameters associated with this experiment
+        Return
+        ------
+        dict of str: object
+            The hyperparameters associated with this experiment
         """
         return copy.deepcopy(self._hyperparameters)
 
     def get_x_columns(self):
         """
-        Return the columns used in the regression
+        Return
+        ------
+        list of str:
+            the columns used in the regression
         """
         return copy.deepcopy(self._regression_inputs.x_columns)
 
     def print_model(self):
+        """
+        Method which prints the representation of the generated model as an empty string when the subclass does not override this method
+        """
         return ""
 
     def set_training_data(self, new_training_data):
+        """
+        Set the training set of this experiment configuration
+        """
         self._regression_inputs = new_training_data

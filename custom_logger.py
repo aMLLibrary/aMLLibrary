@@ -20,6 +20,9 @@ import custom_formatter
 
 
 def getLogger(name):
+    """
+    Create a logger named name with uses the library custom formatter
+    """
     logger = logging.getLogger(name)
     custom_formatter_obj = custom_formatter.CustomFormatter()
     logger.handlers = []

@@ -22,6 +22,13 @@ import sys
 
 
 def main():
+    """
+    Script used to perform regression test of the library
+
+    This script is used to self check the library.
+    It runs all the examples of example_configurations and checks if there is any error during their execution. Quality of the results is not analyzed nor compared with any reference
+    """
+
     parser = argparse.ArgumentParser(description="Performs regression tests")
     parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
     parser.add_argument('-j', help="The number of processes to be used", default=1)

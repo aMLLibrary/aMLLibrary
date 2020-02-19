@@ -22,6 +22,11 @@ import sys
 
 
 def main():
+    """
+    Script to run library with multple .ini files
+
+    For each <file>, ./run.py is invoked putting output in a separate directory (i.e., output_<file?
+    """
     parser = argparse.ArgumentParser(description="Performs multiple experiments")
     parser.add_argument("root_directory", help="The root directory containing the ini files of the experiments")
     parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")

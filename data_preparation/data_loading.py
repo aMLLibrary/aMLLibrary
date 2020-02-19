@@ -27,6 +27,8 @@ class DataLoading(data_preparation.data_preparation.DataPreparation):
     """
     Step which load data from csv
 
+    This step is the first to be executed in the whole flow
+
     Methods
     -------
     get_name()
@@ -47,7 +49,16 @@ class DataLoading(data_preparation.data_preparation.DataPreparation):
         return "DataLoading"
 
     def process(self, inputs):
-        """Get the csv file, drops the irrelevant columns and change it to data frame as output"""
+        """
+        Main method of the class which performs the actual load and return a RegressionInputs
+
+        In the created RegressionInputs, training set is put equal to the whole input dataset
+
+        Parameters
+        ----------
+        inputs: RegressionInputs
+            The data to be analyzed
+        """
         input_path = self._campaign_configuration['DataPreparation']['input_path']
         self._logger.info("Input reading: %s", input_path)
         if not os.path.exists(input_path):

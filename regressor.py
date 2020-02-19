@@ -27,10 +27,11 @@ import regression_inputs
 
 class Regressor:
     """
-    Regressor: it includes preprocesing step plus the actual regressor
+    The main type of object returned by the library. It includes preprocesing step plus the actual regressor
 
     Attributes
-    _campaign_configuration: dict of dict
+    ----------
+    _campaign_configuration: dict of str : dict of str : str
         The set of options specified during the generation of this regressor
 
     _regressor
@@ -67,6 +68,14 @@ class Regressor:
         self._logger = custom_logger.getLogger(__name__)
 
     def predict(self, inputs):
+        """
+        Perform the prediction on a set of input data
+
+        Parameters
+        ----------
+        inputs: pandas.DataFrame
+            The input on which prediction has to be applied
+        """
         data = inputs
         inputs_split = {}
         column_names = inputs.columns.values.tolist()

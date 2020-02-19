@@ -21,6 +21,8 @@ class RenameColumns(data_preparation.data_preparation.DataPreparation):
     """
     Step which renames columns
 
+    This step renames columns on the basis of the content of campaign_configuration['DataPreparation']['rename_columns']
+
     Methods
     -------
     get_name()
@@ -41,6 +43,14 @@ class RenameColumns(data_preparation.data_preparation.DataPreparation):
         return "RenameColumns"
 
     def process(self, inputs):
+        """
+        Main method of the class which performs the renaming
+
+        Parameters
+        ----------
+        inputs: RegressionInputs
+            The data to be analyzed
+        """
         data = inputs
         rename_columns = self._campaign_configuration['DataPreparation']['rename_columns']
         data.data.rename(columns=rename_columns, inplace=True)

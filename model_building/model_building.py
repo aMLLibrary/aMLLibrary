@@ -36,6 +36,14 @@ class ModelBuilding:
     """
     Entry point of the model building phase, i.e., where all the regressions are actually performed
 
+    The process method do the following steps:
+        - Create the generators through the factory
+        - Build the model for each ExperimentConfiguration
+        - Evaluate the MAPE on different sets of each ExperimentConfiguration
+        - Identify the best regressor of each technique
+        - Retrain the best regressors with the whole dataset
+        - Dump the best regressors in pickle format
+
     Attributes
     ----------
     random_generator : Random
@@ -54,7 +62,7 @@ class ModelBuilding:
         """
         Parameters
         ----------
-        seed: float
+        seed: integer
             The seed to be used for the internal random generator
         """
         self._random_generator = random.Random(seed)
@@ -66,11 +74,19 @@ class ModelBuilding:
 
         Parameters
         ----------
-        campaign_configuration: dictionary
+        campaign_configuration: dict of str: dict of str: tr
             The set of options specified by the user though command line and campaign configuration files
 
         regression_inputs: RegressionInputs
             The input of the regression problem
+
+        processes_number: integer
+            The number of processes which can be used
+
+        Return
+        ------
+        Regressor
+            The best regressor of the best technique
         """
         self._logger.info("-->Generate generators")
         factory = gf.GeneratorsFactory(campaign_configuration, self._random_generator.random())

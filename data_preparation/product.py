@@ -23,7 +23,9 @@ import data_preparation.data_preparation
 
 class Product(data_preparation.data_preparation.DataPreparation):
     """
-    Step which load data from csv
+    Step which generates new columns as product of existing columns
+
+    The created columns are the combination of up to campaign_configuration["DataPreparation"]['product_max_degree']
 
     Methods
     -------
@@ -48,6 +50,14 @@ class Product(data_preparation.data_preparation.DataPreparation):
         return "Product"
 
     def process(self, inputs):
+        """
+        Main method of the class which performs the actual product
+
+        Parameters
+        ----------
+        inputs: RegressionInputs
+            The data to be analyzed
+        """
 
         outputs = inputs
 
@@ -75,4 +85,8 @@ class Product(data_preparation.data_preparation.DataPreparation):
 
     @staticmethod
     def _compute_column_name(combination):
+        """
+        Static method used to compute the name of the new columns
+        """
+
         return "_".join(combination)

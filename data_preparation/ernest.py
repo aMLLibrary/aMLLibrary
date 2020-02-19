@@ -23,7 +23,9 @@ import data_preparation.data_preparation
 
 class Ernest(data_preparation.data_preparation.DataPreparation):
     """
-    Step which coputes ernest features
+    Step which computes Ernest features
+
+    This step expects to find "datasize" and "cores" columns. If their name is different in original data, RenameColumns should be used
 
     Methods
     -------
@@ -31,7 +33,7 @@ class Ernest(data_preparation.data_preparation.DataPreparation):
         Return the name of this step
 
     process()
-        Add the ernest features
+        Add the Ernest features
     """
 
     def get_name(self):
@@ -45,6 +47,14 @@ class Ernest(data_preparation.data_preparation.DataPreparation):
         return "Ernest"
 
     def process(self, inputs):
+        """
+        Main method of the class which performs the computation of the Ernest features
+
+        Parameters
+        ----------
+        inputs: RegressionInputs
+            The data to be analyzed
+        """
 
         outputs = inputs
 

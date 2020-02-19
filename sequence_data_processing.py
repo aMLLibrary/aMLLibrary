@@ -48,11 +48,16 @@ import model_building.model_building
 
 class SequenceDataProcessing:
     """
-    main class which performs the whole design space exploration and builds the regressors
+    Main class which performs the whole design space exploration and builds the regressors
+
+    Its main method is process which performs three main steps:
+    1. generate the set of points (i.e., combination of training data, technique, hyper-parameters) to be evaluated
+    2. build the regressor corresponding to each point
+    3. evaluate the results of all the regressors to identify the best one
 
     Attributes
     ----------
-    _data_preprocessing_list: List[DataPreparation]
+    _data_preprocessing_list: list of DataPreparation
         The list of steps to be executed for data preparation
 
     _model_building: ModelBuilding

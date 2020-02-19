@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from typing import List
-
 import sklearn.linear_model as lr
 
 import model_building.experiment_configuration as ec
@@ -25,13 +23,11 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
     """
     Class representing a single experiment configuration for linear regression
 
-    Attributes
-    ----------
-    _regressor : LinearRegression
-        The actual scikt object which performs the linear regression
-
     Methods
     -------
+    _compute_signature()
+        Compute the signature (i.e., an univocal identifier) of this experiment
+
     _train()
         Performs the actual building of the linear model
 
@@ -41,16 +37,19 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
     print_model()
         Prints the model
     """
-    def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix: List[str]):
+    def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
-        campaign_configuration: dict of dict:
+        campaign_configuration: dict of str: dict of str: str
             The set of options specified by the user though command line and campaign configuration files
 
-        hyperparameters: dictionary
+        hyperparameters: dict of str: object
             The set of hyperparameters of this experiment configuration
 
         regression_inputs: RegressionInputs
             The input of the regression problem to be solved
+
+        prefix: list of str
+            The prefix to be added to the signature of this experiment configuration
         """
         assert prefix
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
@@ -60,6 +59,15 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
     def _compute_signature(self, prefix):
         """
         Compute the signature associated with this experiment configuration
+
+        Parameters
+        ----------
+        prefix: list of str
+            The signature of this experiment configuration without considering hyperparameters
+
+        Returns
+        -------
+            The signature of the experiment
         """
         assert isinstance(prefix, list)
         signature = prefix.copy()
@@ -81,6 +89,15 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
     def compute_estimations(self, rows):
         """
         Compute the estimations and the MAPE for runs in rows
+
+        Parameters
+        ----------
+        rows: list of integer
+            The list of the input data to be considered
+
+        Returns
+        -------
+            The values predicted by the associated regressor
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         return self._regressor.predict(xdata)

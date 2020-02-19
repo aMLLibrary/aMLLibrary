@@ -22,7 +22,21 @@ import sequence_data_processing
 
 
 def main():
+    """
+    Main script to use the library standalone
 
+    The main argument of this script is the configuration file which describes the experimental campaing to be performed i.e., which is the input file, which are the pre-processing steps to be performed, which technique with which hyper-parameters have to be used.
+    Example of configuration files can be found in example_confiigurations directory
+
+    Other arguments are:
+    -d, --debug: enables the debug printing.
+    -s, --seed: specifies the seed to be used; it is mainly exploited in the split of the data into training, hyper-parameter selection, and validtion set. If it is not specified, seed=0 will be used making the whole process deterministic.input
+    -o, --output: specifies the output directory where logs and results will be put. If the directory already exists, the script fails. This behaviour has been designed to avoid unintentinal overwriting.
+    -j: specifies the maximum number of processes which can be used.
+    -g, --generate-plots: enables generation of plots of type actual vs. predicted.
+    -t, --self-check: enables the test of the generated regressor on the whole input set.
+    -l, --details: increase the verbosity of the library. In particular, results in terms of MAPE on different sets are printed for all the built regressors and not only for the best one.
+    """
     parser = argparse.ArgumentParser(description="Perform exploration of regression techniques")
     parser.add_argument('-c', "--configuration-file", help="The configuration file for the infrastructure", required=True)
     parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")

@@ -19,7 +19,35 @@ import model_building.stepwisefit as sw
 
 
 class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
+    """
+    Class representing a single experiment configuration for stepwise + linear regression
+
+    Methods
+    -------
+    _compute_signature()
+        Compute the signature (i.e., an univocal identifier) of this experiment
+
+    _train()
+        Performs the actual building of the linear model
+
+    compute_estimations()
+        Compute the estimated values for a give set of data
+    """
+
     def __init__(self, campaign_configuration, hyper_parameters, input_data, prefix):
+        """
+        campaign_configuration: dict of str: dict of str: str
+            The set of options specified by the user though command line and campaign configuration files
+
+        hyperparameters: dict of str: object
+            The set of hyperparameters of this experiment configuration
+
+        regression_inputs: RegressionInputs
+            The input of the regression problem to be solved
+
+        prefix: list of str
+            The prefix to be added to the signature of this experiment configuration
+        """
         super().__init__(campaign_configuration, hyper_parameters, input_data, prefix)
         self.technique = ec.Technique.STEPWISE
         possible_flags = ["p_enter", "p_remove", "max_iter", "fit_intercept"]
@@ -43,6 +71,18 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
             self._logger.debug("The coefficient for %s is %f", col_name, beta)
 
     def _compute_signature(self, prefix):
+        """
+        Compute the signature associated with this experiment configuration
+
+        Parameters
+        ----------
+        prefix: list of str
+            The signature of this experiment configuration without considering hyperparameters
+
+        Returns
+        -------
+            The signature of the experiment
+        """
         assert isinstance(prefix, list)
         signature = prefix.copy()
         possible_flags = ["p_enter", "p_remove", "max_iter", "fit_intercept"]
@@ -56,7 +96,16 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
 
     def compute_estimations(self, rows):
         """
-        Compute the estimations for runs in rows
+        Compute the estimations and the MAPE for runs in rows
+
+        Parameters
+        ----------
+        rows: list of integer
+            The list of the input data to be considered
+
+        Returns
+        -------
+            The values predicted by the associated regressor
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         return self._regressor.predict(xdata)

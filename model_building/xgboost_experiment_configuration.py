@@ -25,15 +25,13 @@ import model_building.experiment_configuration as ec
 
 class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
     """
-    Class representing a single experiment configuration for linear regression
-
-    Attributes
-    ----------
-    _linear_regression : LinearRegression
-        The actual scikt object which performs the linear regression
+    Class representing a single experiment configuration for XGBoost
 
     Methods
     -------
+    _compute_signature()
+        Compute the signature (i.e., an univocal identifier) of this experiment
+
     _train()
         Performs the actual building of the linear model
 
@@ -58,6 +56,15 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
     def _compute_signature(self, prefix):
         """
         Compute the signature associated with this experiment configuration
+
+        Parameters
+        ----------
+        prefix: list of str
+            The signature of this experiment configuration without considering hyperparameters
+
+        Returns
+        -------
+            The signature of the experiment
         """
         signature = prefix.copy()
         signature.append("min_child_weight_" + str(self._hyperparameters['min_child_weight']))
@@ -95,6 +102,15 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
     def compute_estimations(self, rows):
         """
         Compute the estimations and the MAPE for runs in rows
+
+        Parameters
+        ----------
+        rows: list of integer
+            The list of the input data to be considered
+
+        Returns
+        -------
+            The values predicted by the associated regressor
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         self._regressor.set_params(nthread=1)

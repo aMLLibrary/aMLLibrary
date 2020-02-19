@@ -23,6 +23,8 @@ class ColumnSelection(data_preparation.data_preparation.DataPreparation):
     """
     Step which filters input data according to column names
 
+    Filter is applied by simply modifiying the x_columns of the inputs, i.e., no columns is discarded.
+
     Methods
     -------
     get_name()
@@ -43,6 +45,9 @@ class ColumnSelection(data_preparation.data_preparation.DataPreparation):
         return "ColumnSelection"
 
     def process(self, inputs):
+        """
+        Main method of the class which actually performs the filtering
+        """
         data = inputs
         if "use_columns" in self._campaign_configuration['DataPreparation']:
             data.x_columns = self._campaign_configuration['DataPreparation']['use_columns'].copy()

@@ -27,6 +27,8 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
     """
     Step which filters input data according to XGBoost score
 
+    This step is integrated in the generators since it is performed on the different training set; it internally execute a regression flow using only XGBoost as technique
+
     Methods
     -------
     get_name()
@@ -38,10 +40,10 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
 
     def __init__(self, campaign_configuration, prefix):
         """
-        campaign_configuration: dict of dict:
+        campaign_configuration: dict of str: dict of str: str
             The set of options specified by the user though command line and campaign configuration files
 
-        prefix: List[str]
+        prefix: list of str
             The list of generators after which XGBoostFeatureSelectionExpConfsGenerator is plugged
         """
         self._prefix = prefix
@@ -58,10 +60,22 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
         return "XGBoostFeatureSelection"
 
     def process(self, inputs):
+        """
+        Main method of the class
+
+        This method creates an ad-hoc regression flow composed of only XGBoost; if its parameters are not provided, default are used.
+        At the end information about the score of the single features are extracted from the regressor.
+        Features are selected according to their relevance until the selected expected cumulative tolerance is reached
+
+        Parameters
+        ----------
+        inputs: RegressionInputs
+            The data to be analyzed
+        """
 
         max_features = self._campaign_configuration['FeatureSelection']['max_features']
 
-        # setting parameters for XGboost design space expoloration
+        # setting parameters for XGboost design space explooration
         xgboost_parameters = copy.deepcopy(self._campaign_configuration)
 
         xgboost_parameters['General']['techniques'] = ['XGBoost']
@@ -88,7 +102,7 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
 
         best_conf = model_building_var.process(xgboost_parameters, inputs, int(self._campaign_configuration['General']['j']))
 
-        # best_conf is a XGBoost configuration exeperiment
+        # best_conf is a XGBoost configuration experiment
         xgb_regressor = best_conf.get_regressor()
 
         # top = None means all

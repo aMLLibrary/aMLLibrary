@@ -19,7 +19,9 @@ import data_preparation.data_preparation
 
 class Extrapolation(data_preparation.data_preparation.DataPreparation):
     """
-    Step which prepares data for extrapolation
+    Step which prepares data for extrapolation by computing the correct validation set
+
+    This step looks for extrapolation_columns field in campaign configuration and split data into training and validation according to the values of the features
 
     Methods
     -------
@@ -41,6 +43,14 @@ class Extrapolation(data_preparation.data_preparation.DataPreparation):
         return "Extrapolation"
 
     def process(self, inputs):
+        """
+        The main method which actually performs the split
+
+        Parameters
+        ----------
+        inputs: RegressionInputs
+            The data to be analyzed
+        """
         data = inputs
         data.inputs_split["training"] = []
         data.inputs_split["validation"] = []

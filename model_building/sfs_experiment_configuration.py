@@ -24,17 +24,33 @@ import model_building.experiment_configuration
 
 
 def mean_absolute_percentage_error(y_true, y_pred):
+    """
+    Compute the MAPE
+
+    Parameters
+    ----------
+    y_true: numpy.array
+        The real values
+
+    y_pred: numpy.array
+        The predicted value
+
+    Return
+    ------
+    float
+        The computed MAPE
+    """
     y_true, y_pred = np.array(y_true), np.array(y_pred)
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
 
 class SFSExperimentConfiguration(model_building.experiment_configuration.ExperimentConfiguration):
     """
-    Class representing a single experiment configuration for linear regression
+    Class representing a single experiment configuration for SFS coupled with a generic regression
 
     Attributes
     ----------
-    _wrapped_experiment_configurtation : ExperimentConfiguration
+    _wrapped_experiment_configuration : ExperimentConfiguration
         The regressor to be used in conjunction with sequential feature selection
 
     _sfs: SequentialFeatureSelector
@@ -42,6 +58,9 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
 
     Methods
     -------
+    _compute_signature()
+        Compute the signature (i.e., an univocal identifier) of this experiment
+
     _train()
         Performs the actual building of the linear model
 
@@ -53,7 +72,7 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
     """
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         """
-        campaign_configuration: dict of dict:
+        campaign_configuration: dict of str: dict of str: str
             The set of options specified by the user though command line and campaign configuration files
 
         regression_inputs: RegressionInputs
@@ -75,6 +94,15 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
     def _compute_signature(self, prefix):
         """
         Compute the signature associated with this experiment configuration
+
+        Parameters
+        ----------
+        prefix: list of str
+            The signature of this experiment configuration without considering hyperparameters
+
+        Returns
+        -------
+            The signature of the experiment
         """
         return self._wrapped_experiment_configuration.get_signature()
 
@@ -95,6 +123,15 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
     def compute_estimations(self, rows):
         """
         Compute the estimations and the MAPE for runs in rows
+
+        Parameters
+        ----------
+        rows: list of integer
+            The list of the input data to be considered
+
+        Returns
+        -------
+            The values predicted by the associated regressor
         """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
         ret = self._wrapped_experiment_configuration.get_regressor().predict(xdata)
@@ -103,4 +140,7 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
         return ret
 
     def print_model(self):
+        """
+        Print the model
+        """
         return self._wrapped_experiment_configuration.print_model()

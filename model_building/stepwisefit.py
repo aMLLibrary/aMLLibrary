@@ -20,7 +20,46 @@ from scipy import linalg, stats
 
 
 class Stepwise:
+    """
+    Implementation of the stepwise technique
+
+    Attributes
+    ----------
+    _p_to_add: float
+        The minimum significance to add a feature
+
+    _p_to_discard: float
+        The maximum significance to not remove a feature
+
+    _add_intercept: book
+        True if a constant term has to be added to the linear model
+
+    _max_iterations: integer
+        The maximum number of iterations of the algorithm of adding features
+
+    coef
+        The coefficients of the linear model
+
+    intercept: float
+        The value of the intercept term of the linear model
+
+    k_feature_names: list of str
+        The list of selected features
+    """
     def __init__(self, p_enter=0.05, p_remove=0.1, fit_intercept=True, max_iter=100):
+        """
+        p_enter: float
+            The minimum significance to add a feature
+
+        p_remove: float
+            The maximum significance to not remove a feature
+
+        fit_intercept: bool
+            True if the intercept term has to be added to the linear model
+
+        max_iter: integer
+            The maximum number of iterations
+        """
         self._p_to_add = p_enter
         self._p_to_discard = p_remove
         self._add_intercept = fit_intercept
@@ -32,6 +71,12 @@ class Stepwise:
     def fit(self, X, y):
         """
         https://sourceforge.net/p/octave/statistics/ci/default/tree/inst/stepwisefit.m
+
+        X
+            The input of the regression
+
+        y
+            The expected results
         """
         regressors = len(X.columns)
         go_on = True

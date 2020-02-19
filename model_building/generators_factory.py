@@ -24,23 +24,37 @@ import model_building.sequential_feature_selection
 
 class GeneratorsFactory:
     """
-    Factory calls to build the logical hierarchy of generators
+    Factory calls to build the tree of generators.
+
+    Root generator is the generator to which ExperimentConfigurations are required.
+    Leaves generators are the generators (specialized for techniques) which actually generate the ExperimentConfiguration.
+    Intermediate generators wraps the generators of the next level and propagate the requests from root to leaves, possibly manipulating the input data set of lower level generators by generating different training, hp_selection, and validation sets and by filtering columns
+
+    The levels of the tree of the generators (going from the leaves to the root) are:
+        - TechniqueExpConfsGenerator: these are the generators which actually generate the ExperimentConfigurations
+        - SFSExpConfsGenerator (optional): columns (independently for each ExperimentConfiguration) are filtered using SFS
+        - MultiTechniquesExpConfsGenerator: wrap together generators of the single techniques
+        - NormalizationExpConfsGenerator (optional): normalize the data according to the values of the training set
+        - SelectionValidationExpConfsGenerator: extract the hp_selection set from training set
+        - XGBoostFeatureSelectionExpConfsGenerator (optional): columns are filtered according to XGBoost score
+        - SelectionValidationExpConfsGenerator: extract the validation set from training set
+        - RepeatedExpConfsGenerator: duplicate multiple times all the nested generators to repeat multiple time the process; for the sake of generality this is added even if the number of runs is 1
 
     Attributes
-    -
-    _campaign_configuration: dict of dict
+    ----------
+    _campaign_configuration: dict of str: dict of str: str
         The set of options specified by the user though command line and campaign configuration files
 
     Methods
-    -
+    -------
     build()
         Build the required hierarchy of generators on the basis of the configuration file
     """
     def __init__(self, campaign_configuration, seed):
         """
         Parameters
-        -
-        campaign_configuration: #TODO: add type
+        ----------
+        campaign_configuration: dict of str: dict of str: str
             The set of options specified by the user though command line and campaign configuration files
 
         seed: integer
@@ -60,6 +74,7 @@ class GeneratorsFactory:
         Build the required hierarchy of generators on the basis of the configuration file
 
         The methods start from the leaves and go up. Intermediate wrappers must be added or not on the basis of the requirements of the campaign configuration
+
         """
         string_techique_to_enum = {v: k for k, v in ec.enum_to_configuration_label.items()}
 

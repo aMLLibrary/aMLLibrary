@@ -26,6 +26,8 @@ class Normalization(dp.DataPreparation):
     """
     Step which normalizes input data
 
+    All the currently selected columns (i.e., x_columns are considered)
+
     Methods
     -------
     get_name()
@@ -48,6 +50,8 @@ class Normalization(dp.DataPreparation):
     def process(self, inputs):
         """
         Normalizes the data using StandardScaler module
+
+        The generated scalers are added to the RegressionInputs so that they can be used also to scale new data
 
         Parameters
         ----------
