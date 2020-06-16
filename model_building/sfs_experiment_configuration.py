@@ -19,6 +19,7 @@ from typing import List
 import mlxtend.feature_selection
 import numpy as np
 import sklearn
+import sys
 
 import model_building.experiment_configuration
 
@@ -88,6 +89,10 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
         self._wrapped_experiment_configuration = wrapped_experiment_configuration
         super().__init__(campaign_configuration, None, regression_inputs, prefix)
         verbose = 2 if self._campaign_configuration['General']['debug'] else 0
+        temp_xdata, temp_ydata =  self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
+        if self._campaign_configuration['FeatureSelection']['max_features'] > temp_xdata.shape[1]:
+            self._logger.error("ERROR: The maximum number of required features must be in range(1, %d)", temp_xdata.shape[1]+1)
+            sys.exit(-10)
         self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self._wrapped_experiment_configuration.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
         self.technique = self._wrapped_experiment_configuration.technique
 
@@ -111,6 +116,9 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
         Build the model with the experiment configuration represented by this object
         """
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
+        if self._campaign_configuration['FeatureSelection']['max_features'] > xdata.shape[1]:
+            self._logger.info("Reduced maximum number of features from %d to %d", self._sfs.k_features[1], xdata.shape[1])
+            self._sfs.k_features = (1,xdata.shape[1])
         self._sfs.fit(xdata, ydata)
         self._logger.debug("Selected features: %s", str(self._sfs.k_feature_names_))
 
