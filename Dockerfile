@@ -1,3 +1,4 @@
+## First of all, cd into the folder containing this file.
 ## Build the image with:
 #  docker build -t a-mllibrary:1 .
 ## Run container with:
