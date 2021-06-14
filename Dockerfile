@@ -5,6 +5,8 @@
 #  docker run --name aml --rm -v $(pwd):/a-MLlibrary -it a-mllibrary:1
 ## Example run:
 #  pipenv run ./run.py --help
+## Run FaaS files:
+#  pipenv run ./run.py -c example_configurations/faas.ini -o output_faas
 
 FROM python:3.7
 ENV MY_DIR=/a-MLlibrary
