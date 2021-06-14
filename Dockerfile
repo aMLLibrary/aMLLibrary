@@ -1,0 +1,15 @@
+## Build the image with:
+#  docker build -t a-mllibrary:1 .
+## Run container with:
+#  docker run --name aml --rm -v $(pwd):/a-MLlibrary -it a-mllibrary:1
+## Example run:
+#  pipenv run ./run.py --help
+
+FROM python:3.7
+ENV MY_DIR=/a-MLlibrary
+WORKDIR ${MY_DIR}
+RUN python -m pip install pipenv
+COPY Pipfile .
+RUN pipenv install
+COPY . .
+CMD bash
