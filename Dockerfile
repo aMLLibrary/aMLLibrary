@@ -2,7 +2,7 @@
 ## Build the image with:
 #  docker build -t a-mllibrary:1 .
 ## Run container with:
-#  docker run --name aml --rm -v $(pwd):/a-MLlibrary -it a-mllibrary:1
+#  docker run --name aml --rm --user $(id -u):$(id -g) -v $(pwd):/a-MLlibrary -it a-mllibrary:1
 ## Example run:
 #  pipenv run ./run.py --help
 ## Run FaaS files:
