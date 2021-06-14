@@ -1,14 +1,16 @@
 ## First of all, cd into the folder containing this file.
 ## Build the image with:
 #  docker build -t a-mllibrary:1 .
-## Run container with:
+## Run container (bash) with:
 #  docker run --name aml --rm -v $(pwd):/a-MLlibrary -it a-mllibrary:1
 ## Example run:
 #  pipenv run ./run.py --help
 ## Run FaaS files:
 #  pipenv run ./run.py -c example_configurations/faas.ini -o output_faas
-## To remove root protection from output files:
-#  chmod -R a+rw MY_OUTPUT_FOLDER
+## !!! All-in-one command:
+#  docker run --name aml --rm -v $(pwd):/a-MLlibrary -it a-mllibrary:1 pipenv run ./run.py -c example_configurations/faas.ini -o output_faas
+## Remove root protection from "output" folder:
+#  chmod -R a+rw output
 
 FROM python:3.7
 ENV MY_DIR=/a-MLlibrary
