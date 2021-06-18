@@ -18,7 +18,6 @@ limitations under the License.
 import argparse
 import os
 
-
 import sequence_data_processing
 
 
