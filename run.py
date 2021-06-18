@@ -48,7 +48,6 @@ def main():
     parser.add_argument('-l', "--details", help="Print results of the single experiments", default=False, action="store_true")
     args = parser.parse_args()
 
-
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
     sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args.configuration_file, debug=args.debug, seed=args.seed, output=args.output, j=args.j, generate_plots=args.generate_plots, self_check=args.self_check, details=args.details)
