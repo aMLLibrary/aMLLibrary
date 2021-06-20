@@ -2,19 +2,23 @@
 import os
 import pandas as pd
 
+# Go to parent directory
+os.chdir(os.pardir)
+
 # Initialize relevant strings
 apps = 'blockscholes bodytrack freqmine kmeans stereomatch swaptions'.split()
-apps = ['blockscholes']  # TODO
-base_folder = os.path.join('..', 'inputs', 'agora')
+#apps = ['blockscholes']  # TODO
+base_folder = os.path.join('inputs', 'agora')
 
 for app in apps:
   print("\n", ">>>>>", app)
+  # Get files paths
   app_folder = os.path.join(base_folder, app)
   full_dataset_app_folder = os.path.join(app_folder, 'full')
   if not os.path.isdir(full_dataset_app_folder):
     os.mkdir(full_dataset_app_folder)
 
-  # Set maximum number of iteration of this app
+  # Set maximum number of iterations used for this app
   maxiter = 100 if app == 'stereomatch' else 40
   listdir = os.listdir(app_folder)
 
@@ -33,6 +37,16 @@ for app in apps:
     df = pd.read_csv(covariate_file_path, encoding='utf-8')
     df_tar = pd.read_csv(target_file_path, encoding='utf-8')
     df['exec_time_ms'] = df_tar['exec_time_ms']
+
+    # Change some column names to a standardized one
+    thr_name = 'nThreads'
+    df.rename({'threads':       thr_name,
+               'workingthread': thr_name,
+               'num_threads':   thr_name})
+
+    # Add threads column if nonexistent
+    if not thr_name in df:
+      df.loc[:,thr_name] = 1
 
     # Save new dataset to file
     df_path = os.path.join(full_dataset_app_folder, f'itr{it}.csv')
