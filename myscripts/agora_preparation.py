@@ -3,8 +3,9 @@ import os
 import pandas as pd
 import configparser
 
-# Go to parent directory
-os.chdir(os.pardir)
+# Allows running this script from both this folder and from root folder
+if os.getcwd() == os.path.dirname(__file__):
+  os.chdir(os.pardir)
 
 # Initialize list of apps
 apps = 'blockscholes bodytrack freqmine kmeans stereomatch swaptions'.split()
