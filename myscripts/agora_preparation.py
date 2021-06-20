@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 import os
 import pandas as pd
+import configparser
 
 # Go to parent directory
 os.chdir(os.pardir)
 
-# Initialize relevant strings
+# Initialize list of apps
 apps = 'blockscholes bodytrack freqmine kmeans stereomatch swaptions'.split()
 #apps = ['blockscholes']
-base_folder = os.path.join('inputs', 'agora')
+apps = []
 
+
+
+##### WRITE FULL DATASETS #####
+base_folder = os.path.join('inputs', 'agora')
 for app in apps:
   print("\n", ">>>>>", app)
   # Get files paths
@@ -52,3 +57,17 @@ for app in apps:
     df_path = os.path.join(full_dataset_app_folder, f'itr{it}.csv')
     df.to_csv(df_path, index=False)
     print(f"Successfully saved to {df_path}")
+
+
+
+##### WRITE CONFIGURATION FILES #####
+base_configs_folder = 'example_configurations'
+final_configs_folder = os.path.join(base_configs_folder, 'agora')
+blueprint_path = os.path.join(base_configs_folder, 'agora_blueprint.ini')
+if not os.path.isdir(final_configs_folder):
+  os.mkdir(final_configs_folder)
+
+# Read blueprint configuration file
+config = configparser.ConfigParser()
+config.read(blueprint_path)
+print(config.sections())
