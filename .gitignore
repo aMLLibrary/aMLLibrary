@@ -1,6 +1,7 @@
 *swp
 *__pycache__
 log
+inputs/agora
 output
 output_*
 /.idea/
