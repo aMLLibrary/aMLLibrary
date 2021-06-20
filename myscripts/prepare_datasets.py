@@ -7,7 +7,7 @@ os.chdir(os.pardir)
 
 # Initialize relevant strings
 apps = 'blockscholes bodytrack freqmine kmeans stereomatch swaptions'.split()
-#apps = ['blockscholes']  # TODO
+#apps = ['blockscholes']
 base_folder = os.path.join('inputs', 'agora')
 
 for app in apps:
