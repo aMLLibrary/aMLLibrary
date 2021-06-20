@@ -21,7 +21,6 @@ if not os.path.isdir(final_configs_folder):
 # Read blueprint configuration file
 config = configparser.ConfigParser()
 config.read(blueprint_path)
-print(config.sections())
 
 # Loop over apps
 for app in apps:
@@ -59,9 +58,9 @@ for app in apps:
 
     # Change some column names to a standardized one
     thr_name = 'nThreads'
-    df.rename({'threads':       thr_name,
-               'workingthread': thr_name,
-               'num_threads':   thr_name})
+    df = df.rename(columns={'threads':       thr_name,
+                            'workingthread': thr_name,
+                            'num_threads':   thr_name})
 
     # Add threads column if nonexistent
     if not thr_name in df:
