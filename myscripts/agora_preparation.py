@@ -9,16 +9,25 @@ os.chdir(os.pardir)
 # Initialize list of apps
 apps = 'blockscholes bodytrack freqmine kmeans stereomatch swaptions'.split()
 #apps = ['blockscholes']
-apps = []
 
+# Initialize relevant paths
+base_datasets_folder = os.path.join('inputs', 'agora')
+base_configs_folder = 'example_configurations'
+final_configs_folder = os.path.join(base_configs_folder, 'agora')
+blueprint_path = os.path.join(base_configs_folder, 'agora_blueprint.ini')
+if not os.path.isdir(final_configs_folder):
+  os.mkdir(final_configs_folder)
 
+# Read blueprint configuration file
+config = configparser.ConfigParser()
+config.read(blueprint_path)
+print(config.sections())
 
-##### WRITE FULL DATASETS #####
-base_folder = os.path.join('inputs', 'agora')
+# Loop over apps
 for app in apps:
   print("\n", ">>>>>", app)
   # Get files paths
-  app_folder = os.path.join(base_folder, app)
+  app_folder = os.path.join(base_datasets_folder, app)
   full_dataset_app_folder = os.path.join(app_folder, 'full')
   if not os.path.isdir(full_dataset_app_folder):
     os.mkdir(full_dataset_app_folder)
@@ -35,11 +44,11 @@ for app in apps:
     # Check whether the two files actually exist
     if not (covariate_file in listdir and target_file in listdir):
       exit(f"Error: {covariate_file} or {target_file} does not exist")
-    covariate_file_path = os.path.join(app_folder, covariate_file)
+    dataset_file_path = os.path.join(app_folder, covariate_file)
     target_file_path = os.path.join(app_folder, target_file)
 
     # Join covariates and target into a single, full dataset
-    df = pd.read_csv(covariate_file_path, encoding='utf-8')
+    df = pd.read_csv(dataset_file_path, encoding='utf-8')
     df_tar = pd.read_csv(target_file_path, encoding='utf-8')
     df['exec_time_ms'] = df_tar['exec_time_ms']
 
@@ -56,18 +65,12 @@ for app in apps:
     # Save new dataset to file
     df_path = os.path.join(full_dataset_app_folder, f'itr{it}.csv')
     df.to_csv(df_path, index=False)
-    print(f"Successfully saved to {df_path}")
+    print("Saved dataset to", df_path)
 
-
-
-##### WRITE CONFIGURATION FILES #####
-base_configs_folder = 'example_configurations'
-final_configs_folder = os.path.join(base_configs_folder, 'agora')
-blueprint_path = os.path.join(base_configs_folder, 'agora_blueprint.ini')
-if not os.path.isdir(final_configs_folder):
-  os.mkdir(final_configs_folder)
-
-# Read blueprint configuration file
-config = configparser.ConfigParser()
-config.read(blueprint_path)
-print(config.sections())
+    # Create config file
+    config['DataPreparation']['input_path'] = f'"{dataset_file_path}"'
+    config_file_path = os.path.join(final_configs_folder,
+                                    f'{app}_itr{it}.ini')
+    with open(config_file_path, 'w') as f:
+      config.write(f)
+    print("Saved configs to", config_file_path)
