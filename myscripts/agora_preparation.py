@@ -29,8 +29,13 @@ for app in apps:
   # Get files paths
   app_folder = os.path.join(base_datasets_folder, app)
   full_dataset_app_folder = os.path.join(app_folder, 'full')
+
+  # Create folders and subfolders
   if not os.path.isdir(full_dataset_app_folder):
     os.mkdir(full_dataset_app_folder)
+  config_files_subfolder = os.path.join(final_configs_folder, app)
+  if not os.path.isdir(config_files_subfolder):
+    os.mkdir(config_files_subfolder)
 
   # Set maximum number of iterations used for this app
   maxiter = 100 if app == 'stereomatch' else 40
@@ -69,7 +74,7 @@ for app in apps:
 
     # Create config file
     config['DataPreparation']['input_path'] = f'"{dataset_file_path}"'
-    config_file_path = os.path.join(final_configs_folder,
+    config_file_path = os.path.join(config_files_subfolder,
                                     f'{app}_itr{it}.ini')
     with open(config_file_path, 'w') as f:
       config.write(f)
