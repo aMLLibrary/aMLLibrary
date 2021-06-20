@@ -39,7 +39,7 @@ for app in apps:
   
   # Plot all features
   fig = plt.figure(figsize=(16,10))
-  fig.suptitle(app)
+  fig.suptitle(f"{app}, iteration {maxiter}")
   for i, col in enumerate(covariates):
     fig.add_subplot(2, 2, i+1)
     if col == thr_name:
