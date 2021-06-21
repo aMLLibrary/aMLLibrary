@@ -41,14 +41,17 @@ for app in apps:
   # Plot all features
   fig = plt.figure(figsize=(16,10))
   fig.suptitle(f"{app}, iteration {maxiter}")
-  for i, col in enumerate(covariates):
-    fig.add_subplot(2, 2, i+1)
+  idx = 1
+  for col in covariates:
+    fig.add_subplot(2, 3, idx)
+    idx += 1
+    plt.scatter(df[col], df[y_name], marker='.')
+    plt.xlabel(col)
     if col == thr_name:
+      fig.add_subplot(2, 3, idx)
+      idx += 1
       plt.scatter(1/df[col], df[y_name], marker='.')
       plt.xlabel(f"1/{col}")
-    else:
-      plt.scatter(df[col], df[y_name], marker='.')
-      plt.xlabel(col)
     plt.ylabel(y_name)
   pdf.savefig(fig)
   plt.clf()
