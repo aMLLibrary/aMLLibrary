@@ -83,12 +83,12 @@ for app in apps:
     # Set min_child_weight according to data size
     ndata = df.shape[0]
     if ndata <= 10:
-      weights = str( [_ for _ in range(1,3)] )
-    elif ndata <= 100:
-      w = int(0.1 * ndata)
-      weights = str( [_ for _ in range(w,w+3)] )
+      weights = str( [1] )
+    elif ndata < 100:
+      wmax = min(int(0.1 * ndata), 5)
+      weights = str( [_ for _ in range(1,wmax+1)] )
     else:
-      linsp = np.linspace(int(0.01 * ndata), int(0.05 * ndata), 4)
+      linsp = np.linspace(int(0.01 * ndata), int(0.05 * ndata), 5)
       weights = str( [int(_) for _ in linsp] )
     print('n =', ndata, '-> min_child_weight =', weights)
     config['XGBoost']['min_child_weight'] = weights
