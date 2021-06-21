@@ -2,6 +2,7 @@
 import os
 import pandas as pd
 import configparser
+import numpy as np
 
 # Allows running this script from both this folder and from root folder
 if os.getcwd() == os.path.dirname(__file__):
@@ -78,6 +79,19 @@ for app in apps:
       config['DataPreparation']['inverse'] = f"['{thr_name}', 'THRESHOLD']"
     elif app in ['stereomatch', 'bodytrack']:
       config['DataPreparation']['product_max_degree'] = '2'
+
+    # Set min_child_weight according to data size
+    ndata = df.shape[0]
+    if ndata <= 10:
+      weights = str( [_ for _ in range(1,3)] )
+    elif ndata <= 100:
+      w = int(0.1 * ndata)
+      weights = str( [_ for _ in range(w,w+3)] )
+    else:
+      linsp = np.linspace(int(0.01 * ndata), int(0.05 * ndata), 4)
+      weights = str( [int(_) for _ in linsp] )
+    print('n =', ndata, '-> min_child_weight =', weights)
+    config['XGBoost']['min_child_weight'] = weights
 
     # Save config to file
     config_file_path = os.path.join(config_files_subfolder,
