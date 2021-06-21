@@ -1,8 +1,8 @@
 ## First of all, cd into the folder containing this file.
 ## Build the image with:
-#  (sudo) docker build -t a-mllibrary:1 .
+#  sudo docker build -t a-mllibrary:1 .
 ## Run container (bash) with:
-#  (sudo) docker run --name aml --rm -v $(pwd):/a-MLlibrary -it a-mllibrary:1
+#  sudo docker run --name aml --rm -v $(pwd):/a-MLlibrary -it a-mllibrary:1
 ## Example run:
 #  pipenv run ./run.py --help
 ## Run FaaS files:
