@@ -4,17 +4,17 @@ import argparse
 from model_building.predictor import Predictor
 
 def main():
-    parser = argparse.ArgumentParser(
-      description="Perform prediction on new data using the provided models")
+    parser = argparse.ArgumentParser(description="Perform prediction on new data using the provided models")
     parser.add_argument('-c', "--config-file", help="configuration file for the infrastructure", required=True)
     parser.add_argument('-r', "--regressor", help="binary regressor file to be used", required=True)
     parser.add_argument('-o', "--output", help="output folder where predictions will be stored", required=True)
-    #parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
+    parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
     args = parser.parse_args()
 
     predictor_obj = Predictor(config_file=args.config_file,
                               regressor_file=args.regressor,
-                              output_folder=args.output)
+                              output_folder=args.output,
+                              debug=args.debug)
     predictor_obj.predict()
 
 if __name__ == '__main__':

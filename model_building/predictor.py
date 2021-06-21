@@ -1,3 +1,6 @@
+"""
+Copyright 2021 Bruno Guindani
+"""
 import ast
 import configparser as cp
 import logging
@@ -15,9 +18,15 @@ import model_building.model_building
 
 
 class Predictor:
-    def __init__(self, config_file, regressor_file, output_folder):
-        logging.basicConfig(level=logging.INFO)
+    def __init__(self, config_file, regressor_file, output_folder, debug):
+        # Set verbosity level and initialize logger
+        self.debug = debug
+        if self.debug:
+            logging.basicConfig(level=logging.DEBUG)
+        else:
+            logging.basicConfig(level=logging.INFO)
         self._logger = custom_logger.getLogger(__name__)
+
         self._output_folder = output_folder
         self._regressor_file = regressor_file
 
@@ -37,15 +46,14 @@ class Predictor:
         # Read data
         self._logger.info("-->Executing data load")
         data_loader = data_preparation.data_loading.DataLoading(self._campaign_configuration)
-        self._datb = data_loader.process(None)
-        self._logger.info("Current data frame is:\n%s", str(self._datb))
-        self._logger.info("<--")
-        self._datb = self._datb.data
-        self._logger.info("Current data frame is:\n%s", str(self._datb))
+        self.data = data_loader.process(None)
+        self.data = self.data.data
+        self._logger.debug("Current data frame is:\n%s", str(self.data))
         self._logger.info("<--")
 
 
     def load_campaign_configuration(self):
+        # (taken from the SequenceDataProcessing class)
         self._campaign_configuration = {}
 
         for section in self.conf.sections():
@@ -56,24 +64,28 @@ class Predictor:
                 except (ValueError, SyntaxError):
                     self._campaign_configuration[section][item[0]] = item[1]
 
-        self._logger.info("Parameters configuration is:")
-        self._logger.info("-->")
-        self._logger.info(pprint.pformat(self._campaign_configuration, width=1))
-        self._logger.info("<--")
+        self._logger.debug("Parameters configuration is:")
+        self._logger.debug("-->")
+        self._logger.debug(pprint.pformat(self._campaign_configuration, width=1))
+        self._logger.debug("<--")
 
 
     def predict(self):
-        self._logger.info("-->Executing prediction")
-        yy = self._datb[self._campaign_configuration['General']['y']]
-        self._datb = self._datb.drop(columns=[self._campaign_configuration['General']['y']])
+        self._logger.info("-->Performing prediction")
+        yy = self.data[self._campaign_configuration['General']['y']]
+        xx = self.data.drop(columns=[self._campaign_configuration['General']['y']])
         with open(self._regressor_file, "rb") as f:
             regressor = pickle.load(f)
-        yy_pred = regressor.predict(self._datb)
+        yy_pred = regressor.predict(xx)
 
         # Write predictions to file
         yy_both = pd.DataFrame()
         yy_both['real'] = yy
         yy_both['pred'] = yy_pred
+        self._logger.debug("Parameters configuration is:")
+        self._logger.debug("-->")
+        self._logger.debug("Current data frame is:\n%s", str(yy_both))
+        self._logger.debug("<--")
         yy_file = os.path.join(self._output_folder, 'prediction.csv')
         with open(yy_file, 'w') as f:
             yy_both.to_csv(f, index=False)
@@ -87,5 +99,6 @@ class Predictor:
         with open(mape_file, 'w') as f:
           f.write(str(mape))
           f.write('\n')
+        self._logger.info("Saved to %s", str(mape_file))
 
         self._logger.info("<--Performed prediction")
