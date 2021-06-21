@@ -19,10 +19,6 @@ blueprint_path = os.path.join(base_configs_folder, 'agora_blueprint.ini')
 if not os.path.isdir(final_configs_folder):
   os.mkdir(final_configs_folder)
 
-# Read blueprint configuration file
-config = configparser.ConfigParser()
-config.read(blueprint_path)
-
 # Loop over apps
 for app in apps:
   print("\n", ">>>>>", app)
@@ -72,13 +68,18 @@ for app in apps:
     df.to_csv(df_path, index=False)
     print("Saved dataset to", df_path)
 
-    # Create config file
-    config['DataPreparation']['input_path'] = f'"{dataset_file_path}"'
+    # Read blueprint configuration file
+    config = configparser.ConfigParser()
+    config.read(blueprint_path)
 
-    # Add particularly interesting case
+    # Modify config
+    config['DataPreparation']['input_path'] = f'"{dataset_file_path}"'
     if app == 'freqmine':
       config['DataPreparation']['inverse'] = f"['{thr_name}', 'THRESHOLD']"
+    elif app in ['stereomatch', 'bodytrack']:
+      config['DataPreparation']['product_max_degree'] = '2'
 
+    # Save config to file
     config_file_path = os.path.join(config_files_subfolder,
                                     f'{app}_itr{it}.ini')
     with open(config_file_path, 'w') as f:
