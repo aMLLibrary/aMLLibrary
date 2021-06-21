@@ -73,7 +73,7 @@ for app in apps:
     config.read(blueprint_path)
 
     # Modify config
-    config['DataPreparation']['input_path'] = f'"{dataset_file_path}"'
+    config['DataPreparation']['input_path'] = f'"{df_path}"'
     if app == 'freqmine':
       config['DataPreparation']['inverse'] = f"['{thr_name}', 'THRESHOLD']"
     elif app in ['stereomatch', 'bodytrack']:
