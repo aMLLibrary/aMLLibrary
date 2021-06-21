@@ -74,6 +74,11 @@ for app in apps:
 
     # Create config file
     config['DataPreparation']['input_path'] = f'"{dataset_file_path}"'
+
+    # Add particularly interesting case
+    if app == 'freqmine':
+      config['DataPreparation']['inverse'] = f"['{thr_name}', 'THRESHOLD']"
+
     config_file_path = os.path.join(config_files_subfolder,
                                     f'{app}_itr{it}.ini')
     with open(config_file_path, 'w') as f:
