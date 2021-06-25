@@ -17,8 +17,31 @@ import data_preparation.onehot_encoding
 import model_building.model_building
 
 
-class Predictor:
+class Predictor(SequenceDataProcessing):
+    """
+    Class that uses Pickle objects to make predictions on new datasets
+    """
     def __init__(self, config_file, regressor_file, output_folder, debug, mape_to_text):
+        """
+        Constructor of the class
+
+        Parameters
+        ----------
+        config_file: str
+            The configuration file describing the experimental campaign to be performed
+
+        regressor_file: str
+            Pickle binary file that stores the model to be used for prediction
+
+        output_folder: str
+            The directory where all the outputs will be written; it is created by this library and cannot exist before using this module
+
+        debug: bool
+            True if debug messages should be printed
+
+        mape_to_text: bool
+            True if computed MAPEs should be written to a text file (file name is mape.txt)
+        """
         # Set verbosity level and initialize logger
         self.debug = debug
         if self.debug:
@@ -53,25 +76,10 @@ class Predictor:
         self._logger.info("<--")
 
 
-    def load_campaign_configuration(self):
-        # (taken from the SequenceDataProcessing class)
-        self._campaign_configuration = {}
-
-        for section in self.conf.sections():
-            self._campaign_configuration[section] = {}
-            for item in self.conf.items(section):
-                try:
-                    self._campaign_configuration[section][item[0]] = ast.literal_eval(item[1])
-                except (ValueError, SyntaxError):
-                    self._campaign_configuration[section][item[0]] = item[1]
-
-        self._logger.debug("Parameters configuration is:")
-        self._logger.debug("-->")
-        self._logger.debug(pprint.pformat(self._campaign_configuration, width=1))
-        self._logger.debug("<--")
-
-
     def predict(self):
+        """
+        Performs prediction and computes MAPE on it
+        """
         self._logger.info("-->Performing prediction")
         yy = self.data[self._campaign_configuration['General']['y']]
         xx = self.data.drop(columns=[self._campaign_configuration['General']['y']])
@@ -92,12 +100,9 @@ class Predictor:
             yy_both.to_csv(f, index=False)
         self._logger.info("Saved to %s", str(yy_file))
 
-        # Compute MAPE
-        difference = yy - yy_pred
-        mape = np.mean(np.abs(np.divide(difference, yy)))
+        # Compute and output MAPE
+        mape = self.compute_mape(self, yy, yy_pred)
         self._logger.info("---MAPE = %s", str(mape))
-
-        # Write the computed MAPE to file
         if self._mape_to_text:
           mape_file = os.path.join(self._output_folder, 'mape.txt')
           with open(mape_file, 'w') as f:

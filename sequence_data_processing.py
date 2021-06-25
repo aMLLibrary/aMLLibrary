@@ -299,14 +299,14 @@ class SequenceDataProcessing:
                 regressor = pickle.load(pickle_file)
                 pickle_file.close()
                 predicted_y = regressor.predict(check_data)
-                mape = self.copmute_mape(real_y, predicted_y)
+                mape = self.compute_mape(real_y, predicted_y)
                 self._logger.info("---MAPE of %s: %s", technique, str(mape))
 
             self._logger.info("<--Performed self check")
 
         return regressor
 
-    def copmute_mape(self, y_real, y_pred):
+    def compute_mape(self, y_real, y_pred):
         """
         Returns the Mean Absolute Percentage Error (MAPE) of y_pred wrt y_real
 
