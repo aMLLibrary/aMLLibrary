@@ -130,7 +130,7 @@ class SequenceDataProcessing:
         self.conf['General']['generate_plots'] = str(generate_plots)
         self.conf['General']['details'] = str(details)
         self._campaign_configuration = {}
-        self.load_campaign_configuration(configuration_file)
+        self.load_campaign_configuration()
 
         # Check if output path already exist
         if os.path.exists(output):
@@ -213,14 +213,9 @@ class SequenceDataProcessing:
 
         self._model_building = model_building.model_building.ModelBuilding(self.random_generator.random())
 
-    def load_campaign_configuration(self, configuration_file):
+    def load_campaign_configuration(self):
         """
         Load the campaign configuration from config file named _campaign_configuration.ini and put all the information into a dictionary
-
-        Parameters
-        ----------
-        configuration_file : str
-            The name of the file containing the configuration
         """
 
         self._campaign_configuration = {}

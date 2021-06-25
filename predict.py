@@ -16,10 +16,11 @@ def main():
                               regressor_file=args.regressor,
                               output_folder=args.output,
                               debug=args.debug,
-                              mape_to_text=agrs.mape_to_text)
+                              mape_to_text=args.mape_to_text)
     predictor_obj.predict()
 
 if __name__ == '__main__':
     main()
 
-# Example: python predict.py -m -c example_configurations/faas_predict.ini -r output_faas2/LRRidge.pickle -o output_faas_predict
+# Example: python predict.py -m -c example_configurations/faas_predict.ini -r output_faas/LRRidge.pickle -o output_faas_predict
+# after producing the original model with: python run.py -c example_configurations/faas.ini -o output_faas

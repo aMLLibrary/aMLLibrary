@@ -12,12 +12,13 @@ import numpy as np
 import pandas as pd
 
 import custom_logger
+import sequence_data_processing
 import data_preparation.data_loading
 import data_preparation.onehot_encoding
 import model_building.model_building
 
 
-class Predictor(SequenceDataProcessing):
+class Predictor(sequence_data_processing.SequenceDataProcessing):
     """
     Class that uses Pickle objects to make predictions on new datasets
     """
@@ -101,7 +102,7 @@ class Predictor(SequenceDataProcessing):
         self._logger.info("Saved to %s", str(yy_file))
 
         # Compute and output MAPE
-        mape = self.compute_mape(self, yy, yy_pred)
+        mape = self.compute_mape(yy, yy_pred)
         self._logger.info("---MAPE = %s", str(mape))
         if self._mape_to_text:
           mape_file = os.path.join(self._output_folder, 'mape.txt')
