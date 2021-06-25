@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import pandas as pd
 
 from model_building.predictor import Predictor
 
@@ -18,6 +19,13 @@ def main():
                               debug=args.debug,
                               mape_to_text=args.mape_to_text)
     predictor_obj.predict()
+
+    # # For prediction on dataframe:
+    # xx = pd.DataFrame(data=[[0.2224,2.0000,2.3852,600],
+    #                         [0.2330,1.9669,2.3044,600]],
+    #                   columns='Lambda,warm_service_time,cold_service_time,expiration_time'.split(',')
+    #                   )
+    # yy = predictor_obj.predict_from_df(xx)
 
 if __name__ == '__main__':
     main()

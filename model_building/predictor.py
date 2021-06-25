@@ -1,14 +1,11 @@
 """
 Copyright 2021 Bruno Guindani
 """
-import ast
 import configparser as cp
 import logging
 import os
 import pickle
-import pprint
 import sys
-import numpy as np
 import pandas as pd
 
 import custom_logger
@@ -52,8 +49,11 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         self._logger = custom_logger.getLogger(__name__)
 
         self._output_folder = output_folder
-        self._regressor_file = regressor_file
         self._mape_to_text = mape_to_text
+
+        # Read regressor
+        with open(regressor_file, "rb") as f:
+            self._regressor = pickle.load(f)
 
         # Read config file
         self.conf = cp.ConfigParser()
@@ -84,9 +84,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         self._logger.info("-->Performing prediction")
         yy = self.data[self._campaign_configuration['General']['y']]
         xx = self.data.drop(columns=[self._campaign_configuration['General']['y']])
-        with open(self._regressor_file, "rb") as f:
-            regressor = pickle.load(f)
-        yy_pred = regressor.predict(xx)
+        yy_pred = self._regressor.predict(xx)
 
         # Write predictions to file
         yy_both = pd.DataFrame()
@@ -114,18 +112,22 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         self._logger.info("<--Performed prediction")
 
 
-      def predict_from_tuple(self, xx):
+    def predict_from_df(self, xx):
         """
-        Performs prediction on a single covariate vector and computes MAPE
+        Performs prediction on a dataframe
 
         Parameters
         ----------
-        xx: numpy.array
-            The covariate vector to be used for prediction
+        xx: pandas.DataFrame
+            The covariate matrix to be used for prediction
 
         Returns
         -------
-        y_pred
-            The predicted value for the dependent variable
+        yy_pred
+            The predicted values for the dependent variable
         """
-        pass
+        self._logger.info("-->Performing prediction on dataframe")
+        yy_pred = self._regressor.predict(xx)
+        self._logger.info("Predicted values are: %s", str(yy_pred))
+        self._logger.info("<--Performed prediction")
+        return yy_pred
