@@ -18,7 +18,7 @@ import model_building.model_building
 
 
 class Predictor:
-    def __init__(self, config_file, regressor_file, output_folder, debug):
+    def __init__(self, config_file, regressor_file, output_folder, debug, mape_to_text):
         # Set verbosity level and initialize logger
         self.debug = debug
         if self.debug:
@@ -29,6 +29,7 @@ class Predictor:
 
         self._output_folder = output_folder
         self._regressor_file = regressor_file
+        self._mape_to_text = mape_to_text
 
         # Read config file
         self.conf = cp.ConfigParser()
@@ -95,10 +96,13 @@ class Predictor:
         difference = yy - yy_pred
         mape = np.mean(np.abs(np.divide(difference, yy)))
         self._logger.info("---MAPE = %s", str(mape))
-        mape_file = os.path.join(self._output_folder, 'mape.txt')
-        with open(mape_file, 'w') as f:
-          f.write(str(mape))
-          f.write('\n')
-        self._logger.info("Saved to %s", str(mape_file))
+
+        # Write the computed MAPE to file
+        if self._mape_to_text:
+          mape_file = os.path.join(self._output_folder, 'mape.txt')
+          with open(mape_file, 'w') as f:
+            f.write(str(mape))
+            f.write('\n')
+          self._logger.info("Saved MAPE to %s", str(mape_file))
 
         self._logger.info("<--Performed prediction")
