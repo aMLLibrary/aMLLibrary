@@ -79,7 +79,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
 
     def predict(self):
         """
-        Performs prediction and computes MAPE on it
+        Performs prediction and computes MAPE
         """
         self._logger.info("-->Performing prediction")
         yy = self.data[self._campaign_configuration['General']['y']]
@@ -112,3 +112,20 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
           self._logger.info("Saved MAPE to %s", str(mape_file))
 
         self._logger.info("<--Performed prediction")
+
+
+      def predict_from_tuple(self, xx):
+        """
+        Performs prediction on a single covariate vector and computes MAPE
+
+        Parameters
+        ----------
+        xx: numpy.array
+            The covariate vector to be used for prediction
+
+        Returns
+        -------
+        y_pred
+            The predicted value for the dependent variable
+        """
+        pass
