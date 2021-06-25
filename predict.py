@@ -22,4 +22,4 @@ def main():
 if __name__ == '__main__':
     main()
 
-# Example: python predict.py -m -c example_configurations/faas_predict.ini -r output_faas2/LRRidge.pickle -o output_faas2_predict
+# Example: python predict.py -m -c example_configurations/faas_predict.ini -r output_faas2/LRRidge.pickle -o output_faas_predict
