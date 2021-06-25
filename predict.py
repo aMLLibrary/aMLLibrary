@@ -13,12 +13,11 @@ def main():
     parser.add_argument("-m", "--mape-to-text", help="Write MAPE to text file", default=False, action='store_true')
     args = parser.parse_args()
 
-    predictor_obj = Predictor(config_file=args.config_file,
-                              regressor_file=args.regressor,
+    predictor_obj = Predictor(regressor_file=args.regressor,
                               output_folder=args.output,
                               debug=args.debug,
                               mape_to_text=args.mape_to_text)
-    # predictor_obj.predict()
+    predictor_obj.predict(args.config_file)
 
     # For prediction on dataframe:
     xx = pd.DataFrame(data=[[0.2224,2.0000,2.3852,600],

@@ -19,15 +19,12 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
     """
     Class that uses Pickle objects to make predictions on new datasets
     """
-    def __init__(self, config_file, regressor_file, output_folder, debug, mape_to_text):
+    def __init__(self, regressor_file, output_folder, debug, mape_to_text):
         """
         Constructor of the class
 
         Parameters
         ----------
-        config_file: str
-            The configuration file describing the experimental campaign to be performed
-
         regressor_file: str
             Pickle binary file that stores the model to be used for prediction
 
@@ -48,6 +45,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
             logging.basicConfig(level=logging.INFO)
         self._logger = custom_logger.getLogger(__name__)
 
+        # Initialize flags
         self._output_folder = output_folder
         self._mape_to_text = mape_to_text
 
@@ -55,18 +53,28 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         with open(regressor_file, "rb") as f:
             self._regressor = pickle.load(f)
 
+        # Check if output path already exist
+        if os.path.exists(output_folder):
+            self._logger.error("%s already exists", output_folder)
+            sys.exit(1)
+        os.mkdir(output_folder)
+
+
+    def predict(self, config_file):
+        """
+        Performs prediction and computes MAPE
+
+        Parameters
+        ----------
+        config_file: str
+            The configuration file describing the experimental campaign to be performed
+        """
         # Read config file
         self.conf = cp.ConfigParser()
         self.conf.optionxform = str
         self.conf.read(config_file)
         self._campaign_configuration = {}
         self.load_campaign_configuration()
-
-        # Check if output path already exist
-        if os.path.exists(output_folder):
-            self._logger.error("%s already exists", output_folder)
-            sys.exit(1)
-        os.mkdir(output_folder)
 
         # Read data
         self._logger.info("-->Executing data load")
@@ -76,11 +84,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         self._logger.debug("Current data frame is:\n%s", str(self.data))
         self._logger.info("<--")
 
-
-    def predict(self):
-        """
-        Performs prediction and computes MAPE
-        """
+        # Start prediction
         self._logger.info("-->Performing prediction")
         yy = self.data[self._campaign_configuration['General']['y']]
         xx = self.data.drop(columns=[self._campaign_configuration['General']['y']])
