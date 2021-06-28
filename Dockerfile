@@ -12,7 +12,6 @@
 ## Remove root protection from "output" folder:
 #  chmod -R a+rw output
 
-
 FROM python:3.7
 ENV MY_DIR=/a-MLlibrary
 WORKDIR ${MY_DIR}
