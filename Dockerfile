@@ -6,7 +6,7 @@
 ## Example run:
 #  pipenv run ./run.py --help
 ## Run FaaS files:
-#  pipenv run ./run.py -c example_configurations/faas.ini -o output_faas
+#  pipenv run python ./run.py -c example_configurations/faas.ini -o output_faas
 ## !!! All-in-one command:
 #  sudo docker run --name aml --rm -v $(pwd):/a-MLlibrary -it a-mllibrary:1 pipenv run python ./run.py -c example_configurations/faas.ini -o output_faas | tee log_faas.txt
 ## Remove root protection from "output" folder:
