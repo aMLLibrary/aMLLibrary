@@ -82,16 +82,30 @@ for app in apps:
 
     # Set min_child_weight according to data size
     ndata = df.shape[0]
-    if ndata <= 10:
+    if ndata <= 11:
       weights = str( [1] )
-    elif ndata < 100:
-      wmax = min(int(0.1 * ndata), 5)
-      weights = str( [_ for _ in range(1,wmax+1)] )
+    elif ndata <= 20:
+      weights = str( [1,2] )
+    elif ndata <= 30:
+      weights = str( [1,2,3] )
+    elif ndata <= 100:
+      linsp = np.linspace(1, int(0.1 * ndata), 3)
+      weights = str( [int(_) for _ in linsp] )
     else:
-      linsp = np.linspace(int(0.01 * ndata), int(0.05 * ndata), 5)
+      linsp = np.linspace(int(0.01 * ndata), int(0.05 * ndata), 4)
       weights = str( [int(_) for _ in linsp] )
     print('n =', ndata, '-> min_child_weight =', weights)
     config['XGBoost']['min_child_weight'] = weights
+
+    # Add Sequential Feature Selection
+    maxfeatures = {'bodytrack': '5', 'freqmine': '2',
+                  'kmeans': '3', 'stereomatch': '5'
+                  }
+    if app in maxfeatures:
+      config['FeatureSelection'] = {}
+      config['FeatureSelection']['method'] = '"SFS"'
+      config['FeatureSelection']['max_features'] = maxfeatures[app]
+      config['FeatureSelection']['folds'] = '5'
 
     # Save config to file
     config_file_path = os.path.join(config_files_subfolder,
