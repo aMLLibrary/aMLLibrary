@@ -19,7 +19,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
     """
     Class that uses Pickle objects to make predictions on new datasets
     """
-    def __init__(self, regressor_file, output_folder, debug, mape_to_text):
+    def __init__(self, regressor_file, output_folder, debug):
         """
         Constructor of the class
 
@@ -33,9 +33,6 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
 
         debug: bool
             True if debug messages should be printed
-
-        mape_to_text: bool
-            True if computed MAPEs should be written to a text file (file name is mape.txt)
         """
         # Set verbosity level and initialize logger
         self.debug = debug
@@ -47,7 +44,6 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
 
         # Initialize flags
         self._output_folder = output_folder
-        self._mape_to_text = mape_to_text
 
         # Read regressor
         with open(regressor_file, "rb") as f:
@@ -60,7 +56,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         os.mkdir(output_folder)
 
 
-    def predict(self, config_file):
+    def predict(self, config_file, mape_to_file):
         """
         Performs prediction and computes MAPE
 
@@ -68,6 +64,9 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         ----------
         config_file: str
             The configuration file describing the experimental campaign to be performed
+
+        mape_to_file: bool
+            True if computed MAPE should be written to a text file (file name is mape.txt)
         """
         # Read config file
         self.conf = cp.ConfigParser()
@@ -106,7 +105,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         # Compute and output MAPE
         mape = self.compute_mape(yy, yy_pred)
         self._logger.info("---MAPE = %s", str(mape))
-        if self._mape_to_text:
+        if mape_to_file:
           mape_file = os.path.join(self._output_folder, 'mape.txt')
           with open(mape_file, 'w') as f:
             f.write(str(mape))
