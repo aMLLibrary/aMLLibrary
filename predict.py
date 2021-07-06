@@ -19,17 +19,17 @@ def main():
                               debug=args.debug
                               )
 
+    # For inline prediction on dataframe
+    xx = pd.DataFrame(data=[[0.2224,2.0000,2.3852,600],
+                            [0.2330,1.9669,2.3044,600]],
+                      columns='Lambda,warm_service_time,cold_service_time,expiration_time'.split(',')
+                      )
+    yy = predictor_obj.predict_from_df(xx)
+
     # Prediction from file
     predictor_obj.predict(config_file=args.config_file,
                           mape_to_file=args.mape_to_file
                           )
-
-    # # For inline prediction on dataframe:
-    # xx = pd.DataFrame(data=[[0.2224,2.0000,2.3852,600],
-    #                         [0.2330,1.9669,2.3044,600]],
-    #                   columns='Lambda,warm_service_time,cold_service_time,expiration_time'.split(',')
-    #                   )
-    # yy = predictor_obj.predict_from_df(xx)
 
 if __name__ == '__main__':
     main()

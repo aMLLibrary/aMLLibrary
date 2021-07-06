@@ -49,13 +49,6 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         with open(regressor_file, "rb") as f:
             self._regressor = pickle.load(f)
 
-        # Check if output path already exist
-        if os.path.exists(output_folder):
-            self._logger.error("%s already exists", output_folder)
-            sys.exit(1)
-        os.mkdir(output_folder)
-
-
     def predict(self, config_file, mape_to_file):
         """
         Performs prediction and computes MAPE
@@ -68,6 +61,12 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         mape_to_file: bool
             True if computed MAPE should be written to a text file (file name is mape.txt)
         """
+        # Check if output path already exist
+        if os.path.exists(self._output_folder):
+            self._logger.error("%s already exists", self._output_folder)
+            sys.exit(1)
+        os.mkdir(self._output_folder)
+
         # Read config file
         self.conf = cp.ConfigParser()
         self.conf.optionxform = str
