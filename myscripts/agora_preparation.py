@@ -10,33 +10,36 @@ if os.getcwd() == os.path.dirname(__file__):
 
 # Initialize list of apps
 apps = 'blockscholes bodytrack freqmine kmeans stereomatch swaptions'.split()
-#apps = ['blockscholes']
 
 # Initialize relevant paths
-base_datasets_folder = os.path.join('inputs', 'agora')
-base_configs_folder = 'example_configurations'
-final_configs_folder = os.path.join(base_configs_folder, 'agora')
-blueprint_path = os.path.join(base_configs_folder, 'agora_blueprint.ini')
+orig_datasets_folder = os.path.join('inputs', 'agora_orig')
+final_datasets_folder = os.path.join('inputs', 'agora')
+final_configs_folder = os.path.join('example_configurations', 'agora')
+configs_blueprint_path = os.path.join('example_configurations',
+                                      'agora_blueprint.ini')
+if not os.path.isdir(final_datasets_folder):
+  os.mkdir(final_datasets_folder)
 if not os.path.isdir(final_configs_folder):
   os.mkdir(final_configs_folder)
+
 
 # Loop over apps
 for app in apps:
   print("\n", ">>>>>", app)
   # Get files paths
-  app_folder = os.path.join(base_datasets_folder, app)
-  full_dataset_app_folder = os.path.join(app_folder, 'full')
+  orig_dataset_app_subfolder = os.path.join(orig_datasets_folder, app)
+  final_dataset_app_subfolder = os.path.join(final_datasets_folder, app)
+  config_files_app_subfolder = os.path.join(final_configs_folder, app)
 
-  # Create folders and subfolders
-  if not os.path.isdir(full_dataset_app_folder):
-    os.mkdir(full_dataset_app_folder)
-  config_files_subfolder = os.path.join(final_configs_folder, app)
-  if not os.path.isdir(config_files_subfolder):
-    os.mkdir(config_files_subfolder)
+  # Create subfolders
+  if not os.path.isdir(final_dataset_app_subfolder):
+    os.mkdir(final_dataset_app_subfolder)
+  if not os.path.isdir(config_files_app_subfolder):
+    os.mkdir(config_files_app_subfolder)
 
   # Set maximum number of iterations used for this app
   maxiter = 100 if app == 'stereomatch' else 40
-  listdir = os.listdir(app_folder)
+  listdir = os.listdir(orig_dataset_app_subfolder)
 
   # Loop over files of different iterations
   for it in range(1, maxiter+1):
@@ -46,8 +49,9 @@ for app in apps:
     # Check whether the two files actually exist
     if not (covariate_file in listdir and target_file in listdir):
       exit(f"Error: {covariate_file} or {target_file} does not exist")
-    dataset_file_path = os.path.join(app_folder, covariate_file)
-    target_file_path = os.path.join(app_folder, target_file)
+    dataset_file_path = os.path.join(orig_dataset_app_subfolder,
+                                     covariate_file)
+    target_file_path = os.path.join(orig_dataset_app_subfolder, target_file)
 
     # Join covariates and target into a single, full dataset
     df = pd.read_csv(dataset_file_path, encoding='utf-8')
@@ -65,13 +69,15 @@ for app in apps:
       df.loc[:,thr_name] = 1
 
     # Save new dataset to file
-    df_path = os.path.join(full_dataset_app_folder, f'itr{it}.csv')
+    it00 = str(it).zfill(3)
+    df_path = os.path.join(final_dataset_app_subfolder,
+                           f'{app}_itr_{it00}.csv')
     df.to_csv(df_path, index=False)
     print("Saved dataset to", df_path)
 
-    # Read blueprint configuration file
+    # Read blueprint configuration file (refreshed at each iteration)
     config = configparser.ConfigParser()
-    config.read(blueprint_path)
+    config.read(configs_blueprint_path)
 
     # Modify config
     config['DataPreparation']['input_path'] = f'"{df_path}"'
@@ -108,8 +114,8 @@ for app in apps:
       config['FeatureSelection']['folds'] = '5'
 
     # Save config to file
-    config_file_path = os.path.join(config_files_subfolder,
-                                    f'{app}_itr{it}.ini')
+    config_file_path = os.path.join(config_files_app_subfolder,
+                                    f'{app}_itr_{it00}.ini')
     with open(config_file_path, 'w') as f:
       config.write(f)
     print("Saved configs to", config_file_path)
