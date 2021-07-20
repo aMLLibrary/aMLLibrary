@@ -3,12 +3,8 @@
 #  sudo docker build -t a-mllibrary:1 .
 ## Run container (bash) with:
 #  sudo docker run --name aml --rm -v $(pwd):/a-MLlibrary -it a-mllibrary:1
-## Example run:
-#  pipenv run ./run.py --help
-## Run FaaS files:
-#  pipenv run python ./run.py -c example_configurations/faas.ini -o output_faas
-## !!! All-in-one command:
-#  sudo docker run --name aml --rm -v $(pwd):/a-MLlibrary -it a-mllibrary:1 pipenv run python ./run.py -c example_configurations/faas.ini -o output_faas | tee log_faas.txt
+## !!! Run small FaaS test with all-in-one command:
+#  sudo docker run --name aml --rm -v $(pwd):/a-MLlibrary -it a-mllibrary:1 pipenv run python ./run.py -c example_configurations/faas_test.ini -o output_faas_test
 ## Remove root protection from "output" folder:
 #  chmod -R a+rw output
 
