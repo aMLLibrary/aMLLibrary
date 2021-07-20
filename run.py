@@ -51,7 +51,19 @@ def main():
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
     sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args.configuration_file, debug=args.debug, seed=args.seed, output=args.output, j=args.j, generate_plots=args.generate_plots, self_check=args.self_check, details=args.details)
-    sequence_data_processor.process()
+    regressor = sequence_data_processor.process()
+
+    # Print XGBoost weights, if any, both to screen and to file
+    try:
+      weights = regressor.get_regressor().get_booster().get_fscore()
+      weights_sum = sum(weights.values())
+      for key in weights:
+        weights[key] /= weights_sum
+      print("XGBoost weights:", weights)
+      with open(os.path.join(args.output, 'results'), 'a') as f:
+        f.write("\nXGBoost weights:" + str(weights) + "\n")
+    except:
+      print("Not an XGBoost regressor; no weights to display")
 
 
 if __name__ == '__main__':
