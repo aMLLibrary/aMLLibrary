@@ -18,6 +18,7 @@ from typing import List
 
 import mlxtend.feature_selection
 import numpy as np
+import pandas as pd
 import sklearn
 import sys
 
@@ -126,9 +127,13 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
 
         # Use the selected feature to retrain the regressor
         filtered_xdata = self._sfs.transform(xdata)
+        # Restore column names, since filtered_xdata is an np.array
+        x_columns = list(self._sfs.k_feature_names_)
+        self._regression_inputs.x_columns = x_columns
+        filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_columns)
+
         self._regressor = self._wrapped_experiment_configuration.get_regressor()
         self._wrapped_experiment_configuration.get_regressor().fit(filtered_xdata, ydata)
-        self._regression_inputs.x_columns = list(self._sfs.k_feature_names_)
 
     def compute_estimations(self, rows):
         """
