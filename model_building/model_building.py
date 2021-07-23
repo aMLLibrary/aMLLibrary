@@ -162,6 +162,10 @@ class ModelBuilding:
             pickle.dump(best_regressors[technique], pickle_file)
             pickle_file.close()
         self._logger.info("<--Built the final regressors")
+        self._logger.info("Best model:")
+        self._logger.info("-->")
+        self._logger.info(best_conf.print_model())
+        self._logger.info("<--")
 
         # Return the regressor
         return best_regressors[best_technique]
