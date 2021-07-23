@@ -122,7 +122,7 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
             self._logger.info("Reduced maximum number of features from %d to %d", self._sfs.k_features[1], xdata.shape[1])
             self._sfs.k_features = (1,xdata.shape[1])
         self._sfs.fit(xdata, ydata)
-        self._logger.debug("Selected features: %s", str(self._sfs.k_feature_names_))
+        self._logger.info("Selected features: %s", str(self._sfs.k_feature_names_))
 
         # Use the selected feature to retrain the regressor
         filtered_xdata = self._sfs.transform(xdata)
@@ -153,4 +153,5 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
         """
         Print the model
         """
-        return self._wrapped_experiment_configuration.print_model()
+        return "".join(("Selected features: ", str(self._sfs.k_feature_names_), "\n",
+                        self._wrapped_experiment_configuration.print_model()))
