@@ -118,8 +118,8 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         return self._regressor.predict(xdata)
 
     def print_model(self):
-      weights = self._regressor.get_booster().get_fscore()
-      weights_sum = sum(weights.values())
-      for key in weights:
-        weights[key] /= weights_sum
-      return "".join(("XGBoost weights: ", str(weights)))
+        weights = self._regressor.get_booster().get_fscore()
+        weights_sum = sum(weights.values())
+        for key in weights:
+            weights[key] /= weights_sum
+        return "".join(("XGBoost weights: ", str(weights)))
