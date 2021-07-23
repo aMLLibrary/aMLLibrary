@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import os, sys
+
 # Allows running this script from both this folder and from root folder
 if os.getcwd() == os.path.dirname(__file__):
   os.chdir(os.pardir)
-
 sys.path.append('.')
 
 import pickle
