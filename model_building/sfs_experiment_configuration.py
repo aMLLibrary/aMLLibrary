@@ -122,16 +122,15 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
         if self._campaign_configuration['FeatureSelection']['max_features'] > xdata.shape[1]:
             self._logger.info("Reduced maximum number of features from %d to %d", self._sfs.k_features[1], xdata.shape[1])
             self._sfs.k_features = (1,xdata.shape[1])
+        # Perform feature selection
         self._sfs.fit(xdata, ydata)
-        self._logger.info("Selected features: %s", str(self._sfs.k_feature_names_))
-
-        # Use the selected feature to retrain the regressor
-        filtered_xdata = self._sfs.transform(xdata)
-        # Restore column names, since filtered_xdata is an np.array
         x_columns = list(self._sfs.k_feature_names_)
+        self._logger.info("Selected features: %s", str(x_columns))
         self._regression_inputs.x_columns = x_columns
+        self._wrapped_experiment_configuration._regression_inputs.x_columns = x_columns
+        # Use the selected feature to retrain the regressor, after restoring column names
+        filtered_xdata = self._sfs.transform(xdata)  # is an np.array
         filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_columns)
-
         self._regressor = self._wrapped_experiment_configuration.get_regressor()
         self._wrapped_experiment_configuration.get_regressor().fit(filtered_xdata, ydata)
 
