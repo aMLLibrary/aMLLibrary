@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
 import multiprocessing
 import os
 import pickle
@@ -162,10 +163,14 @@ class ModelBuilding:
             pickle.dump(best_regressors[technique], pickle_file)
             pickle_file.close()
         self._logger.info("<--Built the final regressors")
+        file_handler = logging.FileHandler(os.path.join(campaign_configuration['General']['output'], 'results'), 'a+')
+        self._logger.addHandler(file_handler)
         self._logger.info("Best model:")
         self._logger.info("-->")
         self._logger.info(best_conf.print_model())
         self._logger.info("<--")
+        self._logger.removeHandler(file_handler)
+        file_handler.close()
 
         # Return the regressor
         return best_regressors[best_technique]
