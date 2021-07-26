@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BASE_OUTPUT_FOLD=output_agora
+BASE_OUTPUT_FOLD=outputs/output_agora
 mkdir $BASE_OUTPUT_FOLD
 
 for app in example_configurations/agora/*; do

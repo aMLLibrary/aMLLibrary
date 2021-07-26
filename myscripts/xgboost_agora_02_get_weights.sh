@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for app in output_agora_02_from_servers/*; do
+for app in outputs/output_agora_02_from_servers/*; do
   APP_NAME=$(basename $app)
   for iter in $app/*; do
     # echo python myscripts/xgboost_weights_from_pickle.py $iter
