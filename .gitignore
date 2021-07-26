@@ -2,8 +2,7 @@
 *__pycache__
 log
 inputs/agora
-output
-output_*
+output*
 /.idea/
 .mypy_cache/
 *orig
