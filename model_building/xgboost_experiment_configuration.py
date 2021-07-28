@@ -51,7 +51,6 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.XGBOOST
-        self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', n_jobs=1)
 
     def _compute_signature(self, prefix):
         """
@@ -80,6 +79,7 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("---Building model for %s", self._signature)
+        self.initialize_regressor()
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         with warnings.catch_warnings():
@@ -123,3 +123,9 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         for key in weights:
             weights[key] /= weights_sum
         return "".join(("XGBoost weights: ", str(weights)))
+
+    def initialize_regressor(self):
+        if not getattr(self, '_hyperparameters', None):
+            self._regressor = xgb.XGBRegressor()
+        else:
+            self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', n_jobs=1)

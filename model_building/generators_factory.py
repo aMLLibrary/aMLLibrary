@@ -19,6 +19,7 @@ import random
 import custom_logger
 import model_building.design_space as ds
 import model_building.experiment_configuration as ec
+import model_building.hyperopt_exp_conf_generator
 import model_building.sequential_feature_selection
 
 
@@ -84,6 +85,13 @@ class GeneratorsFactory:
             self._logger.info("Building technique generator for %s", technique)
             generators[technique] = ds.TechniqueExpConfsGenerator(self._campaign_configuration, None, string_techique_to_enum[technique])
         assert generators
+
+        if True:  # TODO
+            hyperopt_generators = {}
+            self._logger.info("Building Hyperopt generator")
+            for technique, generator in generators.items():
+                hyperopt_generators[technique] = model_building.hyperopt_exp_conf_generator.HyperoptExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
+            generators = hyperopt_generators
 
         if 'FeatureSelection' in self._campaign_configuration and "method" in self._campaign_configuration['FeatureSelection'] and self._campaign_configuration['FeatureSelection']['method'] == 'SFS':
             feature_selection_generators = {}

@@ -194,6 +194,12 @@ class ExperimentConfiguration(abc.ABC):
         The actual implementation is demanded to the subclasses
         """
 
+    @abc.abstractmethod
+    def initialize_regressor(self):
+        """
+        The actual implementation is demanded to the subclasses
+        """
+
     def evaluate(self):
         """
         Validate the model, i.e., compute the MAPE on the validation set, hp selection, training
@@ -357,6 +363,8 @@ class ExperimentConfiguration(abc.ABC):
         ------
         The regressor wrapped in this experiment configuration
         """
+        if not getattr(self, '_regressor', None) or not self._regressor:
+          self.initialize_regressor()
         return self._regressor
 
     def get_hyperparameters(self):
