@@ -10,6 +10,7 @@ from hyperopt.pyll import scope
 import model_building.experiment_configuration
 
 class HyperoptExperimentConfiguration(model_building.experiment_configuration.ExperimentConfiguration):
+    # TODO update outdated class
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         self._wrapped_experiment_configuration = wrapped_experiment_configuration
         super().__init__(campaign_configuration, None, regression_inputs, prefix)

@@ -86,19 +86,25 @@ class GeneratorsFactory:
             generators[technique] = ds.TechniqueExpConfsGenerator(self._campaign_configuration, None, string_techique_to_enum[technique])
         assert generators
 
-        if True:  # TODO
-            hyperopt_generators = {}
-            self._logger.info("Building Hyperopt generator")
-            for technique, generator in generators.items():
-                hyperopt_generators[technique] = model_building.hyperopt_exp_conf_generator.HyperoptExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
-            generators = hyperopt_generators
-
-        if 'FeatureSelection' in self._campaign_configuration and "method" in self._campaign_configuration['FeatureSelection'] and self._campaign_configuration['FeatureSelection']['method'] == 'SFS':
-            feature_selection_generators = {}
-            self._logger.info("Building SFS generator")
-            for technique, generator in generators.items():
-                feature_selection_generators[technique] = model_building.sequential_feature_selection.SFSExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
-            generators = feature_selection_generators
+        # Add Hyperopt and/or SFS wrapper generators
+        new_generators = {}
+        if 'HyperparameterTuning' in self._campaign_configuration['General'] and self._campaign_configuration['General']['HyperparameterTuning'] == 'Hyperopt':
+            if 'FeatureSelection' in self._campaign_configuration and "method" in self._campaign_configuration['FeatureSelection'] and self._campaign_configuration['FeatureSelection']['method'] == 'SFS':        
+                self._logger.info("Building Hyperopt-SFS generator")
+                for technique, generator in generators.items():
+                    new_generators[technique] = model_building.hyperopt_exp_conf_generator.HyperoptSFSExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
+            else:
+                self._logger.info("Building Hyperopt generator")
+                for technique, generator in generators.items():
+                    new_generators[technique] = model_building.hyperopt_exp_conf_generator.HyperoptExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
+        else:  # if Hyperopt was not requested
+            if 'FeatureSelection' in self._campaign_configuration and "method" in self._campaign_configuration['FeatureSelection'] and self._campaign_configuration['FeatureSelection']['method'] == 'SFS':
+                self._logger.info("Building SFS generator")
+                for technique, generator in generators.items():
+                    new_generators[technique] = model_building.sequential_feature_selection.SFSExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
+            else:
+                new_generators = generators  # no additional wrapper needed
+        generators = new_generators
 
         # Wrap together different techniques
         self._logger.info("Building multi technique generator")
