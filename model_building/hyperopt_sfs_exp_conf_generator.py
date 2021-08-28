@@ -93,7 +93,7 @@ class HyperoptExpConfsGenerator(model_building.design_space.ExpConfsGenerator):
         internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
         ret_list = []
         for wrapped_point in internal_list:
-            ret_list.append(model_building.hyperopt_experiment_configuration.HyperoptExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
+            ret_list.append(model_building.hyperopt_sfs_experiment_configuration.HyperoptExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
         self._logger.info("<--")
         return ret_list
 
@@ -112,7 +112,7 @@ class HyperoptSFSExpConfsGenerator(model_building.design_space.ExpConfsGenerator
         internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
         ret_list = []
         for wrapped_point in internal_list:
-            ret_list.append(model_building.hyperopt_experiment_configuration.HyperoptSFSExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
+            ret_list.append(model_building.hyperopt_sfs_experiment_configuration.HyperoptSFSExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
         self._logger.info("<--")
         return ret_list
 
