@@ -171,10 +171,9 @@ class ExperimentConfiguration(abc.ABC):
             self._experiment_directory = os.path.join(self._experiment_directory, token)
         # Import here to avoid problems with circular dependencies
         # pylint: disable=import-outside-toplevel
-        import model_building.sfs_experiment_configuration
-        import model_building.hyperopt_experiment_configuration
-        if ((isinstance(self, model_building.sfs_experiment_configuration.SFSExperimentConfiguration) or 'FeatureSelection' not in self._campaign_configuration or 'method' not in self._campaign_configuration['FeatureSelection'] or self._campaign_configuration['FeatureSelection']['method'] != "SFS")
-            and not isinstance(self, model_building.hyperopt_experiment_configuration.HyperoptExperimentConfiguration)):
+        import model_building.hyperopt_and_sfs_experiment_configuration
+        if ((isinstance(self, model_building.hyperopt_and_sfs_experiment_configuration.SFSExperimentConfiguration) or 'FeatureSelection' not in self._campaign_configuration or 'method' not in self._campaign_configuration['FeatureSelection'] or self._campaign_configuration['FeatureSelection']['method'] != "SFS")
+            and not isinstance(self, model_building.hyperopt_and_sfs_experiment_configuration.HyperoptExperimentConfiguration)): # TODO, maybe?
             assert not os.path.exists(self._experiment_directory), self._experiment_directory
             os.makedirs(self._experiment_directory)
 
