@@ -21,11 +21,12 @@ import mlxtend.feature_selection
 import numpy as np
 import pandas as pd
 import sklearn
-from hyperopt import fmin, tpe, hp, STATUS_OK
+from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.pyll import scope
 import sys
+import pickle
 
-import model_building.experiment_configuration
+import model_building.experiment_configuration as ec
 
 
 def mean_absolute_percentage_error(y_true, y_pred):
@@ -50,7 +51,7 @@ def mean_absolute_percentage_error(y_true, y_pred):
 
 
 
-class SFSExperimentConfiguration(model_building.experiment_configuration.ExperimentConfiguration):
+class SFSExperimentConfiguration(ec.ExperimentConfiguration):
     """
     Class representing a single experiment configuration for SFS coupled with a generic regression
 
@@ -170,11 +171,17 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
 
 
 
-class HyperoptExperimentConfiguration(model_building.experiment_configuration.ExperimentConfiguration):
+class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         self._wrapped_experiment_configuration = wrapped_experiment_configuration
         super().__init__(campaign_configuration, None, regression_inputs, prefix)
         self.technique = self._wrapped_experiment_configuration.technique
+        self._hyperopt_max_evals = campaign_configuration['General']['hyperopt_max_evals']
+        if 'hyperopt_save_interval' in campaign_configuration['General']:
+            self._hyperopt_save_interval = campaign_configuration['General']['hyperopt_save_interval']
+        else:
+            self._hyperopt_save_interval = int(1 + self._hyperopt_max_evals / 2)
+
 
     def _compute_signature(self, prefix):
         return self._wrapped_experiment_configuration.get_signature()
@@ -189,7 +196,8 @@ class HyperoptExperimentConfiguration(model_building.experiment_configuration.Ex
     def _train(self):
         self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()
         # Recover parameter space
-        prior_dict = self._campaign_configuration['XGBoost']  # TODO
+        technique_strg = ec.enum_to_configuration_label[self._wrapped_experiment_configuration.technique]
+        prior_dict = self._campaign_configuration[technique_strg]
         params = self._wrapped_experiment_configuration.get_default_parameters()
         for param in params:
             if param in prior_dict:
@@ -199,8 +207,15 @@ class HyperoptExperimentConfiguration(model_building.experiment_configuration.Ex
         params['X'], params['y'] = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         logging.getLogger('hyperopt.tpe').propagate = False
         # Call Hyperopt minimizer
-        best_param = fmin(self._objective_function, params, algo=tpe.suggest,
-                          max_evals=1, verbose=False)  # TODO max_evals, pickle dump Trials once every tot iterations
+        trials = Trials()
+        curr_evals = 0
+        while curr_evals + self._hyperopt_save_interval <= self._hyperopt_max_evals:
+            # with open("trials.pickle", "rb") as f:
+            #     trials = pickle.load(f)
+            curr_evals += self._hyperopt_save_interval
+            best_param = fmin(self._objective_function, params, algo=tpe.suggest, trials=trials, max_evals=curr_evals, verbose=False)
+            with open("trials.pickle", "wb") as f:  # TODO fix path
+                pickle.dump(trials, f)
         # Restore output from fmin
         logging.getLogger('hyperopt.tpe').propagate = True
         # Convert floats to ints so that XGBoost won't complain
@@ -218,9 +233,10 @@ class HyperoptExperimentConfiguration(model_building.experiment_configuration.Ex
         return ret
 
     def print_model(self):
-        return "\n".join(("Optimal hyperparameter(s) found with hyperopt:",
-                          str(self._wrapped_experiment_configuration._hyperparameters),
-                          self._wrapped_experiment_configuration.print_model()))
+        return "".join(("Optimal hyperparameter(s) found with hyperopt: ",
+                        str(self._wrapped_experiment_configuration._hyperparameters),
+                        "\n",
+                        self._wrapped_experiment_configuration.print_model()))
 
     def initialize_regressor(self):
         self._wrapped_experiment_configuration.initialize_regressor()
@@ -232,10 +248,13 @@ class HyperoptExperimentConfiguration(model_building.experiment_configuration.Ex
         try:
             prior_type, prior_args_strg = prior_ini.replace(' ', '').replace(')', '').split('(')
             prior_args = [float(a) for a in prior_args_strg.split(',')]
-            # TODO Get log of values when appropriate? Discuss
+            # Get log of parameter values when appropriate
+            if prior_type.startswith('log') or prior_type.startswith('qlog'):
+                prior_args = [np.log(a) for a in prior_args]
+            # Initialize hyperopt prior object
             prior = getattr(hp, prior_type)(param_name, *prior_args)
+            # Handle case of quantized priors, which imply discrete values
             if prior_type.startswith('q'):
-                # quantized prior, for discrete values
                 prior = scope.int(prior)
             return prior
         except:
@@ -245,7 +264,7 @@ class HyperoptExperimentConfiguration(model_building.experiment_configuration.Ex
 
 
 
-class HyperoptSFSExperimentConfiguration(model_building.experiment_configuration.ExperimentConfiguration):
+class HyperoptSFSExperimentConfiguration(ec.ExperimentConfiguration):
     # TODO adapt from above class and hyperopt script
     def __init__(self):
       pass
