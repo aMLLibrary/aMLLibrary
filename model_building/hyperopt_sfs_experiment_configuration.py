@@ -171,7 +171,6 @@ class SFSExperimentConfiguration(model_building.experiment_configuration.Experim
 
 
 class HyperoptExperimentConfiguration(model_building.experiment_configuration.ExperimentConfiguration):
-    # TODO update outdated class
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         self._wrapped_experiment_configuration = wrapped_experiment_configuration
         super().__init__(campaign_configuration, None, regression_inputs, prefix)
@@ -194,14 +193,14 @@ class HyperoptExperimentConfiguration(model_building.experiment_configuration.Ex
         params = self._wrapped_experiment_configuration.get_default_parameters()
         for param in params:
             if param in prior_dict:
-                prior = self._parse_prior(param, prior_dict[param][0])
+                prior = self._parse_prior(param, prior_dict[param][0])  # TODO handle case with multiple alternative priors
                 params[param] = prior
         # Include datasets and temporarily disable output from fmin
         params['X'], params['y'] = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         logging.getLogger('hyperopt.tpe').propagate = False
         # Call Hyperopt minimizer
         best_param = fmin(self._objective_function, params, algo=tpe.suggest,
-                          max_evals=1, verbose=False)  # TODO max_evals
+                          max_evals=1, verbose=False)  # TODO max_evals, pickle dump Trials once every tot iterations
         # Restore output from fmin
         logging.getLogger('hyperopt.tpe').propagate = True
         # Convert floats to ints so that XGBoost won't complain
@@ -233,8 +232,8 @@ class HyperoptExperimentConfiguration(model_building.experiment_configuration.Ex
         try:
             prior_type, prior_args_strg = prior_ini.replace(' ', '').replace(')', '').split('(')
             prior_args = [float(a) for a in prior_args_strg.split(',')]
+            # TODO Get log of values when appropriate? Discuss
             prior = getattr(hp, prior_type)(param_name, *prior_args)
-            # TODO get log of values when appropriate
             if prior_type.startswith('q'):
                 # quantized prior, for discrete values
                 prior = scope.int(prior)
