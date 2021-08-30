@@ -193,7 +193,7 @@ class HyperoptExperimentConfiguration(model_building.experiment_configuration.Ex
         params = {
           'learning_rate': hp.loguniform('learning_rate', np.log(0.01), np.log(1)),
           'max_depth': scope.int(hp.quniform('max_depth', 100, 300, 100)),
-          'gamma': hp.loguniform('gamma', np.log(0.1), np.log(1)),  # aka 'gamma'
+          'gamma': hp.loguniform('gamma', np.log(0.1), np.log(1)),
           'min_child_weight': scope.int(hp.quniform('min_child_weight', 1, 1.01, 1)),  # is fixed
           'n_estimators': scope.int(hp.quniform('n_estimators', 500, 500.1, 1)),  # is fixed
         }
@@ -228,6 +228,20 @@ class HyperoptExperimentConfiguration(model_building.experiment_configuration.Ex
 
     def get_regressor(self):
         return self._wrapped_experiment_configuration.get_regressor()
+
+    def _parse_prior(self, param_name, prior_ini):
+        try:
+            prior_type, prior_args_strg = prior_ini.replace(' ', '').replace(')', '').split('(')
+            prior_args = [float(a) for a in prior_args_strg.split(',')]
+            prior = getattr(hp, prior_type)(param_name, *prior_args)
+            if prior_type.startswith('q'):
+                # quantized prior, for discrete values
+                prior = scope.int(prior)
+            return prior
+        except:
+            self._logger.error("Error in parsing prior string: %s", prior_ini)
+            sys.exit(1)
+
 
 
 
