@@ -189,16 +189,15 @@ class HyperoptExperimentConfiguration(model_building.experiment_configuration.Ex
 
     def _train(self):
         self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()
-        # Initialize parameter space and include datasets
-        params = {
-          'learning_rate': hp.loguniform('learning_rate', np.log(0.01), np.log(1)),
-          'max_depth': scope.int(hp.quniform('max_depth', 100, 300, 100)),
-          'gamma': hp.loguniform('gamma', np.log(0.1), np.log(1)),
-          'min_child_weight': scope.int(hp.quniform('min_child_weight', 1, 1.01, 1)),  # is fixed
-          'n_estimators': scope.int(hp.quniform('n_estimators', 500, 500.1, 1)),  # is fixed
-        }
+        # Recover parameter space
+        prior_dict = self._campaign_configuration['XGBoost']  # TODO
+        params = self._wrapped_experiment_configuration.get_default_parameters()
+        for param in params:
+            if param in prior_dict:
+                prior = self._parse_prior(param, prior_dict[param][0])
+                params[param] = prior
+        # Include datasets and temporarily disable output from fmin
         params['X'], params['y'] = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
-        # Temporarily disable output from fmin
         logging.getLogger('hyperopt.tpe').propagate = False
         # Call Hyperopt minimizer
         best_param = fmin(self._objective_function, params, algo=tpe.suggest,
@@ -220,8 +219,9 @@ class HyperoptExperimentConfiguration(model_building.experiment_configuration.Ex
         return ret
 
     def print_model(self):
-        return "".join(("Optimal hyperparameter(s) found with hyperopt\n",
-                        self._wrapped_experiment_configuration.print_model()))
+        return "\n".join(("Optimal hyperparameter(s) found with hyperopt:",
+                          str(self._wrapped_experiment_configuration._hyperparameters),
+                          self._wrapped_experiment_configuration.print_model()))
 
     def initialize_regressor(self):
         self._wrapped_experiment_configuration.initialize_regressor()
@@ -234,6 +234,7 @@ class HyperoptExperimentConfiguration(model_building.experiment_configuration.Ex
             prior_type, prior_args_strg = prior_ini.replace(' ', '').replace(')', '').split('(')
             prior_args = [float(a) for a in prior_args_strg.split(',')]
             prior = getattr(hp, prior_type)(param_name, *prior_args)
+            # TODO get log of values when appropriate
             if prior_type.startswith('q'):
                 # quantized prior, for discrete values
                 prior = scope.int(prior)

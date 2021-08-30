@@ -87,7 +87,7 @@ class GeneratorsFactory:
 
         # Add Hyperopt and/or SFS wrapper generators
         new_generators = {}
-        if 'HyperparameterTuning' in self._campaign_configuration['General'] and self._campaign_configuration['General']['hyperparameter_tuning'] == 'Hyperopt':
+        if 'hyperparameter_tuning' in self._campaign_configuration['General'] and self._campaign_configuration['General']['hyperparameter_tuning'].lower() == 'hyperopt':
             if 'FeatureSelection' in self._campaign_configuration and "method" in self._campaign_configuration['FeatureSelection'] and self._campaign_configuration['FeatureSelection']['method'] == 'SFS':        
                 self._logger.info("Building Hyperopt-SFS generator")
                 for technique, generator in generators.items():
