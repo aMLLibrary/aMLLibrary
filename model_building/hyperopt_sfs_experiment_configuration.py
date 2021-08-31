@@ -261,6 +261,9 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
     def _parse_prior(self, param_name, prior_ini):
         try:
             prior_type, prior_args_strg = prior_ini.replace(' ', '').replace(')', '').split('(')
+            if not hasattr(hp, prior_type):
+                self._logger.error("Unrecognized prior type: %s", prior_type)
+                sys.exit(1)
             prior_args = [float(a) for a in prior_args_strg.split(',')]
             # Get log of parameter values when appropriate
             if prior_type.startswith('log') or prior_type.startswith('qlog'):
