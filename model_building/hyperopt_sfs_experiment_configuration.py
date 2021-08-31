@@ -197,14 +197,13 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
 
     def _train(self):
         self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()
-        # Recover parameter space
-        technique_strg = ec.enum_to_configuration_label[self._wrapped_experiment_configuration.technique]
-        prior_dict = self._campaign_configuration[technique_strg]
+        prior_dict = self._wrapped_experiment_configuration._hyperparameters
         params = self._wrapped_experiment_configuration.get_default_parameters()
         for param in params:
             if param in prior_dict:
-                prior = self._parse_prior(param, prior_dict[param][0])  # TODO handle case with multiple alternative priors
+                prior = self._parse_prior(param, prior_dict[param])
                 params[param] = prior
+        # TODO: final regressors have point values rather than priors. Fix that case
         # Include datasets and temporarily disable output from fmin
         params['X'], params['y'] = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         logging.getLogger('hyperopt.tpe').propagate = False
@@ -232,7 +231,7 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
             os.remove(trials_pickle_path)
         # Restore output from fmin
         logging.getLogger('hyperopt.tpe').propagate = True
-        # Convert floats to ints so that XGBoost won't complain
+        # Convert floats to ints so that XGBoost won't complain  # TODO
         for key in ['max_depth', 'min_child_weight', 'n_estimators']:
           best_param[key] = int(best_param[key])
         # Train model with the newfound optimal hypers
