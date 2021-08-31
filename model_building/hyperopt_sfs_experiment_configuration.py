@@ -183,6 +183,7 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         else:
             self._hyperopt_save_interval = 0
             # self._hyperopt_save_interval = int(1 + self._hyperopt_max_evals / 2)
+        self._hyperopt_trained = False
 
 
     def _compute_signature(self, prefix):
@@ -196,6 +197,9 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         return {'loss': -score, 'status': STATUS_OK}
 
     def _train(self):
+        if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
+            self._wrapped_experiment_configuration._train()
+            return
         self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()
         prior_dict = self._wrapped_experiment_configuration._hyperparameters
         params = self._wrapped_experiment_configuration.get_default_parameters()
@@ -203,7 +207,6 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
             if param in prior_dict:
                 prior = self._parse_prior(param, prior_dict[param])
                 params[param] = prior
-        # TODO: final regressors have point values rather than priors. Fix that case
         # Include datasets and temporarily disable output from fmin
         params['X'], params['y'] = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         logging.getLogger('hyperopt.tpe').propagate = False
@@ -229,7 +232,8 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
                     pickle.dump(trials, f)
             # Clear trials file after finished
             os.remove(trials_pickle_path)
-        # Restore output from fmin
+        # Set flag and restore output from fmin
+        self._hyperopt_trained = True
         logging.getLogger('hyperopt.tpe').propagate = True
         # Convert floats to ints so that XGBoost won't complain  # TODO
         for key in ['max_depth', 'min_child_weight', 'n_estimators']:
