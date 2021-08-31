@@ -216,7 +216,7 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
             # Save Trials object every _hyperopt_save_interval iterations for fault tolerance
             curr_evals = 0
             trials = Trials()
-            trials_pickle_path = os.path.join(self._campaign_configuration['General']['output'], 'trials.pickle')  # TODO fix
+            trials_pickle_path = os.path.join(self._experiment_directory, 'trials.pickle')
             while curr_evals < self._hyperopt_max_evals:
                 # First, check for an existing, partially filled trials file, if any, and restart from there
                 if os.path.isfile(trials_pickle_path):
