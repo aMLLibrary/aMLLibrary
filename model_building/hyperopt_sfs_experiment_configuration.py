@@ -23,6 +23,7 @@ import pandas as pd
 import sklearn
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.pyll import scope
+import os
 import sys
 import pickle
 
@@ -180,7 +181,8 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         if 'hyperopt_save_interval' in campaign_configuration['General']:
             self._hyperopt_save_interval = campaign_configuration['General']['hyperopt_save_interval']
         else:
-            self._hyperopt_save_interval = int(1 + self._hyperopt_max_evals / 2)
+            self._hyperopt_save_interval = 0
+            # self._hyperopt_save_interval = int(1 + self._hyperopt_max_evals / 2)
 
 
     def _compute_signature(self, prefix):
@@ -207,15 +209,27 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         params['X'], params['y'] = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         logging.getLogger('hyperopt.tpe').propagate = False
         # Call Hyperopt minimizer
-        trials = Trials()
-        curr_evals = 0
-        while curr_evals + self._hyperopt_save_interval <= self._hyperopt_max_evals:
-            # with open("trials.pickle", "rb") as f:
-            #     trials = pickle.load(f)
-            curr_evals += self._hyperopt_save_interval
-            best_param = fmin(self._objective_function, params, algo=tpe.suggest, trials=trials, max_evals=curr_evals, verbose=False)
-            with open("trials.pickle", "wb") as f:  # TODO fix path
-                pickle.dump(trials, f)
+        if self._hyperopt_save_interval == 0:
+            # Do not perform periodic saves to Pickle files
+            best_param = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=self._hyperopt_max_evals, verbose=False)
+        else:
+            # Save Trials object every _hyperopt_save_interval iterations for fault tolerance
+            curr_evals = 0
+            trials = Trials()
+            trials_pickle_path = os.path.join(self._campaign_configuration['General']['output'], 'trials.pickle')  # TODO fix
+            while curr_evals < self._hyperopt_max_evals:
+                # First, check for an existing, partially filled trials file, if any, and restart from there
+                if os.path.isfile(trials_pickle_path):
+                    with open(trials_pickle_path, 'rb') as f:
+                        trials = pickle.load(f)
+                    curr_evals = len(trials.trials)
+                # Perform next _hyperopt_save_interval iterations and save Pickle file
+                curr_evals = min(self._hyperopt_max_evals, curr_evals+self._hyperopt_save_interval)
+                best_param = fmin(self._objective_function, params, algo=tpe.suggest, trials=trials, max_evals=curr_evals, verbose=False)
+                with open(trials_pickle_path, 'wb') as f:
+                    pickle.dump(trials, f)
+            # Clear trials file after finished
+            os.remove(trials_pickle_path)
         # Restore output from fmin
         logging.getLogger('hyperopt.tpe').propagate = True
         # Convert floats to ints so that XGBoost won't complain
