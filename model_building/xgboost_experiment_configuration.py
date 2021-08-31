@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import copy
 import os
 import warnings
 
@@ -136,3 +137,9 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
                 'gamma': 0.25,
                 'min_child_weight': 1,
                 'n_estimators': 500}
+
+    def fix_hyperparameters(self, hypers):
+        new_hypers = copy.deepcopy(hypers)
+        for key in ['max_depth', 'min_child_weight', 'n_estimators']:
+            new_hypers[key] = int(new_hypers[key])
+        return new_hypers

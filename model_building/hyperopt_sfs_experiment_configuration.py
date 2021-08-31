@@ -235,9 +235,8 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         # Set flag and restore output from fmin
         self._hyperopt_trained = True
         logging.getLogger('hyperopt.tpe').propagate = True
-        # Convert floats to ints so that XGBoost won't complain  # TODO
-        best_param = self.fix_hyperparameters(best_param)
         # Train model with the newfound optimal hypers
+        best_param = self._wrapped_experiment_configuration.fix_hyperparameters(best_param)
         self._wrapped_experiment_configuration._regressor = self._wrapped_regressor
         self._wrapped_experiment_configuration._hyperparameters = best_param
         self._wrapped_experiment_configuration._train()
@@ -280,13 +279,6 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
             self._logger.error("Error in parsing prior string: %s", prior_ini)
             sys.exit(1)
 
-    def fix_hyperparameters(self, params):
-        import copy
-        new_params = copy.deepcopy(params)
-        for key in ['max_depth', 'min_child_weight', 'n_estimators']:
-            if key in new_params:
-              new_params[key] = int(new_params[key])
-        return new_params
 
 
 

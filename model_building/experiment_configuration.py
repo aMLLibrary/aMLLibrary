@@ -377,6 +377,9 @@ class ExperimentConfiguration(abc.ABC):
         """
         return copy.deepcopy(self._hyperparameters)
 
+    def fix_hyperparameters(self, hypers):
+        return copy.deepcopy(hypers)
+
     def get_x_columns(self):
         """
         Return
