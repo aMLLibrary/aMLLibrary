@@ -816,7 +816,7 @@ class KFoldExpConfsGenerator(SelectionValidationExpConfsGenerator):
         wrapped_generator: ExpConfsGenerator
             The wrapped generator to be duplicated and modified
 
-        campaign_configuration: #TODO: add type
+        campaign_configuration: dict of str: dict of str: str
             The set of options specified by the user though command line and campaign configuration files
 
         seed: integer
@@ -972,13 +972,14 @@ class RandomExpConfsGenerator(ExpConfsGenerator):
         campaign_configuration: dict of str: dict of str: str
             The set of options specified by the user though command line and campaign configuration files
 
-        wrapped_generator: ExpConfsGenerator
-            The wrapped generator
-
         seed: integer
             The seed to be used in random based activities
 
-        # TODO wrong documentation
+        experiment_configurations_number: integer
+            The number of experiment configurations to select
+
+        wrapped_generator: ExpConfsGenerator
+            The wrapped generator
         """
         super().__init__(campaign_configuration, seed)
 
