@@ -282,7 +282,15 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
 
 
 
-class HyperoptSFSExperimentConfiguration(ec.ExperimentConfiguration):
-    # TODO adapt from above class and hyperopt script
-    def __init__(self):
-      pass
+class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
+    def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
+        super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
+        # Check if the maximum number of required features is greater than the number of existing features
+        temp_xdata, temp_ydata =  self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
+        if self._campaign_configuration['FeatureSelection']['max_features'] > temp_xdata.shape[1]:
+            self._logger.error("ERROR: The maximum number of required features must be in range(1, %d)", temp_xdata.shape[1]+1)
+            sys.exit(-10)
+
+    def _train(self):
+        # TODO all
+        pass
