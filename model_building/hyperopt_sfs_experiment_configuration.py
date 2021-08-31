@@ -237,7 +237,8 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         logging.getLogger('hyperopt.tpe').propagate = True
         # Convert floats to ints so that XGBoost won't complain  # TODO
         for key in ['max_depth', 'min_child_weight', 'n_estimators']:
-          best_param[key] = int(best_param[key])
+            if key in best_param:
+              best_param[key] = int(best_param[key])
         # Train model with the newfound optimal hypers
         self._wrapped_experiment_configuration._regressor = self._wrapped_regressor
         self._wrapped_experiment_configuration._hyperparameters = best_param

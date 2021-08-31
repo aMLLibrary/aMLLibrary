@@ -54,7 +54,6 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         assert prefix
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.LR_RIDGE
-        self._regressor = lr.Ridge(alpha=self._hyperparameters['alpha'])
 
     def _compute_signature(self, prefix):
         """
@@ -114,3 +113,12 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
             ret_string = ret_string + "(" + str(coefficient) + "*" + column + ")"
         ret_string = ret_string + " + (" + str(self._regressor.intercept_) + ")"
         return ret_string
+
+    def initialize_regressor(self):
+        if not getattr(self, '_hyperparameters', None):
+            self._regressor = lr.Ridge()
+        else:
+            self._regressor = lr.Ridge(alpha=self._hyperparameters['alpha'])
+
+    def get_default_parameters(self):
+        return {'alpha': 0.1}
