@@ -198,17 +198,7 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         score = sklearn.model_selection.cross_val_score(self._wrapped_regressor, X, y, scoring='r2', cv=5).mean()
         return {'loss': -score, 'status': STATUS_OK}
 
-    def _train(self):
-        if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
-            self._wrapped_experiment_configuration._train()
-            return
-        self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()
-        prior_dict = self._wrapped_experiment_configuration._hyperparameters
-        params = self._wrapped_experiment_configuration.get_default_parameters()
-        for param in params:
-            if param in prior_dict:
-                prior = self._parse_prior(param, prior_dict[param])
-                params[param] = prior
+    def _run_hyperopt(self, params):
         # Include datasets and temporarily disable output from fmin
         params['X'], params['y'] = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         logging.getLogger('hyperopt.tpe').propagate = False
@@ -234,9 +224,24 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
                     pickle.dump(trials, f)
             # Clear trials file after finished
             os.remove(trials_pickle_path)
-        # Set flag and restore output from fmin
-        self._hyperopt_trained = True
+        # Restore output from fmin
         logging.getLogger('hyperopt.tpe').propagate = True
+        return best_param
+
+    def _train(self):
+        if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
+            self._wrapped_experiment_configuration._train()
+            return
+        self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()
+        prior_dict = self._wrapped_experiment_configuration._hyperparameters
+        params = self._wrapped_experiment_configuration.get_default_parameters()
+        for param in params:
+            if param in prior_dict:
+                prior = self._parse_prior(param, prior_dict[param])
+                params[param] = prior
+        # Run Hyperopt optimizer
+        best_param = self._run_hyperopt(params)
+        self._hyperopt_trained = True
         # Train model with the newfound optimal hypers
         best_param = self._wrapped_experiment_configuration.fix_hyperparameters(best_param)
         self._wrapped_experiment_configuration._regressor = self._wrapped_regressor
