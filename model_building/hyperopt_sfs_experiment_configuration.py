@@ -363,10 +363,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
             # Compute training scores
             for new_column in remaining_features:
                 X_train_sub = X_train[selected_features+[new_column]]
-                model = xgb.XGBRegressor(
-                    **best_param, min_child_weight=1, n_estimators=2000,
-                    tree_method='hist',  # objective='reg:squarederror'
-                )
+                model = self._wrapped_regressor(**best_param)  # TODO doesn't work
                 model, score = candidates_evaluator(model, X_train_sub, y_train)
                 candidate_models.append(model)
                 candidate_metrics.append(score)
