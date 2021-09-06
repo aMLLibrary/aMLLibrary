@@ -297,7 +297,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
             self._logger.error("ERROR: The maximum number of required features must be in range(1, %d)", temp_xdata.shape[1]+1)
             sys.exit(-10)
 
-    def _get_standard_evaluator(scorer):
+    def _get_standard_evaluator(self, scorer):
         def evaluator(model, X, y, trained=False):
             if not trained:
                 model = model.fit(X, y)
@@ -305,7 +305,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
             return model, score
         return evaluator
 
-    def _get_cv_evaluator(scorer, cv=3):
+    def _get_cv_evaluator(self, scorer, cv=3):
         def evaluator(model, X, y, trained=False):
             scores = sklearn.model_selection.cross_val_score(model, X, y, scoring=scorer, cv=cv)
             if not trained:
@@ -314,7 +314,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         return evaluator
 
     def _train(self):
-        # self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()  # TODO
+        self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()
         # Read parameter priors
         prior_dict = self._wrapped_experiment_configuration._hyperparameters
         params = self._wrapped_experiment_configuration.get_default_parameters()
@@ -325,9 +325,9 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         # Get training data
         X_train, y_train = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         # Define evaluators
-        candidates_evaluator = _get_standard_evaluator(make_scorer(r2_score))
+        candidates_evaluator = self._get_standard_evaluator(make_scorer(r2_score))
         candidates_argbest = np.argmax
-        subsets_evaluator = _get_standard_evaluator(make_scorer(r2_score))
+        subsets_evaluator = self._get_standard_evaluator(make_scorer(r2_score))
         subsets_argbest = np.argmax
         # subsets_* will contain one value for each different dim
         subsets_best_models = []
