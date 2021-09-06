@@ -27,7 +27,6 @@ from hyperopt.pyll import scope
 import os
 import sys
 import pickle
-# import xgboost as xgb  # TODO
 
 import model_building.experiment_configuration as ec
 
@@ -202,7 +201,7 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         # Include datasets and temporarily disable output from fmin
         params['X'], params['y'] = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         logging.getLogger('hyperopt.tpe').propagate = False
-        # Call Hyperopt minimizer
+        # Call Hyperopt optimizer
         if self._hyperopt_save_interval == 0:
             # Do not perform periodic saves to Pickle files
             best_param = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=self._hyperopt_max_evals, verbose=False)
@@ -226,6 +225,7 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
             os.remove(trials_pickle_path)
         # Restore output from fmin
         logging.getLogger('hyperopt.tpe').propagate = True
+        best_param = self._wrapped_experiment_configuration.fix_hyperparameters(best_param)
         return best_param
 
     def _train(self):
@@ -239,11 +239,10 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
             if param in prior_dict:
                 prior = self._parse_prior(param, prior_dict[param])
                 params[param] = prior
-        # Run Hyperopt optimizer
+        # Call Hyperopt optimizer
         best_param = self._run_hyperopt(params)
         self._hyperopt_trained = True
         # Train model with the newfound optimal hypers
-        best_param = self._wrapped_experiment_configuration.fix_hyperparameters(best_param)
         self._wrapped_experiment_configuration._regressor = self._wrapped_regressor
         self._wrapped_experiment_configuration._hyperparameters = best_param
         self._wrapped_experiment_configuration._train()
@@ -315,6 +314,15 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         return evaluator
 
     def _train(self):
+        # self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()  # TODO
+        # Read parameter priors
+        prior_dict = self._wrapped_experiment_configuration._hyperparameters
+        params = self._wrapped_experiment_configuration.get_default_parameters()
+        for param in params:
+            if param in prior_dict:
+                prior = self._parse_prior(param, prior_dict[param])
+                params[param] = prior
+        # Get training data
         X_train, y_train = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         # Define evaluators
         candidates_evaluator = _get_standard_evaluator(make_scorer(r2_score))
@@ -339,29 +347,18 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         _, score_dummy = subsets_evaluator(model_dummy, X_train[[]], y_train, trained=True)
         subsets_best_metrics.append(score_dummy)
         # STEP 2: EVALUATE ALL CANDIDATES OF ALL DIMENSIONS
-        max_dim = min(max_features, len(all_features))
+        max_dim = self._campaign_configuration['FeatureSelection']['max_features']
         for dim in range(1, max_dim+1):
             # Containers for candidate metrics and models for this dim
             candidate_metrics = []
             candidate_models = []
             # STEP 2a: TRAIN ALL CANDIDATES WITH THIS DIM
             remaining_features = all_features.difference(selected_features)
-            # Initialize Hyperopt parameter space
-            params = {
-              'learning_rate': hp.loguniform('learning_rate', np.log(0.01), np.log(1)),
-              'max_depth': scope.int(hp.quniform('max_depth', 100, 300, 100)),
-              'min_split_gain': hp.loguniform('min_split_gain', np.log(0.1), np.log(1))
-            }
             # Pass training data
             params['X'] = X_train
             params['y'] = y_train
-            # Call Hyperopt minimizer
-            best_param = fmin(objective_function, params, algo=tpe.suggest,
-                              max_evals=10)
-            # Re-format parameters so that XGBoost won't complain
-            if 'max_depth' in best_param and 'min_split_gain' in best_param:  # TODO
-                best_param['max_depth'] = int(best_param['max_depth'])
-                best_param['gamma'] = best_param.pop('min_split_gain')
+            # Call Hyperopt optimizer
+            best_param = self._run_hyperopt(params)
             subsets_best_hyperparams.append(best_param)
             # Compute training scores
             for new_column in remaining_features:
