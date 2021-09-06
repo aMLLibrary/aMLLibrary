@@ -21,11 +21,13 @@ import mlxtend.feature_selection
 import numpy as np
 import pandas as pd
 import sklearn
+from sklearn.metrics import r2_score, make_scorer
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.pyll import scope
 import os
 import sys
 import pickle
+# import xgboost as xgb  # TODO
 
 import model_building.experiment_configuration as ec
 
@@ -286,120 +288,102 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
         # Check if the maximum number of required features is greater than the number of existing features
-        temp_xdata, temp_ydata =  self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
+        temp_xdata, temp_ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         if self._campaign_configuration['FeatureSelection']['max_features'] > temp_xdata.shape[1]:
             self._logger.error("ERROR: The maximum number of required features must be in range(1, %d)", temp_xdata.shape[1]+1)
             sys.exit(-10)
 
+    def _get_standard_evaluator(scorer):
+        def evaluator(model, X, y, trained=False):
+            if not trained:
+                model = model.fit(X, y)
+            score = scorer(model, X, y)
+            return model, score
+        return evaluator
+
+    def _get_cv_evaluator(scorer, cv=3):
+        def evaluator(model, X, y, trained=False):
+            scores = sklearn.model_selection.cross_val_score(model, X, y, scoring=scorer, cv=cv)
+            if not trained:
+                model = model.fit(X, y)
+            return model, np.mean(scores)
+        return evaluator
+
     def _train(self):
-        # TODO all
-        pass
-
-
-
-
-
-
-
-
-
-
-# from sklearn.dummy import DummyRegressor
-# from sklearn.metrics import r2_score, make_scorer
-# import xgboost as xgb
-
-# def get_standard_evaluator(scorer):
-# def evaluator(model, X, y, trained=False):
-# if not trained:
-#   model = model.fit(X, y)
-# score = scorer(model, X, y)
-# return model, score
-# return evaluator
-
-# def get_cv_evaluator(scorer, cv=3):
-# def evaluator(model, X, y, trained=False):
-# scores = sklearn.model_selection.cross_val_score(model, X, y, scoring=scorer, cv=cv)
-# if not trained:
-#   model = model.fit(X, y)
-# return model, np.mean(scores)
-# return evaluator
-
-# def forward_selection(X_train, y_train,
-#                   candidates_evaluator, candidates_argbest,
-#                   subsets_evaluator, subsets_argbest):
-# # subsets_* will contain one value for each different dim
-# subsets_best_metrics = []
-# subsets_best_features = []
-# subsets_best_hyperparams = []
-# selected_features = []
-# all_features = X_train.columns
-# # 1. Train M0
-# # ===========
-# model = DummyRegressor()
-# # Compute training metrics
-# model, score = candidates_evaluator(model, X_train[[]], y_train)
-# subsets_best_features.append([])
-# subsets_best_hyperparams.append({})
-# # Compute validation metric for step 3
-# _, score = subsets_evaluator(model, X_train[[]], y_train, trained=True)
-# subsets_best_metrics.append(score)
-# # 2. Evaluate all Mk candidates with dim=k=0...P features
-# # =======================================================
-# max_dim = min(max_features, len(all_features))
-# for dim in range(1, max_dim+1):
-# # Containers for candidate metrics and models for this dim
-# candidate_metrics = []
-# candidate_models = []
-# # 2.a Train all the possible candidate models with this dim
-# # =========================================================
-# remaining_features = all_features.difference(selected_features)
-# # Initialize Hyperopt parameter space
-# params = {
-#   'learning_rate': hp.loguniform('learning_rate', np.log(0.01), np.log(1)),
-#   'max_depth': scope.int(hp.quniform('max_depth', 100, 300, 100)),
-#   'min_split_gain': hp.loguniform('min_split_gain', np.log(0.1), np.log(1))
-# }
-# # Pass training data
-# params['X'] = X_train
-# params['y'] = y_train
-# # Call Hyperopt minimizer
-# best_param = fmin(objective_function, params, algo=tpe.suggest,
-#                   max_evals=10)
-# # Re-format parameters so that XGBoost won't complain
-# if 'max_depth' in best_param and 'min_split_gain' in best_param:  # TODO
-#     best_param['max_depth'] = int(best_param['max_depth'])
-#     best_param['gamma'] = best_param.pop('min_split_gain')
-# subsets_best_hyperparams.append(best_param)
-# # Compute training scores
-# for new_column in remaining_features:
-#     X_train_sub = X_train[selected_features+[new_column]]
-#     model = xgb.XGBRegressor(
-#         **best_param, min_child_weight=1, n_estimators=2000,
-#         tree_method='hist',  # objective='reg:squarederror'
-#     )
-#     model, score = candidates_evaluator(model, X_train_sub, y_train)
-#     candidate_models.append(model)
-#     candidate_metrics.append(score)
-# # 2.b Select the best candidate for this dim
-# # ==========================================
-# idx_best_candidate = candidates_argbest(candidate_metrics)
-# # Update selected feature
-# selected_features.append(remaining_features[idx_best_candidate])
-# # Save best candidate features
-# best_features = selected_features.copy()
-# subsets_best_features.append(best_features)
-# best_subset_model = candidate_models[idx_best_candidate]
-# # Compute validation metric for step 3
-# best_subset_X_train = X_train[best_features]
-# _, score = subsets_evaluator(best_subset_model, best_subset_X_train,
-#                              y_train, trained=True)
-# subsets_best_metrics.append(score)
-# # 3. Among best candidates with different dims, select the best one
-# # =================================================================
-# idx_best = subsets_argbest(subsets_best_metrics)
-# best_features = subsets_best_features[idx_best]
-# print("Best model:")
-# print("!!  Number of features:", idx_best)
-# print("!!  Features:", subsets_best_features[idx_best])
-# print("!!  Hyperparameters:", subsets_best_hyperparams[idx_best])
-# print("!!  Validation score:", subsets_best_metrics[idx_best])
+        X_train, y_train = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
+        # Define evaluators
+        candidates_evaluator = _get_standard_evaluator(make_scorer(r2_score))
+        candidates_argbest = np.argmax
+        subsets_evaluator = _get_standard_evaluator(make_scorer(r2_score))
+        subsets_argbest = np.argmax
+        # subsets_* will contain one value for each different dim
+        subsets_best_models = []
+        subsets_best_metrics = []
+        subsets_best_features = []
+        subsets_best_hyperparams = []
+        selected_features = []
+        all_features = X_train.columns
+        ## STEP 1: TRAIN DUMMY MODEL
+        model_dummy = sklearn.dummy.DummyRegressor()
+        # Compute training metrics
+        model_dummy, score_dummy = candidates_evaluator(model_dummy, X_train[[]], y_train)
+        subsets_best_models.append(model_dummy)
+        subsets_best_features.append([])
+        subsets_best_hyperparams.append({})
+        # Compute validation metric for step 3
+        _, score_dummy = subsets_evaluator(model_dummy, X_train[[]], y_train, trained=True)
+        subsets_best_metrics.append(score_dummy)
+        # STEP 2: EVALUATE ALL CANDIDATES OF ALL DIMENSIONS
+        max_dim = min(max_features, len(all_features))
+        for dim in range(1, max_dim+1):
+            # Containers for candidate metrics and models for this dim
+            candidate_metrics = []
+            candidate_models = []
+            # STEP 2a: TRAIN ALL CANDIDATES WITH THIS DIM
+            remaining_features = all_features.difference(selected_features)
+            # Initialize Hyperopt parameter space
+            params = {
+              'learning_rate': hp.loguniform('learning_rate', np.log(0.01), np.log(1)),
+              'max_depth': scope.int(hp.quniform('max_depth', 100, 300, 100)),
+              'min_split_gain': hp.loguniform('min_split_gain', np.log(0.1), np.log(1))
+            }
+            # Pass training data
+            params['X'] = X_train
+            params['y'] = y_train
+            # Call Hyperopt minimizer
+            best_param = fmin(objective_function, params, algo=tpe.suggest,
+                              max_evals=10)
+            # Re-format parameters so that XGBoost won't complain
+            if 'max_depth' in best_param and 'min_split_gain' in best_param:  # TODO
+                best_param['max_depth'] = int(best_param['max_depth'])
+                best_param['gamma'] = best_param.pop('min_split_gain')
+            subsets_best_hyperparams.append(best_param)
+            # Compute training scores
+            for new_column in remaining_features:
+                X_train_sub = X_train[selected_features+[new_column]]
+                model = xgb.XGBRegressor(
+                    **best_param, min_child_weight=1, n_estimators=2000,
+                    tree_method='hist',  # objective='reg:squarederror'
+                )
+                model, score = candidates_evaluator(model, X_train_sub, y_train)
+                candidate_models.append(model)
+                candidate_metrics.append(score)
+            # STEP 2b: SELECT BEST CANDIDATE WITH THIS DIM
+            idx_best_candidate = candidates_argbest(candidate_metrics)
+            # Update selected feature
+            selected_features.append(remaining_features[idx_best_candidate])
+            # Save best candidate features
+            best_features = selected_features.copy()
+            subsets_best_features.append(best_features)
+            best_subset_model = candidate_models[idx_best_candidate]
+            subsets_best_models.append(best_subset_model)
+            # Compute validation metric for step 3
+            best_subset_X_train = X_train[best_features]
+            _, score = subsets_evaluator(best_subset_model, best_subset_X_train,
+                                         y_train, trained=True)
+            subsets_best_metrics.append(score)
+        # end of dim loop
+        # STEP 3: SELECT OVERALL BEST CANDIDATE AMONG ONES WITH DIFFERENT DIMS
+        idx_best = subsets_argbest(subsets_best_metrics)
+        best_features = subsets_best_features[idx_best]
+        self._wrapped_experiment_configuration._regressor = subsets_best_models[idx_best]
