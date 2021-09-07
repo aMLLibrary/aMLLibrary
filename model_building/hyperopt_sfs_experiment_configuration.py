@@ -316,6 +316,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
     def _train(self):
         if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
             SFSExperimentConfiguration._train(self)
+            self._wrapped_experiment_configuration._regression_inputs.x_columns = self._regression_inputs.x_columns
             return
         self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()
         # Read parameter priors
