@@ -363,7 +363,8 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
             # Compute training scores
             for new_column in remaining_features:
                 X_train_sub = X_train[selected_features+[new_column]]
-                model = self._wrapped_regressor(**best_param)  # TODO doesn't work
+                self._wrapped_regressor.__init__(**best_param)
+                model = self._wrapped_regressor
                 model, score = candidates_evaluator(model, X_train_sub, y_train)
                 candidate_models.append(model)
                 candidate_metrics.append(score)
