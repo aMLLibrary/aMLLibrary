@@ -137,6 +137,7 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
         filtered_xdata = self._sfs.transform(xdata)  # is an np.array
         filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_columns)
         self._regression_inputs.x_columns = x_columns
+        self._wrapped_experiment_configuration._regression_inputs.x_columns = self._regression_inputs.x_columns
         self._wrapped_experiment_configuration.get_regressor().fit(filtered_xdata, ydata)
 
     def compute_estimations(self, rows):

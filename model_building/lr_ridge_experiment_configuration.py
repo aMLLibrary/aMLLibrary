@@ -78,6 +78,7 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         self._logger.debug("Building model for %s", self._signature)
+        self.initialize_regressor()
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
