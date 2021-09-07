@@ -133,7 +133,7 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
         self._sfs.fit(xdata, ydata)
         x_columns = list(self._sfs.k_feature_names_)
         self._logger.info("Selected features: %s", str(x_columns))
-        # Use the selected feature to retrain the regressor, after restoring column names
+        # Use the selected features to retrain the regressor, after restoring column names
         filtered_xdata = self._sfs.transform(xdata)  # is an np.array
         filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_columns)
         self._regression_inputs.x_columns = x_columns
