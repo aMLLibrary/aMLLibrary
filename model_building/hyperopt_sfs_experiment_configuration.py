@@ -96,8 +96,7 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
         """
         self._wrapped_experiment_configuration = wrapped_experiment_configuration
         super().__init__(campaign_configuration, None, regression_inputs, prefix)
-        self._verbose = 2 if self._campaign_configuration['General']['debug'] else 0
-        temp_xdata, temp_ydata =  self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
+        temp_xdata, temp_ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         # if the maximum number of required features is greater than the number of existing features, exit
         if self._campaign_configuration['FeatureSelection']['max_features'] > temp_xdata.shape[1]:
             self._logger.error("ERROR: The maximum number of required features must be in range(1, %d)", temp_xdata.shape[1]+1)
@@ -123,7 +122,8 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
         """
         Build the model with the experiment configuration represented by this object
         """
-        self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self._wrapped_experiment_configuration.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=self._verbose, scoring=sklearn.metrics.make_scorer(mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
+        verbose = 2 if self._campaign_configuration['General']['debug'] else 0
+        self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self._wrapped_experiment_configuration.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         # set the maximum number of required features to the minimum between itself and the number of existing features
         if self._campaign_configuration['FeatureSelection']['max_features'] > xdata.shape[1]:
@@ -314,6 +314,9 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         return evaluator
 
     def _train(self):
+        if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
+            SFSExperimentConfiguration._train(self)
+            return
         self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()
         # Read parameter priors
         prior_dict = self._wrapped_experiment_configuration._hyperparameters
