@@ -387,3 +387,6 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         idx_best = subsets_argbest(subsets_best_metrics)
         best_features = subsets_best_features[idx_best]
         self._wrapped_experiment_configuration._regressor = subsets_best_models[idx_best]
+        self._logger.info("Selected features: %s", str(best_features))
+        self._regression_inputs.x_columns = best_features
+        self._wrapped_experiment_configuration.get_regressor().fit(X_train[best_features], y_train)
