@@ -132,7 +132,7 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
         # Perform feature selection
         self._sfs.fit(xdata, ydata)
         x_columns = list(self._sfs.k_feature_names_)
-        self._logger.info("Selected features: %s", str(x_columns))
+        self._logger.debug("Selected features: %s", str(x_columns))
         # Use the selected features to retrain the regressor, after restoring column names
         filtered_xdata = self._sfs.transform(xdata)  # is an np.array
         filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_columns)
@@ -314,6 +314,15 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
             return model, np.mean(scores)
         return evaluator
 
+    def print_model(self):
+        """
+        Print the model
+        """
+        return "".join(("Optimal hyperparameter(s) found with hyperopt: ",
+                        str(self._wrapped_experiment_configuration._hyperparameters),
+                        "\nSelected features: ", str(self._regression_inputs.x_columns), "\n",
+                        self._wrapped_experiment_configuration.print_model()))
+
     def _train(self):
         if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
             SFSExperimentConfiguration._train(self)
@@ -394,6 +403,6 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         self._wrapped_experiment_configuration._regressor = subsets_best_models[idx_best]
         self._hyperopt_trained = True
         self._wrapped_experiment_configuration._hyperparameters = subsets_best_hyperparams[idx_best]
-        self._logger.info("Selected features: %s", str(best_features))
+        self._logger.debug("Selected features: %s", str(best_features))
         self._regression_inputs.x_columns = best_features
         self._wrapped_experiment_configuration.get_regressor().fit(X_train[best_features], y_train)
