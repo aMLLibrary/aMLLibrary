@@ -373,7 +373,7 @@ class ExperimentConfiguration(abc.ABC):
         ------
         The regressor wrapped in this experiment configuration
         """
-        if not self._regressor:
+        if self._regressor is None:
             self.initialize_regressor()
         return self._regressor
 
