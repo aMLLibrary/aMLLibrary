@@ -19,7 +19,6 @@ import random
 import custom_logger
 import model_building.design_space as ds
 import model_building.experiment_configuration as ec
-import model_building.hyperopt_sfs_exp_conf_generator as hsecg
 
 
 class GeneratorsFactory:
@@ -91,16 +90,16 @@ class GeneratorsFactory:
             if 'FeatureSelection' in self._campaign_configuration and "method" in self._campaign_configuration['FeatureSelection'] and self._campaign_configuration['FeatureSelection']['method'] == 'SFS':        
                 self._logger.info("Building Hyperopt-SFS generator")
                 for technique, generator in generators.items():
-                    new_generators[technique] = hsecg.HyperoptSFSExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
+                    new_generators[technique] = ds.HyperoptSFSExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
             else:
                 self._logger.info("Building Hyperopt generator")
                 for technique, generator in generators.items():
-                    new_generators[technique] = hsecg.HyperoptExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
+                    new_generators[technique] = ds.HyperoptExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
         else:  # if Hyperopt was not requested
             if 'FeatureSelection' in self._campaign_configuration and "method" in self._campaign_configuration['FeatureSelection'] and self._campaign_configuration['FeatureSelection']['method'] == 'SFS':
                 self._logger.info("Building SFS generator")
                 for technique, generator in generators.items():
-                    new_generators[technique] = hsecg.SFSExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
+                    new_generators[technique] = ds.SFSExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
             else:
                 new_generators = generators  # no additional wrapper needed
         generators = new_generators
