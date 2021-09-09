@@ -288,10 +288,6 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         """
         return self._wrapped_experiment_configuration.get_x_columns()
 
-    def set_x_columns(self, x_cols):
-        super().set_x_columns(x_cols)
-        self._wrapped_experiment_configuration.set_x_columns(x_cols)
-
     def _parse_prior(self, param_name, prior_ini):
         try:
             prior_type, prior_args_strg = prior_ini.replace(' ', '').replace(')', '').split('(')
