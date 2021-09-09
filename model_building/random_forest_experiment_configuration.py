@@ -52,13 +52,6 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.RF
-        self._regressor = rf.RandomForestRegressor(
-            n_estimators=self._hyperparameters['n_estimators'],
-            criterion=self._hyperparameters['criterion'],
-            max_depth=self._hyperparameters['max_depth'],
-            max_features=self._hyperparameters['max_features'],
-            min_samples_split=self._hyperparameters['min_samples_split'],
-            min_samples_leaf=self._hyperparameters['min_samples_leaf'])
 
     def _compute_signature(self, prefix):
         """
@@ -111,3 +104,23 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         return self._regressor.predict(xdata)
+
+    def initialize_regressor(self):
+        if not getattr(self, '_hyperparameters', None):
+            self._regressor = rf.RandomForestRegressor()
+        else:
+            self._regressor = rf.RandomForestRegressor(
+                n_estimators=self._hyperparameters['n_estimators'],
+                criterion=self._hyperparameters['criterion'],
+                max_depth=self._hyperparameters['max_depth'],
+                max_features=self._hyperparameters['max_features'],
+                min_samples_split=self._hyperparameters['min_samples_split'],
+                min_samples_leaf=self._hyperparameters['min_samples_leaf'])
+
+    def get_default_parameters(self):
+        return {'n_estimators': 5,
+                'criterion': 'mse',
+                'max_depth': 3,
+                'max_features': 'auto',
+                'min_samples_split': 0.1,
+                'min_samples_leaf': 1}

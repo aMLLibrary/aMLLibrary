@@ -51,9 +51,6 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.NNLS
-        self._regressor = lm.Lasso(fit_intercept=self._hyperparameters['fit_intercept'],
-                                   alpha=0.001,
-                                   positive=True)
 
     def _compute_signature(self, prefix):
         """
@@ -101,3 +98,14 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         return self._regressor.predict(xdata)
+
+    def initialize_regressor(self):
+        if not getattr(self, '_hyperparameters', None):
+            self._regressor = lm.Lasso()
+        else:
+            self._regressor = lm.Lasso(fit_intercept=self._hyperparameters['fit_intercept'],
+                                       alpha=0.001,
+                                       positive=True)
+
+    def get_default_parameters(self):
+        return {'fit_intercept': True}
