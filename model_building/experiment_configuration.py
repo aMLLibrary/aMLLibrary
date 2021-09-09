@@ -186,6 +186,7 @@ class ExperimentConfiguration(abc.ABC):
         This public method wraps the private method which performs the actual work. In doing this it controls the start/stop of logging on file
         """
         self._start_file_logger()
+        self.initialize_regressor()
         self._train()
         self._stop_file_logger()
 
