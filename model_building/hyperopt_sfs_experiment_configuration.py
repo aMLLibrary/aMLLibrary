@@ -172,6 +172,9 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
     def get_regressor(self):
         return self._wrapped_experiment_configuration.get_regressor()
 
+    def get_default_parameters(self):
+        return self._wrapped_experiment_configuration.get_default_parameters()
+
 
 
 class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
@@ -265,6 +268,9 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
 
     def get_regressor(self):
         return self._wrapped_experiment_configuration.get_regressor()
+
+    def get_default_parameters(self):
+        return self._wrapped_experiment_configuration.get_default_parameters()
 
     def _parse_prior(self, param_name, prior_ini):
         try:
