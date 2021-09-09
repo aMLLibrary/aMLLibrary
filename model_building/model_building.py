@@ -163,11 +163,12 @@ class ModelBuilding:
             pickle.dump(best_regressors[technique], pickle_file)
             pickle_file.close()
         self._logger.info("<--Built the final regressors")
+        best_config = best_confs[best_technique]
         file_handler = logging.FileHandler(os.path.join(campaign_configuration['General']['output'], 'results'), 'a+')
         self._logger.addHandler(file_handler)
         self._logger.info("Best model:")
         self._logger.info("-->")
-        self._logger.info(best_conf.print_model())
+        self._logger.info(best_config.print_model())
         self._logger.info("<--")
         self._logger.removeHandler(file_handler)
         file_handler.close()
