@@ -373,8 +373,8 @@ class ExperimentConfiguration(abc.ABC):
         ------
         The regressor wrapped in this experiment configuration
         """
-        if not getattr(self, '_regressor', None) or not self._regressor:
-          self.initialize_regressor()
+        if not self._regressor:
+            self.initialize_regressor()
         return self._regressor
 
     def get_hyperparameters(self):
