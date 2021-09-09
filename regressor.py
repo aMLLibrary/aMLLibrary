@@ -54,7 +54,7 @@ class Regressor:
     get_regressor()
         Return the regressor associated with this experiment configuration
     """
-    def __init__(self, campaign_configuration, regressor, x_columns, scalers):
+    def __init__(self, campaign_configuration, regressor, x_cols, scalers):
         """
         Parameters
         regressor
@@ -63,7 +63,7 @@ class Regressor:
         assert regressor
         self._campaign_configuration = campaign_configuration
         self._regressor = regressor
-        self._x_columns = x_columns
+        self._x_columns = x_cols
         self._scalers = scalers
         self._logger = custom_logger.getLogger(__name__)
 

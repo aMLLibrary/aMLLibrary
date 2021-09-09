@@ -85,9 +85,6 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
 
-        # for idx, col_name in enumerate(self._regression_inputs.x_columns):
-        #    self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])
-
     def compute_estimations(self, rows):
         """
         Compute the estimations and the MAPE for runs in rows

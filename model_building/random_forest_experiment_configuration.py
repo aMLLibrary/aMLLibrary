@@ -84,10 +84,6 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
-        self._logger.debug("Model built")
-
-        # for idx, col_name in enumerate(self._regression_inputs.x_columns):
-        #    self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])
 
     def compute_estimations(self, rows):
         """

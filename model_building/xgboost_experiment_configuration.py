@@ -88,16 +88,12 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         self._logger.debug("---Model built")
 
         # Da simone
-
         expl = eli5.xgboost.explain_weights_xgboost(self._regressor, top=None)  # feature_names= XXX self.feature_names XXX
         expl_weights = eli5.format_as_text(expl)
         self._logger.debug("---Features Importance Computed")  # OK
         target = open(os.path.join(self._experiment_directory, "explanations.txt"), 'w')
         target.write(expl_weights)
         target.close()
-
-        # for idx, col_name in enumerate(self._regression_inputs.x_columns):
-        #    self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])
 
     def compute_estimations(self, rows):
         """
