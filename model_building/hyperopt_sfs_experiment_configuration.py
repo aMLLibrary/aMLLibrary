@@ -297,6 +297,7 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         return self._wrapped_experiment_configuration.get_x_columns()
 
     def set_x_columns(self, x_cols):
+        super().set_x_columns(x_cols)
         self._wrapped_experiment_configuration.set_x_columns(x_cols)
 
     def _parse_prior(self, param_name, prior_ini):
@@ -437,5 +438,5 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         self._hyperopt_trained = True
         self._wrapped_experiment_configuration._hyperparameters = subsets_best_hyperparams[idx_best]
         self._logger.debug("Selected features: %s", str(best_features))
-        self._regression_inputs.x_columns = best_features
+        self.set_x_columns(best_features)
         self._wrapped_experiment_configuration.get_regressor().fit(X_train[best_features], y_train)
