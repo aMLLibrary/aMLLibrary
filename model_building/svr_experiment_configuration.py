@@ -52,9 +52,6 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.SVR
-        self._regressor = svm.SVR(C=self._hyperparameters['C'], epsilon=self._hyperparameters['epsilon'],
-                                  gamma=self._hyperparameters['gamma'], kernel=self._hyperparameters['kernel'],
-                                  degree=self._hyperparameters['degree'])
 
     def _compute_signature(self, prefix):
         """
@@ -106,3 +103,17 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         return self._regressor.predict(xdata)
+
+    def initialize_regressor(self):
+        if not getattr(self, '_hyperparameters', None):
+            self._regressor = svm.SVR()
+        else:
+            self._regressor = svm.SVR(C=self._hyperparameters['C'], epsilon=self._hyperparameters['epsilon'],
+                                      gamma=self._hyperparameters['gamma'], kernel=self._hyperparameters['kernel'],
+                                      degree=self._hyperparameters['degree'])
+    def get_default_parameters(self):
+        return {'C': 0.001,
+                'epsilon': 0.05,
+                'gamma': 1e-7,
+                'kernel': 'linear',
+                'degree': 2}

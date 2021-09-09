@@ -204,6 +204,12 @@ class ExperimentConfiguration(abc.ABC):
         The actual implementation is demanded to the subclasses
         """
 
+    @abc.abstractmethod
+    def get_default_parameters(self):
+        """
+        The actual implementation is demanded to the subclasses
+        """
+
     def evaluate(self):
         """
         Validate the model, i.e., compute the MAPE on the validation set, hp selection, training
