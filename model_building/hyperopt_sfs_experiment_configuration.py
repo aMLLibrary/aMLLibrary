@@ -136,8 +136,7 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
         # Use the selected features to retrain the regressor, after restoring column names
         filtered_xdata = self._sfs.transform(xdata)  # is an np.array
         filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_cols)
-        self._regression_inputs.x_columns = x_cols
-        self._wrapped_experiment_configuration._regression_inputs.x_columns = self._regression_inputs.x_columns
+        self.set_x_columns(x_cols)
         self._wrapped_experiment_configuration.get_regressor().fit(filtered_xdata, ydata)
         # ^ TODO and similar
 
