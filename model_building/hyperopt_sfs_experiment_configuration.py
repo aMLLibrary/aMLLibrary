@@ -187,8 +187,6 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
     def set_x_columns(self, x_cols):
         super().set_x_columns(x_cols)
         self._wrapped_experiment_configuration.set_x_columns(x_cols)
-        # self._regression_inputs.x_columns = x_cols
-        # self._wrapped_experiment_configuration._regression_inputs.x_columns = x_cols
 
 
 
