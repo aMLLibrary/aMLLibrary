@@ -215,7 +215,7 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         # Call Hyperopt optimizer
         if self._hyperopt_save_interval == 0:
             # Do not perform periodic saves to Pickle files
-            best_param = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=self._hyperopt_max_evals, verbose=False)
+            best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=self._hyperopt_max_evals, verbose=False)
         else:
             # Save Trials object every _hyperopt_save_interval iterations for fault tolerance
             curr_evals = 0
@@ -229,15 +229,19 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
                     curr_evals = len(trials.trials)
                 # Perform next _hyperopt_save_interval iterations and save Pickle file
                 curr_evals = min(self._hyperopt_max_evals, curr_evals+self._hyperopt_save_interval)
-                best_param = fmin(self._objective_function, params, algo=tpe.suggest, trials=trials, max_evals=curr_evals, verbose=False)
+                best_params = fmin(self._objective_function, params, algo=tpe.suggest, trials=trials, max_evals=curr_evals, verbose=False)
                 with open(trials_pickle_path, 'wb') as f:
                     pickle.dump(trials, f)
             # Clear trials file after finished
             os.remove(trials_pickle_path)
         # Restore output from fmin
         logging.getLogger('hyperopt.tpe').propagate = True
-        best_param = self._wrapped_experiment_configuration.fix_hyperparameters(best_param)
-        return best_param
+        # Recover 'lost' params entries whose values was set, and were thus not returned by fmin()
+        for par in params:
+            if par not in ['X', 'y'] and par not in best_params:
+                best_params[par] = params[par]
+        best_params = self._wrapped_experiment_configuration.fix_hyperparameters(best_params)
+        return best_params
 
     def _train(self):
         if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
@@ -305,8 +309,8 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
                 prior = scope.int(prior)
             return prior
         except:
-            self._logger.error("Error in parsing prior string: %s", prior_ini)
-            sys.exit(1)
+            self._logger.debug("%s was not recognized as a prior string. It will be asssumed it is a point-wise value", prior_ini)
+            return prior_ini
 
 
 
