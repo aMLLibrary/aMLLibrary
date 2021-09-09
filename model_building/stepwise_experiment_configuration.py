@@ -50,13 +50,6 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyper_parameters, input_data, prefix)
         self.technique = ec.Technique.STEPWISE
-        possible_flags = ["p_enter", "p_remove", "max_iter", "fit_intercept"]
-        hp_flags = {
-            label: self._hyperparameters[label]
-            for label in possible_flags
-            if label in self._hyperparameters
-        }
-        self._regressor = sw.Stepwise(**hp_flags)
 
     def _train(self):
         """
@@ -109,3 +102,21 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         return self._regressor.predict(xdata)
+
+    def initialize_regressor(self):
+        if not getattr(self, '_hyperparameters', None):
+            self._regressor = sw.Stepwise()
+        else:
+            possible_flags = ["p_enter", "p_remove", "max_iter", "fit_intercept"]
+            hp_flags = {
+                label: self._hyperparameters[label]
+                for label in possible_flags
+                if label in self._hyperparameters
+            }
+            self._regressor = sw.Stepwise(**hp_flags)
+
+    def get_default_parameters(self):
+        return {'p_enter': 0.05,
+                'p_remove': 0.1,
+                'fit_intercept': True,
+                'max_iter': 100}
