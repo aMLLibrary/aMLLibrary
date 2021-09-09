@@ -18,7 +18,6 @@ import copy
 import os
 import warnings
 
-import eli5
 import xgboost as xgb
 
 import model_building.experiment_configuration as ec
@@ -86,14 +85,8 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
             warnings.simplefilter("ignore")
             self._regressor.fit(xdata, ydata)
         self._logger.debug("---Model built")
-
-        # Da simone
-        expl = eli5.xgboost.explain_weights_xgboost(self._regressor, top=None)  # feature_names= XXX self.feature_names XXX
-        expl_weights = eli5.format_as_text(expl)
-        self._logger.debug("---Features Importance Computed")  # OK
-        target = open(os.path.join(self._experiment_directory, "explanations.txt"), 'w')
-        target.write(expl_weights)
-        target.close()
+        for key, val in self.get_weights_dict().items():
+            self._logger.debug("The weight for %s is %f", key, val)
 
     def compute_estimations(self, rows):
         """
@@ -114,11 +107,7 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         return self._regressor.predict(xdata)
 
     def print_model(self):
-        weights = self._regressor.get_booster().get_fscore()
-        weights_sum = sum(weights.values())
-        for key in weights:
-            weights[key] /= weights_sum
-        return "".join(("XGBoost weights: ", str(weights)))
+        return "".join(("XGBoost weights: ", str(self.get_weights_dict())))
 
     def initialize_regressor(self):
         if not getattr(self, '_hyperparameters', None):
@@ -138,3 +127,10 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         for key in ['max_depth', 'min_child_weight', 'n_estimators']:
             new_hypers[key] = int(new_hypers[key])
         return new_hypers
+
+    def get_weights_dict(self):
+        weights = self._regressor.get_booster().get_fscore()
+        weights_sum = sum(weights.values())
+        for key in weights:
+            weights[key] /= weights_sum
+        return weights
