@@ -131,14 +131,15 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
             self._sfs.k_features = (1,xdata.shape[1])
         # Perform feature selection
         self._sfs.fit(xdata, ydata)
-        x_columns = list(self._sfs.k_feature_names_)
-        self._logger.debug("Selected features: %s", str(x_columns))
+        x_cols = list(self._sfs.k_feature_names_)
+        self._logger.debug("Selected features: %s", str(x_cols))
         # Use the selected features to retrain the regressor, after restoring column names
         filtered_xdata = self._sfs.transform(xdata)  # is an np.array
-        filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_columns)
-        self._regression_inputs.x_columns = x_columns
+        filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_cols)
+        self._regression_inputs.x_columns = x_cols
         self._wrapped_experiment_configuration._regression_inputs.x_columns = self._regression_inputs.x_columns
         self._wrapped_experiment_configuration.get_regressor().fit(filtered_xdata, ydata)
+        # ^ TODO and similar
 
     def compute_estimations(self, rows):
         """
@@ -175,6 +176,21 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
     def get_default_parameters(self):
         return self._wrapped_experiment_configuration.get_default_parameters()
 
+    def get_x_columns(self):
+        """
+        Return
+        ------
+        list of str:
+            the columns used in the regression
+        """
+        return self._wrapped_experiment_configuration.get_x_columns()
+
+    def set_x_columns(self, x_cols):
+        super().set_x_columns(x_cols)
+        self._wrapped_experiment_configuration.set_x_columns(x_cols)
+        # self._regression_inputs.x_columns = x_cols
+        # self._wrapped_experiment_configuration._regression_inputs.x_columns = x_cols
+
 
 
 class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
@@ -187,7 +203,6 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
             self._hyperopt_save_interval = campaign_configuration['General']['hyperopt_save_interval']
         else:
             self._hyperopt_save_interval = 0
-            # self._hyperopt_save_interval = int(1 + self._hyperopt_max_evals / 2)
         self._hyperopt_trained = False
 
 
@@ -272,6 +287,18 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
     def get_default_parameters(self):
         return self._wrapped_experiment_configuration.get_default_parameters()
 
+    def get_x_columns(self):
+        """
+        Return
+        ------
+        list of str:
+            the columns used in the regression
+        """
+        return self._wrapped_experiment_configuration.get_x_columns()
+
+    def set_x_columns(self, x_cols):
+        self._wrapped_experiment_configuration.set_x_columns(x_cols)
+
     def _parse_prior(self, param_name, prior_ini):
         try:
             prior_type, prior_args_strg = prior_ini.replace(' ', '').replace(')', '').split('(')
@@ -326,7 +353,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         """
         return "".join(("Optimal hyperparameter(s) found with hyperopt: ",
                         str(self._wrapped_experiment_configuration._hyperparameters),
-                        "\nSelected features: ", str(self._regression_inputs.x_columns), "\n",
+                        "\nSelected features: ", str(self.get_x_columns()), "\n",
                         self._wrapped_experiment_configuration.print_model()))
 
     def _train(self):

@@ -82,7 +82,7 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
-        for idx, col_name in enumerate(self._regression_inputs.x_columns):
+        for idx, col_name in enumerate(self.get_x_columns()):
             self._logger.debug("The coefficient for %s is %f", col_name, self._regressor.coef_[idx])
 
     def compute_estimations(self, rows):
@@ -107,7 +107,7 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         """
         ret_string = ""
         coefficients = self._regressor.coef_
-        for column, coefficient in zip(self._regression_inputs.x_columns, coefficients):
+        for column, coefficient in zip(self.get_x_columns(), coefficients):
             if ret_string != "":
                 ret_string = ret_string + " + "
             ret_string = ret_string + "(" + str(coefficient) + "*" + column + ")"

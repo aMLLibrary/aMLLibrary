@@ -398,6 +398,9 @@ class ExperimentConfiguration(abc.ABC):
         """
         return copy.deepcopy(self._regression_inputs.x_columns)
 
+    def set_x_columns(self, x_cols):
+        self._regression_inputs.x_columns = x_cols
+
     def print_model(self):
         """
         Method which prints the representation of the generated model as an empty string when the subclass does not override this method
