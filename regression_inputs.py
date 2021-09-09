@@ -53,7 +53,7 @@ class RegressionInputs:
         Generates the two pandas data frame with x_columns and y
 
     """
-    def __init__(self, data, inputs_split, x_columns, y_column):
+    def __init__(self, data, inputs_split, x_cols, y_column):
         """
         Parameters
         data: dataframe
@@ -62,7 +62,7 @@ class RegressionInputs:
         inputs_split: map of str to list of integers
             How the input is split. Key is the type of set (e.g., training, cv1, validation), value is the list of rows beloning to that set
 
-        x_columns: list of strings
+        x_cols: list of strings
             The labels of the columns of the data frame to be used to train the model
 
         y_column: string
@@ -70,7 +70,7 @@ class RegressionInputs:
         """
         self.data = data
         self.inputs_split = inputs_split
-        self.x_columns = x_columns
+        self.x_columns = x_cols
         self.scalers = {}
         self.y_column = y_column
         self.scaled_columns = []
