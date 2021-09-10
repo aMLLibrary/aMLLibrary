@@ -72,7 +72,9 @@ class ModelBuilding:
 
     def process(self, campaign_configuration, regression_inputs, processes_number):
         """
-        Perform the actual regression
+        Perform the actual regression and prints out results
+
+        Regression results, including description of the best model and its performance metrics, are both printed on screen and saved to the results.txt file
 
         Parameters
         ----------
@@ -152,7 +154,7 @@ class ModelBuilding:
             # Set training set
             best_conf.set_training_data(all_data)
 
-            # Train
+            # Train and evaluate by several metrics
             best_conf.train()
             best_conf.evaluate()
             self._logger.info("Validation metrics on full dataset for %s:", technique)
