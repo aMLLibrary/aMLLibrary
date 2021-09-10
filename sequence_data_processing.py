@@ -216,7 +216,7 @@ class SequenceDataProcessing:
 
     def load_campaign_configuration(self):
         """
-        Load the campaign configuration from config file named _campaign_configuration.ini and put all the information into a dictionary
+        Load the campaign configuration from the self.conf member, a ConfigParser object, and store all information into a member dictionary called self._campaign_configuration
         """
 
         self._campaign_configuration = {}
