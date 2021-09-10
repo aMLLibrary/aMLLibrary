@@ -112,7 +112,7 @@ class MultiExpConfsGenerator(ExpConfsGenerator):
     Attributes
     ----------
     generators: dict of str: ExpConfsGenerator
-        The ExpConfsGenerator to be used
+        The ExpConfsGenerator objects to be used
 
     Methods
     -------
@@ -131,7 +131,7 @@ class MultiExpConfsGenerator(ExpConfsGenerator):
             The seed to be used in random based activities
 
         generators: dict of str: ExpConfsGenerator
-            The ExpConfsGenerator to be used
+            The ExpConfsGenerator objects to be used
         """
         assert generators
         super().__init__(campaign_configuration, seed)
@@ -141,6 +141,20 @@ class MultiExpConfsGenerator(ExpConfsGenerator):
         raise NotImplementedError()
 
     def _get_deep_copy_parameters(self):
+        """
+        Returns deep copy of relevant parameters, but with a different random seed
+
+        Returns
+        ----------
+        campaign_configuration: dict of str: dict of str: str
+            The set of options specified by the user though command line and campaign configuration files
+
+        seed: integer
+            A randomized seed to be used in random based activities
+
+        generators: dict of str: ExpConfsGenerator
+            The ExpConfsGenerator objects used
+        """
         campaign_configuration = self._campaign_configuration
         seed = self._random_generator.random()
         generators = copy.deepcopy(self._generators)
