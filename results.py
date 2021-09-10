@@ -272,13 +272,21 @@ class Results:
                 if "hp_selection" not in run_tec_conf_set[run][technique][configuration]:
                     for set_name in set_names:
                         run_tec_conf_set[run][technique][configuration][set_name] = 0
+                        run_tec_conf_set[run][technique][configuration]["rmses"][set_name] = 0
+                        run_tec_conf_set[run][technique][configuration]["r2s"][set_name] = 0
                 for set_name in set_names:
-                    run_tec_conf_set[run][technique][configuration][set_name] = run_tec_conf_set[run][technique][configuration][set_name] + (conf.mapes[set_name] / (folds * folds))
+                    run_tec_conf_set[run][technique][configuration][set_name] += (conf.mapes[set_name] / (folds * folds))
+                    run_tec_conf_set[run][technique][configuration]["rmses"][set_name] += (conf.rmses[set_name] / (folds * folds))
+                    run_tec_conf_set[run][technique][configuration]["r2s"][set_name] += (conf.r2s[set_name] / (folds * folds))
                 if configuration not in run_efold_tec_conf_set[run][ext_fold][technique]:
                     for set_name in set_names:
                         run_efold_tec_conf_set[run][ext_fold][technique][configuration][set_name] = 0
+                        run_efold_tec_conf_set[run][ext_fold][technique][configuration]["rmses"][set_name] = 0
+                        run_efold_tec_conf_set[run][ext_fold][technique][configuration]["r2s"][set_name] = 0
                 for set_name in set_names:
-                    run_efold_tec_conf_set[run][ext_fold][technique][configuration][set_name] = run_efold_tec_conf_set[run][ext_fold][technique][configuration][set_name] + (conf.mapes[set_name] / (folds * folds))
+                    run_efold_tec_conf_set[run][ext_fold][technique][configuration][set_name] += (conf.mapes[set_name] / (folds * folds))
+                    run_efold_tec_conf_set[run][ext_fold][technique][configuration]["rmses"][set_name] += (conf.rmses[set_name] / (folds * folds))
+                    run_efold_tec_conf_set[run][ext_fold][technique][configuration]["r2s"][set_name] += (conf.r2s[set_name] / (folds * folds))
 
             # Select the best configuration for each technique in each external fold across different internal folders
             run_efold_tec_best_conf = recursivedict()
@@ -297,8 +305,12 @@ class Results:
                         if "hp_selection" not in run_tec_set[run][tec]:
                             for set_name in set_names:
                                 run_tec_set[run][tec][set_name] = 0
+                                run_tec_set[run][tec]["rmses"][set_name] = 0
+                                run_tec_set[run][tec]["r2s"][set_name] = 0
                         for set_name in set_names:
-                            run_tec_set[run][tec][set_name] = run_tec_set[run][tec][set_name] + run_efold_tec_best_conf[run][efold][tec][1][set_name]
+                            run_tec_set[run][tec][set_name] += run_efold_tec_best_conf[run][efold][tec][1][set_name]
+                            run_tec_set[run][tec]["rmses"][set_name] += run_efold_tec_best_conf[run][efold][tec][1]["rmses"][set_name]
+                            run_tec_set[run][tec]["r2s"][set_name] += run_efold_tec_best_conf[run][efold][tec][1]["r2s"][set_name]
 
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
@@ -312,7 +324,13 @@ class Results:
                     if not overall_run_best or run_tec_set[run][technique]["hp_selection"] < overall_run_best[1]["hp_selection"]:
                         overall_run_best = (technique, run_tec_set[run][technique])
 
-                self._logger.info("---Overall best result is %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", overall_run_best[0], overall_run_best[1]["training"], overall_run_best[1]["hp_selection"], overall_run_best[1]["validation"])
+                self._logger.info("<--Overall best result is %s", overall_run_best[0])
+                self._logger.info("Metrics for best result:")
+                self._logger.info("-->")
+                self._logger.info("MAPE: (Training %f - HP Selection %f) - Validation %f", overall_run_best[1]["training"], overall_run_best[1]["hp_selection"], overall_run_best[1]["validation"])
+                self._logger.info("RMSE: (Training %f - HP Selection %f) - Validation %f", overall_run_best[1]["rmses"]["training"], overall_run_best[1]["rmses"]["hp_selection"], overall_run_best[1]["rmses"]["validation"])
+                self._logger.info("R^2 : (Training %f - HP Selection %f) - Validation %f", overall_run_best[1]["r2s"]["training"], overall_run_best[1]["r2s"]["hp_selection"], overall_run_best[1]["r2s"]["validation"])
+                self._logger.info("<--")
 
         else:
             self._logger.error("Unexpected combination: %s", str((validation, hp_selection)))
