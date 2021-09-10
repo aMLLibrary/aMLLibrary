@@ -115,7 +115,7 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
         filtered_xdata = self._sfs.transform(xdata)  # is an np.array
         filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_cols)
         self.set_x_columns(x_cols)
-        self._wrapped_experiment_configuration.get_regressor().fit(filtered_xdata, ydata)  # TODO _train() instead?
+        self._wrapped_experiment_configuration.get_regressor().fit(filtered_xdata, ydata)
 
     def compute_estimations(self, rows):
         """
@@ -140,7 +140,7 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
         """
         Print the model
         """
-        return "".join(("Selected features: ", str(self._sfs.k_feature_names_), "\n",
+        return "".join(("Selected features: ", str(self.get_x_columns()), "\n",
                         self._wrapped_experiment_configuration.print_model()))
 
     def initialize_regressor(self):
