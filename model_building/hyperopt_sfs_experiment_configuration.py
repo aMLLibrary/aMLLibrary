@@ -223,7 +223,7 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         for par in params:
             if par not in ['X', 'y'] and par not in best_params:
                 best_params[par] = params[par]
-        best_params = self._wrapped_experiment_configuration.fix_hyperparameters(best_params)
+        best_params = self._wrapped_experiment_configuration.repair_hyperparameters(best_params)
         return best_params
 
     def _train(self):
