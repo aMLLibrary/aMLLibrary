@@ -152,7 +152,7 @@ class Results:
                 self._logger.info("-->")
                 self._logger.info("MAPE: (Training %f - HP Selection %f) - Validation %f", overall_run_best.mapes["training"], overall_run_best.mapes["hp_selection"], overall_run_best.mapes["validation"])
                 self._logger.info("RMSE: (Training %f - HP Selection %f) - Validation %f", overall_run_best.rmses["training"], overall_run_best.rmses["hp_selection"], overall_run_best.rmses["validation"])
-                self._logger.info("R^2:  (Training %f - HP Selection %f) - Validation %f", overall_run_best.r2s  ["training"], overall_run_best.r2s  ["hp_selection"], overall_run_best.r2s  ["validation"])
+                self._logger.info("R^2 : (Training %f - HP Selection %f) - Validation %f", overall_run_best.r2s  ["training"], overall_run_best.r2s  ["hp_selection"], overall_run_best.r2s  ["validation"])
                 self._logger.info("<--")
 
         elif (validation, hp_selection) in {("KFold", "All"), ("KFold", "HoldOut")}:
@@ -174,7 +174,7 @@ class Results:
                 if technique not in run_fold_tec_best_conf[run][fold] or conf.mapes["hp_selection"] < run_fold_tec_best_conf[run][fold][technique].mapes["hp_selection"]:
                     run_fold_tec_best_conf[run][fold][technique] = conf
 
-            # Aggregate different folds (only the value of the mapes)
+            # Aggregate different folds (only the value of the metrics)
             run_tec_set = recursivedict()
             for run in run_fold_tec_best_conf:
                 for fold in run_fold_tec_best_conf[run]:
@@ -184,6 +184,8 @@ class Results:
                                 run_tec_set[run][tec][set_name] = 0
                         for set_name in set_names:
                             run_tec_set[run][tec][set_name] = run_fold_tec_best_conf[run][fold][tec].mapes[set_name]
+                            run_tec_set[run][tec]['rmses'][set_name] = run_fold_tec_best_conf[run][fold][tec].rmses[set_name]
+                            run_tec_set[run][tec]['r2s'][set_name] = run_fold_tec_best_conf[run][fold][tec].r2s[set_name]
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
                 self._logger.info("Printing results for run %s", str(run))
@@ -194,9 +196,15 @@ class Results:
 
                     # Compute which is the best technique
                     if not overall_run_best or run_tec_set[run][technique]["hp_selection"] < overall_run_best[1]["hp_selection"]:
-                        overall_run_best = (technique, run_tec_set[run][technique])
+                        overall_run_best = (technique, run_tec_set[run][technique], run_tec_set[run][technique]['rmses'], run_tec_set[run][technique]['r2s'])
 
-                self._logger.info("---Overall best result is %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", overall_run_best[0], overall_run_best[1]["training"], overall_run_best[1]["hp_selection"], overall_run_best[1]["validation"])
+                self._logger.info("<--Overall best result is %s", overall_run_best[0])
+                self._logger.info("Metrics for best result:")
+                self._logger.info("-->")
+                self._logger.info("MAPE: (Training %f - HP Selection %f) - Validation %f", overall_run_best[1]["training"], overall_run_best[1]["hp_selection"], overall_run_best[1]["validation"])
+                self._logger.info("RMSE: (Training %f - HP Selection %f) - Validation %f", overall_run_best[2]["training"], overall_run_best[2]["hp_selection"], overall_run_best[2]["validation"])
+                self._logger.info("R^2 : (Training %f - HP Selection %f) - Validation %f", overall_run_best[3]["training"], overall_run_best[3]["hp_selection"], overall_run_best[3]["validation"])
+                self._logger.info("<--")
 
             # Overall best will contain as first argument the technique with the best (across runs) average (across folds) mape on validation; now we consider on all the runs and on all the folds the configuraiton of this technique with best validation mape
 
