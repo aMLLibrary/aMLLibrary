@@ -114,10 +114,14 @@ class Results:
 
     def get_bests(self):
         """
-        Identify for each considered technique, the configuration with the best validation MAPE
+        Identify for each considered technique, the configuration with the best validation MAPE, also recover all other metrics, and print the results
 
         Returns
         -------
+        an ExperimentConfiguration instance
+            the best-performing experiment configuration in terms of MAPE
+        a Technique(Enum) instance
+            Enum object indicating the technique of the best-performing experiment configuration (see experiment_configuration.py)
         """
         set_names = ["training", "hp_selection", "validation"]
         run_tec_conf_set = recursivedict()
@@ -261,7 +265,7 @@ class Results:
 
         elif (validation, hp_selection) in {("KFold", "KFold")}:
             folds = float(self._campaign_configuration['General']['folds'])
-            # For each run, for each external fold, for each technique, the aggregated mape
+            # For each run, for each external fold, for each technique, the aggregated metrics
             run_efold_tec_conf_set = recursivedict()
 
             # Hyperparameter search aggregating over internal folders
