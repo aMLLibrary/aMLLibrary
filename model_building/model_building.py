@@ -154,7 +154,12 @@ class ModelBuilding:
             # Train
             best_conf.train()
             best_conf.evaluate()
-            self._logger.info("Validation MAPE on full dataset for %s: %s", technique, str(best_conf.mapes["validation"]))
+            self._logger.info("Validation metrics on full dataset for %s:", technique)
+            self._logger.info("-->")
+            self._logger.info("MAPE: %s", str(best_conf.mapes["validation"]))
+            self._logger.info("RMSE: %s", str(best_conf.rmses["validation"]))
+            self._logger.info("R^2 : %s", str(best_conf.r2s  ["validation"]))
+            self._logger.info("<--")
 
             # Build the regressor
             best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)
