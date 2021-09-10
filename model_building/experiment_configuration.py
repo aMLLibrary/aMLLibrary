@@ -35,7 +35,7 @@ import custom_logger  # noqa: E402
 
 class Technique(Enum):
     """
-    Enum class listing the different regression techniques"
+    Enum class listing the different regression techniques
     """
     NONE = 0
     LR_RIDGE = 1
