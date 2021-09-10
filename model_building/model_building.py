@@ -156,9 +156,9 @@ class ModelBuilding:
             best_conf.evaluate()
             self._logger.info("Validation metrics on full dataset for %s:", technique)
             self._logger.info("-->")
-            self._logger.info("MAPE: %s", str(best_conf.mapes["validation"]))
-            self._logger.info("RMSE: %s", str(best_conf.rmses["validation"]))
-            self._logger.info("R^2 : %s", str(best_conf.r2s  ["validation"]))
+            self._logger.info("MAPE: %f", best_conf.mapes["validation"])
+            self._logger.info("RMSE: %f", best_conf.rmses["validation"])
+            self._logger.info("R^2 : %f", best_conf.r2s  ["validation"])
             self._logger.info("<--")
 
             # Build the regressor
