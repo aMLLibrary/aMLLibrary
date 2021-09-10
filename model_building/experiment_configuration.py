@@ -55,7 +55,7 @@ enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST:
 
 def mean_absolute_percentage_error(y_true, y_pred):
     """
-    Compute the MAPE
+    Compute the Mean Absolute Percentage Error (MAPE) of the given inputs
 
     Parameters
     ----------
@@ -108,6 +108,12 @@ class ExperimentConfiguration(abc.ABC):
     mapes: dict of str: float
         The MAPE obtained on the different sets
 
+    rmses: dict of str: float
+        The Root Mean Squared Errors (RMSE) obtained on the different sets
+
+    r2s: dict of str: float
+        The R^2 scores obtained on the different sets
+
     _experiment_directory: str
         The directory where output of this experiment has to be stored
 
@@ -121,6 +127,12 @@ class ExperimentConfiguration(abc.ABC):
 
     _train()
         Actual internal implementation of the training process
+
+    initialize_regressor()
+        Initializes the regressor object for the experiments
+
+    get_default_parameters()
+        Get a dictionary with all technique parameters with default values
 
     evaluate()
         Compute the MAPE on the different input dataset
@@ -158,8 +170,14 @@ class ExperimentConfiguration(abc.ABC):
     get_hyperparameters()
         Return the values of the hyperparameters associated with this experiment configuration
 
+    repair_hyperparameters()
+        Repair hyperparameter values which cause the regressor to raise errors
+
     get_x_columns()
         Return the columns used in the regression
+
+    set_x_columns()
+        Set the columns to be used in the regression
 
     print_model()
         Prints in readable form the trained model; at the moment is not pure virtual since not all the subclasses implement it
@@ -202,12 +220,13 @@ class ExperimentConfiguration(abc.ABC):
             and not isinstance(self, hsec.HyperoptExperimentConfiguration)
             and not isinstance(self, hsec.HyperoptSFSExperimentConfiguration)
            ):
+            # This is not a wrapper of another experiment: create experiment directory
             assert not os.path.exists(self._experiment_directory), self._experiment_directory
             os.makedirs(self._experiment_directory)
 
     def train(self):
         """
-        Builid the model with the experiment configuration represented by this object
+        Build the model with the experiment configuration represented by this object
 
         This public method wraps the private method which performs the actual work. In doing this it controls the start/stop of logging on file
         """
@@ -227,18 +246,24 @@ class ExperimentConfiguration(abc.ABC):
     @abc.abstractmethod
     def initialize_regressor(self):
         """
+        Initialize the regressor object for the experiments
+
         The actual implementation is demanded to the subclasses
         """
 
     @abc.abstractmethod
     def get_default_parameters(self):
         """
+        Get a dictionary with all technique parameters with default values
+
         The actual implementation is demanded to the subclasses
         """
 
     def evaluate(self):
         """
         Validate the model, i.e., compute the MAPE and other metrics on the validation set, hp selection, training
+
+        Values are stored in the appropriate class members
         """
         self._start_file_logger()
 
@@ -418,11 +443,26 @@ class ExperimentConfiguration(abc.ABC):
         """
         return copy.deepcopy(self._hyperparameters)
 
-    def fix_hyperparameters(self, hypers):
+    def repair_hyperparameters(self, hypers):
+        """
+        Repair and return hyperparameter values which cause the regressor to raise errors
+
+        Parameters
+        ----------
+        hypers: dict of str: object
+            the hyperparameters to be repaired
+
+        Return
+        ------
+        dict of str: object
+            the repaired hyperparameters
+        """
         return copy.deepcopy(hypers)
 
     def get_x_columns(self):
         """
+        Return the columns used in the regression
+
         Return
         ------
         list of str:
@@ -431,11 +471,14 @@ class ExperimentConfiguration(abc.ABC):
         return copy.deepcopy(self._regression_inputs.x_columns)
 
     def set_x_columns(self, x_cols):
+        """
+        Set the columns to be used in the regression
+        """
         self._regression_inputs.x_columns = x_cols
 
     def print_model(self):
         """
-        Method which prints the representation of the generated model as an empty string when the subclass does not override this method
+        Method which prints the representation of the generated model, as an empty string when the subclass does not override this method
         """
         return ""
 
