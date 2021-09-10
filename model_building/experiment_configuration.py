@@ -22,6 +22,7 @@ from enum import Enum
 
 import numpy as np
 import matplotlib
+from sklearn.metrics import mean_squared_error, r2_score
 
 matplotlib.use('Agg')
 # pylint: disable=wrong-import-position
@@ -185,6 +186,8 @@ class ExperimentConfiguration(abc.ABC):
         self._signature = self._compute_signature(prefix)
         self._logger = custom_logger.getLogger(self.get_signature_string())
         self.mapes = {}
+        self.rmses = {}
+        self.r2s = {}
         self._regressor = None
 
         # Create experiment directory
@@ -234,22 +237,29 @@ class ExperimentConfiguration(abc.ABC):
 
     def evaluate(self):
         """
-        Validate the model, i.e., compute the MAPE on the validation set, hp selection, training
+        Validate the model, i.e., compute the MAPE and other metrics on the validation set, hp selection, training
         """
         self._start_file_logger()
 
         for set_name in ["validation", "hp_selection", "training"]:
             rows = self._regression_inputs.inputs_split[set_name]
-            self._logger.debug("Computing MAPE on %s set", set_name)
+            self._logger.debug("Computing metrics on %s set", set_name)
             predicted_y = self.compute_estimations(rows)
             real_y = self._regression_inputs.data.loc[rows, self._regression_inputs.y_column].values.astype(np.float64)
             if self._regression_inputs.y_column in self._regression_inputs.scalers:
                 y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
                 predicted_y = y_scaler.inverse_transform(predicted_y)
                 real_y = y_scaler.inverse_transform(real_y)
-            self.mapes[set_name] = mean_absolute_percentage_error(real_y, predicted_y)
             self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
+            # Mean Absolute Percentage Error
+            self.mapes[set_name] = mean_absolute_percentage_error(real_y, predicted_y)
             self._logger.debug("MAPE on %s set is %f", set_name, self.mapes[set_name])
+            # Root Mean Squared Error
+            self.rmses[set_name] = mean_squared_error(real_y, predicted_y, squared=False)
+            self._logger.debug("RMSE on %s set is %f", set_name, self.rmses[set_name])
+            # R-squared metric
+            self.r2s[set_name] = r2_score(real_y, predicted_y)
+            self._logger.debug("R^2  on %s set is %f", set_name, self.r2s[set_name])
 
         self._stop_file_logger()
 
