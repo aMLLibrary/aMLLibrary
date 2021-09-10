@@ -222,8 +222,12 @@ class Results:
                 if "hp_selection" not in run_tec_conf_set[run][technique][configuration]:
                     for set_name in set_names:
                         run_tec_conf_set[run][technique][configuration][set_name] = 0
+                        run_tec_conf_set[run][technique][configuration]["rmses"][set_name] = 0
+                        run_tec_conf_set[run][technique][configuration]["r2s"][set_name] = 0
                 for set_name in set_names:
-                    run_tec_conf_set[run][technique][configuration][set_name] = run_tec_conf_set[run][technique][configuration][set_name] + conf.mapes[set_name] / folds
+                    run_tec_conf_set[run][technique][configuration][set_name] += conf.mapes[set_name] / folds
+                    run_tec_conf_set[run][technique][configuration]["rmses"][set_name] += conf.rmses[set_name] / folds
+                    run_tec_conf_set[run][technique][configuration]["r2s"][set_name] += conf.r2s[set_name] / folds
 
             # Select the best configuration for each technique across different folders
             run_tec_best_conf = recursivedict()
@@ -246,7 +250,13 @@ class Results:
                     if not overall_run_best or temp[1]["hp_selection"] < overall_run_best[2]["hp_selection"]:
                         overall_run_best = (technique, temp[0], temp[1])
 
-                self._logger.info("---Overall best result is %s %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", overall_run_best[0], overall_run_best[1], overall_run_best[2]["training"], overall_run_best[2]["hp_selection"], overall_run_best[2]["validation"])
+                self._logger.info("<--Overall best result is %s %s", overall_run_best[0], overall_run_best[1])
+                self._logger.info("Metrics for best result:")
+                self._logger.info("-->")
+                self._logger.info("MAPE: (Training %f - HP Selection %f) - Validation %f", overall_run_best[2]["training"], overall_run_best[2]["hp_selection"], overall_run_best[2]["validation"])
+                self._logger.info("RMSE: (Training %f - HP Selection %f) - Validation %f", overall_run_best[2]["rmses"]["training"], overall_run_best[2]["rmses"]["hp_selection"], overall_run_best[2]["rmses"]["validation"])
+                self._logger.info("R^2 : (Training %f - HP Selection %f) - Validation %f", overall_run_best[2]["r2s"]["training"], overall_run_best[2]["r2s"]["hp_selection"], overall_run_best[2]["r2s"]["validation"])
+                self._logger.info("<--")
 
         elif (validation, hp_selection) in {("KFold", "KFold")}:
             folds = float(self._campaign_configuration['General']['folds'])
