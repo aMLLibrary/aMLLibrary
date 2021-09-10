@@ -51,6 +51,28 @@ enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST:
                                Technique.STEPWISE: 'Stepwise'}
 
 
+def mean_absolute_percentage_error(y_true, y_pred):
+    """
+    Compute the MAPE
+
+    Parameters
+    ----------
+    y_true: numpy.array
+        The real values
+
+    y_pred: numpy.array
+        The predicted value
+
+    Return
+    ------
+    float
+        The computed MAPE
+    """
+    y_true, y_pred = np.array(y_true), np.array(y_pred)
+    return np.mean(np.abs((y_true - y_pred) / y_true))
+
+
+
 class ExperimentConfiguration(abc.ABC):
     """
     Abstract class representing a single experiment configuration to be performed
@@ -225,8 +247,7 @@ class ExperimentConfiguration(abc.ABC):
                 y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
                 predicted_y = y_scaler.inverse_transform(predicted_y)
                 real_y = y_scaler.inverse_transform(real_y)
-            difference = real_y - predicted_y
-            self.mapes[set_name] = np.mean(np.abs(np.divide(difference, real_y)))
+            self.mapes[set_name] = mean_absolute_percentage_error(real_y, predicted_y)
             self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
             self._logger.debug("MAPE on %s set is %f", set_name, self.mapes[set_name])
 

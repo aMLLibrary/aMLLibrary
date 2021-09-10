@@ -31,28 +31,6 @@ import pickle
 import model_building.experiment_configuration as ec
 
 
-def mean_absolute_percentage_error(y_true, y_pred):
-    """
-    Compute the MAPE
-
-    Parameters
-    ----------
-    y_true: numpy.array
-        The real values
-
-    y_pred: numpy.array
-        The predicted value
-
-    Return
-    ------
-    float
-        The computed MAPE
-    """
-    y_true, y_pred = np.array(y_true), np.array(y_pred)
-    return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
-
-
-
 class SFSExperimentConfiguration(ec.ExperimentConfiguration):
     """
     Class representing a single experiment configuration for SFS coupled with a generic regression
@@ -123,7 +101,7 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         verbose = 2 if self._campaign_configuration['General']['debug'] else 0
-        self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self._wrapped_experiment_configuration.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
+        self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self._wrapped_experiment_configuration.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(ec.mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         # set the maximum number of required features to the minimum between itself and the number of existing features
         if self._campaign_configuration['FeatureSelection']['max_features'] > xdata.shape[1]:
