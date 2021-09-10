@@ -147,8 +147,13 @@ class Results:
                     # Compute which is the best technique
                     if not overall_run_best or temp.mapes["hp_selection"] < overall_run_best.mapes["hp_selection"]:
                         overall_run_best = temp
-                best_model_description = overall_run_best.print_model()
-                self._logger.info("<--Overall best result is %s %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", overall_run_best.get_signature()[3:], "(" + best_model_description + ")" if best_model_description else "", overall_run_best.mapes["training"], overall_run_best.mapes["hp_selection"], overall_run_best.mapes["validation"])
+                self._logger.info("<--Overall best result is %s", overall_run_best.get_signature()[3:])
+                self._logger.info("Metrics for best result:")
+                self._logger.info("-->")
+                self._logger.info("MAPE: (Training %f - HP Selection %f) - Validation %f", overall_run_best.mapes["training"], overall_run_best.mapes["hp_selection"], overall_run_best.mapes["validation"])
+                self._logger.info("RMSE: (Training %f - HP Selection %f) - Validation %f", overall_run_best.rmses["training"], overall_run_best.rmses["hp_selection"], overall_run_best.rmses["validation"])
+                self._logger.info("R^2:  (Training %f - HP Selection %f) - Validation %f", overall_run_best.r2s  ["training"], overall_run_best.r2s  ["hp_selection"], overall_run_best.r2s  ["validation"])
+                self._logger.info("<--")
 
         elif (validation, hp_selection) in {("KFold", "All"), ("KFold", "HoldOut")}:
             folds = float(self._campaign_configuration['General']['folds'])
