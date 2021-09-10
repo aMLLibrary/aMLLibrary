@@ -294,31 +294,9 @@ class SequenceDataProcessing:
                 regressor = pickle.load(pickle_file)
                 pickle_file.close()
                 predicted_y = regressor.predict(check_data)
-                mape = self.compute_mape(real_y, predicted_y)
+                mape = ec.mean_absolute_percentage_error(real_y, predicted_y)
                 self._logger.info("---MAPE of %s: %s", technique, str(mape))
 
             self._logger.info("<--Performed self check")
 
         return regressor
-
-    def compute_mape(self, y_real, y_pred):
-        """
-        Returns the Mean Absolute Percentage Error (MAPE) of y_pred wrt y_real
-
-        Parameters
-        ----------
-        y_real: numpy.array
-            Vector of original values for the dependent variable
-
-        y_pred: numpy.array
-            Vector of predicted values for the dependent variable
-
-
-        Returns
-        -------
-        mape
-            The MAPE of y_pred with respect to y_real
-        """
-        diff = y_real - y_pred
-        mape = numpy.mean(numpy.abs(numpy.divide(diff, y_real)))
-        return mape
