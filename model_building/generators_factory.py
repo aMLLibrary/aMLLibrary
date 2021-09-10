@@ -33,6 +33,8 @@ class GeneratorsFactory:
     The levels of the tree of the generators (going from the leaves to the root) are:
         - TechniqueExpConfsGenerator: these are the generators which actually generate the ExperimentConfigurations
         - SFSExpConfsGenerator (optional): columns (independently for each ExperimentConfiguration) are filtered using SFS
+        - HyperoptExpConfsGenerator (optional): hyperparameters will be optimized with the Hyperopt library starting from a prior distribution(s) instead of using a grid search approach
+        - HyperoptSFSExpConfsGenerator (optional): combines the above two procedures
         - MultiTechniquesExpConfsGenerator: wrap together generators of the single techniques
         - NormalizationExpConfsGenerator (optional): normalize the data according to the values of the training set
         - SelectionValidationExpConfsGenerator: extract the hp_selection set from training set
@@ -88,6 +90,7 @@ class GeneratorsFactory:
         # Add Hyperopt and/or SFS wrapper generators
         new_generators = {}
         if 'hyperparameter_tuning' in self._campaign_configuration['General'] and self._campaign_configuration['General']['hyperparameter_tuning'].lower() == 'hyperopt':
+            # Hyperopt was requested: choose between Hyperopt+SFS or pure Hyperopt
             if 'FeatureSelection' in self._campaign_configuration and "method" in self._campaign_configuration['FeatureSelection'] and self._campaign_configuration['FeatureSelection']['method'] == 'SFS':        
                 self._logger.info("Building Hyperopt-SFS generator")
                 for technique, generator in generators.items():
@@ -96,13 +99,14 @@ class GeneratorsFactory:
                 self._logger.info("Building Hyperopt generator")
                 for technique, generator in generators.items():
                     new_generators[technique] = ds.HyperoptExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
-        else:  # if Hyperopt was not requested
+        else:
+            # Hyperopt was not requested: choose between pure SFS or no additional wrapper
             if 'FeatureSelection' in self._campaign_configuration and "method" in self._campaign_configuration['FeatureSelection'] and self._campaign_configuration['FeatureSelection']['method'] == 'SFS':
                 self._logger.info("Building SFS generator")
                 for technique, generator in generators.items():
                     new_generators[technique] = ds.SFSExpConfsGenerator(generator, self._campaign_configuration, self._random_generator.random())
             else:
-                new_generators = generators  # no additional wrapper needed
+                new_generators = generators
         generators = new_generators
 
         # Wrap together different techniques
