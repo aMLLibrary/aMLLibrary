@@ -91,16 +91,12 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
 
     def compute_estimations(self, rows):
         """
-        Compute the estimations and the MAPE for runs in rows
+        Compute the predictions for data points indicated in rows estimated by the regressor
 
         Parameters
         ----------
-        rows: list of integer
-            The list of the input data to be considered
-
-        Returns
-        -------
-            The values predicted by the associated regressor
+        rows: list of integers
+            The set of rows to be considered
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         self._regressor.set_params(nthread=1)
@@ -111,12 +107,18 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         return "".join(("XGBoost weights: ", str(self.get_weights_dict())))
 
     def initialize_regressor(self):
+        """
+        Initialize the regressor object for the experiments
+        """
         if not getattr(self, '_hyperparameters', None):
             self._regressor = xgb.XGBRegressor()
         else:
             self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', n_jobs=1)
 
     def get_default_parameters(self):
+        """
+        Get a dictionary with all technique parameters with default values
+        """
         return {'learning_rate': 0.1,
                 'max_depth': 100,
                 'gamma': 0.25,
@@ -124,12 +126,28 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
                 'n_estimators': 500}
 
     def repair_hyperparameters(self, hypers):
+        """
+        Repair and return hyperparameter values which cause the regressor to raise errors
+
+        Parameters
+        ----------
+        hypers: dict of str: object
+            the hyperparameters to be repaired
+
+        Return
+        ------
+        dict of str: object
+            the repaired hyperparameters
+        """
         new_hypers = copy.deepcopy(hypers)
         for key in ['max_depth', 'min_child_weight', 'n_estimators']:
             new_hypers[key] = int(new_hypers[key])
         return new_hypers
 
     def get_weights_dict(self):
+        """
+        Return a dictionary containing the regressor's normalized importance weights for each feature
+        """
         weights = self._regressor.get_booster().get_fscore()
         weights_sum = sum(weights.values())
         for key in weights:

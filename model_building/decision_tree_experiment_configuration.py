@@ -102,6 +102,9 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         return self._regressor.predict(xdata)
 
     def initialize_regressor(self):
+        """
+        Initialize the regressor object for the experiments
+        """
         if not getattr(self, '_hyperparameters', None):
             self._regressor = dt.DecisionTreeRegressor()
         else:
@@ -112,6 +115,9 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
                                                        min_samples_leaf=self._hyperparameters['min_samples_leaf'])
 
     def get_default_parameters(self):
+        """
+        Get a dictionary with all technique parameters with default values
+        """
         return {'criterion': 'mse',
                 'max_depth': 3,
                 'max_features': 'auto',

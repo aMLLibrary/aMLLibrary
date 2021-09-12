@@ -88,21 +88,20 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
 
     def compute_estimations(self, rows):
         """
-        Compute the estimations and the MAPE for runs in rows
+        Compute the predictions for data points indicated in rows estimated by the regressor
 
         Parameters
         ----------
-        rows: list of integer
-            The list of the input data to be considered
-
-        Returns
-        -------
-            The values predicted by the associated regressor
+        rows: list of integers
+            The set of rows to be considered
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         return self._regressor.predict(xdata)
 
     def initialize_regressor(self):
+        """
+        Initialize the regressor object for the experiments
+        """
         if not getattr(self, '_hyperparameters', None):
             self._regressor = rf.RandomForestRegressor()
         else:
@@ -115,6 +114,9 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
                 min_samples_leaf=self._hyperparameters['min_samples_leaf'])
 
     def get_default_parameters(self):
+        """
+        Get a dictionary with all technique parameters with default values
+        """
         return {'n_estimators': 5,
                 'criterion': 'mse',
                 'max_depth': 3,

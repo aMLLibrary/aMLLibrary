@@ -364,7 +364,9 @@ class ExperimentConfiguration(abc.ABC):
     @abc.abstractmethod
     def compute_estimations(self, rows):
         """
-        Compute the estimations and the MAPE for runs in rows
+        Compute the predictions for data points indicated in rows estimated by the regressor
+
+        The actual implementation is demanded to the subclasses
 
         Parameters
         ----------
@@ -473,12 +475,17 @@ class ExperimentConfiguration(abc.ABC):
     def set_x_columns(self, x_cols):
         """
         Set the columns to be used in the regression
+
+        Parameters
+        ----------
+        x_cols: list of str
+            the columns to be used in the regression
         """
         self._regression_inputs.x_columns = x_cols
 
     def print_model(self):
         """
-        Method which prints the representation of the generated model, as an empty string when the subclass does not override this method
+        Print the representation of the generated model, as an empty string when the subclass does not override this method
         """
         return ""
 

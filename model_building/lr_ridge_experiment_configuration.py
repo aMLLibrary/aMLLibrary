@@ -88,16 +88,12 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
 
     def compute_estimations(self, rows):
         """
-        Compute the estimations and the MAPE for runs in rows
+        Compute the predictions for data points indicated in rows estimated by the regressor
 
         Parameters
         ----------
-        rows: list of integer
-            The list of the input data to be considered
-
-        Returns
-        -------
-            The values predicted by the associated regressor
+        rows: list of integers
+            The set of rows to be considered
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         return self._regressor.predict(xdata)
@@ -116,10 +112,16 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         return ret_string
 
     def initialize_regressor(self):
+        """
+        Initialize the regressor object for the experiments
+        """
         if not getattr(self, '_hyperparameters', None):
             self._regressor = lr.Ridge()
         else:
             self._regressor = lr.Ridge(alpha=self._hyperparameters['alpha'])
 
     def get_default_parameters(self):
+        """
+        Get a dictionary with all technique parameters with default values
+        """
         return {'alpha': 0.1}

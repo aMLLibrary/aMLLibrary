@@ -56,7 +56,7 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
         Compute the estimated values for a give set of data
 
     print_model()
-        Prints the model
+        Print the representation of the generated model
     """
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         """
@@ -120,16 +120,12 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
 
     def compute_estimations(self, rows):
         """
-        Compute the estimations and the MAPE for runs in rows
+        Compute the predictions for data points indicated in rows estimated by the regressor
 
         Parameters
         ----------
-        rows: list of integer
-            The list of the input data to be considered
-
-        Returns
-        -------
-            The values predicted by the associated regressor
+        rows: list of integers
+            The set of rows to be considered
         """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
         ret = self._wrapped_experiment_configuration.get_regressor().predict(xdata)
@@ -139,22 +135,33 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
 
     def print_model(self):
         """
-        Print the model
+        Print the representation of the generated model
         """
         return "".join(("Selected features: ", str(self.get_x_columns()), "\n",
                         self._wrapped_experiment_configuration.print_model()))
 
     def initialize_regressor(self):
+        """
+        Initialize the regressor object for the experiments
+        """
         self._wrapped_experiment_configuration.initialize_regressor()
 
     def get_regressor(self):
+        """
+        Return the regressor associated with this (wrapped) experiment configuration
+        """
         return self._wrapped_experiment_configuration.get_regressor()
 
     def get_default_parameters(self):
+        """
+        Get a dictionary with all technique parameters with default values
+        """
         return self._wrapped_experiment_configuration.get_default_parameters()
 
     def get_x_columns(self):
         """
+        Return the columns used in the regression
+
         Return
         ------
         list of str:
@@ -163,13 +170,27 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
         return self._wrapped_experiment_configuration.get_x_columns()
 
     def set_x_columns(self, x_cols):
+        """
+        Set the columns to be used in the regression
+
+        Parameters
+        ----------
+        x_cols: list of str
+            the columns to be used in the regression
+        """
         super().set_x_columns(x_cols)
         self._wrapped_experiment_configuration.set_x_columns(x_cols)
 
 
 
 class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
+    """
+    TODO
+    """
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
+        """
+        TODO
+        """
         self._wrapped_experiment_configuration = wrapped_experiment_configuration
         super().__init__(campaign_configuration, None, regression_inputs, prefix)
         self.technique = self._wrapped_experiment_configuration.technique
@@ -182,9 +203,39 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
 
 
     def _compute_signature(self, prefix):
+        """
+        Compute the signature associated with this experiment configuration
+
+        Parameters
+        ----------
+        prefix: list of str
+            The signature of this experiment configuration without considering hyperparameters
+
+        Returns
+        -------
+            The signature of the experiment
+        """
         return self._wrapped_experiment_configuration.get_signature()
 
     def _objective_function(self, params):
+        """
+        The objective function to be passed to Hyperopt for minimization
+
+        It is the cross-validation R^2 of the wrapped regressor
+
+        Parameters
+        ----------
+        params: dict of str: objects
+            dict containing regression data and model hyperparameters
+
+        Return
+        ------
+        loss: float
+            negative value of the objective function, i.e. a loss
+
+        status: str
+            status value to report that the computation was successful
+        """
         X, y = params['X'], params['y']
         del params['X'], params['y']
         self._wrapped_regressor.__init__(**params)
@@ -192,6 +243,24 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         return {'loss': -score, 'status': STATUS_OK}
 
     def _run_hyperopt(self, params):
+        """
+        Method that calls Hyperopt to find optimal hyperparameters
+
+        Hyperopt performs a maximum of hyperopt_max_evals round of Bayesian optimization.
+        Also, this method writes a Pickle object to a file every hyperopt_save_interval iterations as a checkpoint for fault tolerance.
+        The value of both of these parameters value is given as user input in the configuration file.
+        If the former is not given, or its value is 0, no Pickle checkpoint will be created.
+
+        Parameters
+        ----------
+        params: dict of str: object
+            dict containing either fixed values for hyperparameters, or Hyperopt prior objects for random hyperparameters
+
+        Return
+        ------
+        best_params: dict of str: object
+            the best hyperparameter configuration found by Hyperopt
+        """
         # Include datasets and temporarily disable output from fmin
         params['X'], params['y'] = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         logging.getLogger('hyperopt.tpe').propagate = False
@@ -227,10 +296,14 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         return best_params
 
     def _train(self):
+        """
+        Build the model with the experiment configuration represented by this object
+        """
         if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
             self._wrapped_experiment_configuration._train()
             return
         self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()
+        # Get hyperparameters dictionary, with fixed values or Hyperopt priors
         prior_dict = self._wrapped_experiment_configuration._hyperparameters
         params = self._wrapped_experiment_configuration.get_default_parameters()
         for param in params:
@@ -246,21 +319,38 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         self._wrapped_experiment_configuration._train()
 
     def compute_estimations(self, rows):
+        """
+        Compute the predictions for data points indicated in rows estimated by the regressor
+
+        Parameters
+        ----------
+        rows: list of integers
+            The set of rows to be considered
+        """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
         ret = self._wrapped_experiment_configuration.get_regressor().predict(xdata)
         self._logger.debug("Using regressor on %s: %s vs %s", str(xdata), str(ydata), str(ret))
         return ret
 
     def print_model(self):
+        """
+        Print the representation of the generated model
+        """
         return "".join(("Optimal hyperparameter(s) found with hyperopt: ",
                         str(self._wrapped_experiment_configuration._hyperparameters),
                         "\n",
                         self._wrapped_experiment_configuration.print_model()))
 
     def initialize_regressor(self):
+        """
+        Initialize the regressor object for the experiments
+        """
         self._wrapped_experiment_configuration.initialize_regressor()
 
     def get_regressor(self):
+        """
+        Return the regressor associated with this (wrapped) experiment configuration
+        """
         return self._wrapped_experiment_configuration.get_regressor()
 
     def get_default_parameters(self):
@@ -268,6 +358,8 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
 
     def get_x_columns(self):
         """
+        Return the columns used in the regression
+
         Return
         ------
         list of str:
@@ -276,10 +368,21 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         return self._wrapped_experiment_configuration.get_x_columns()
 
     def set_x_columns(self, x_cols):
+        """
+        Set the columns to be used in the regression
+
+        Parameters
+        ----------
+        x_cols: list of str
+            the columns to be used in the regression
+        """
         super().set_x_columns(x_cols)
         self._wrapped_experiment_configuration.set_x_columns(x_cols)
 
     def _parse_prior(self, param_name, prior_ini):
+        """
+        TODO
+        """
         try:
             prior_type, prior_args_strg = prior_ini.replace(' ', '').replace(')', '').split('(')
             if not hasattr(hp, prior_type):
@@ -303,7 +406,13 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
 
 
 class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
+    """
+    TODO
+    """
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
+        """
+        TODO
+        """
         super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
         # Check if the maximum number of required features is greater than the number of existing features
         temp_xdata, temp_ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
@@ -312,6 +421,19 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
             sys.exit(-10)
 
     def _get_standard_evaluator(self, scorer):
+        """
+        Return the wrapper that applies scorer to model to evaluate it
+
+        Parameters
+        ----------
+        scorer: callable object
+            scorer to be applied to the model
+
+        Return
+        ------
+        evaluator: function
+            fits model for data X, evaluates it in y and returns both model and the evaluation score
+        """
         def evaluator(model, X, y, trained=False):
             if not trained:
                 model = model.fit(X, y)
@@ -320,6 +442,19 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         return evaluator
 
     def _get_cv_evaluator(self, scorer, cv=3):
+        """
+        Return the wrapper that applies cross-validation with scorer to model to evaluate it
+
+        Parameters
+        ----------
+        scorer: callable object
+            scorer to be applied to the model
+
+        Return
+        ------
+        evaluator: function
+            fits model for data X, evaluates it in y through cross-validation and returns both model and the evaluation score
+        """
         def evaluator(model, X, y, trained=False):
             scores = sklearn.model_selection.cross_val_score(model, X, y, scoring=scorer, cv=cv)
             if not trained:
@@ -329,7 +464,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
 
     def print_model(self):
         """
-        Print the model
+        Print the representation of the generated model
         """
         return "".join(("Optimal hyperparameter(s) found with hyperopt: ",
                         str(self._wrapped_experiment_configuration._hyperparameters),
@@ -337,6 +472,9 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
                         self._wrapped_experiment_configuration.print_model()))
 
     def _train(self):
+        """
+        Build the model with the experiment configuration represented by this object
+        """
         if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
             SFSExperimentConfiguration._train(self)
             return
