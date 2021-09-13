@@ -35,7 +35,35 @@ import model_building.experiment_configuration as ec
 
 class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
     """
-    TODO
+    Template class representing a wrapper for experiment configurations
+
+    This class is intended for experiment configurations that augment regular experiment configurations, by enriching its regression procedure.
+    Examples of such classes are HyperoptExperimentConfiguration and SFSExperimentConfiguration.
+
+    Attributes
+    ----------
+    _wrapped_experiment_configuration : ExperimentConfiguration
+        The regressor to be used in conjunction with sequential feature selection
+
+    Methods
+    -------
+    _compute_signature()
+        Compute the signature associated with this (wrapped) experiment configuration
+
+    initialize_regressor()
+        Initialize the (wrapped) regressor object for the experiments
+
+    get_regressor()
+        Return the regressor associated with this (wrapped) experiment configuration
+
+    get_default_parameters()
+        Get a dictionary with all technique parameters with default values
+
+    get_x_columns()
+        Return the columns used in the regression
+
+    set_x_columns(self, x_cols)
+        Set the columns to be used in the regression
     """
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         """
@@ -58,28 +86,33 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
 
     def _compute_signature(self, prefix):
         """
-        Compute the signature associated with this experiment configuration
+        Compute the signature associated with this (wrapped) experiment configuration
 
         Parameters
         ----------
         prefix: list of str
             The signature of this experiment configuration without considering hyperparameters
 
-        Returns
-        -------
+        Return
+        ------
             The signature of the experiment
         """
         return self._wrapped_experiment_configuration.get_signature()
 
     def initialize_regressor(self):
         """
-        Initialize the regressor object for the experiments
+        Initialize the (wrapped) regressor object for the experiments
         """
         self._wrapped_experiment_configuration.initialize_regressor()
 
     def get_regressor(self):
         """
         Return the regressor associated with this (wrapped) experiment configuration
+
+        Return
+        ------
+        regressor object:
+            the regressor associated with this (wrapped) experiment configuration
         """
         return self._wrapped_experiment_configuration.get_regressor()
 
@@ -117,20 +150,17 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
 
 class SFSExperimentConfiguration(WrapperExperimentConfiguration):
     """
-    Class representing a single experiment configuration for SFS coupled with a generic regression
+    Class representing a single experiment configuration for SFS coupled with a generic wrapped regression
 
     Attributes
     ----------
-    _wrapped_experiment_configuration : ExperimentConfiguration
-        The regressor to be used in conjunction with sequential feature selection
-
     _sfs: SequentialFeatureSelector
         The actual sequential feature selector implemented by mlxtend library
 
     Methods
     -------
-    _compute_signature()
-        Compute the signature (i.e., an univocal identifier) of this experiment
+    _check_num_features()
+        Exit if the maximum number of required features is greater than the number of existing features
 
     _train()
         Performs the actual building of the linear model
@@ -216,7 +246,42 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
 
 class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
     """
-    TODO
+    Class representing a single experiment configuration whose hyperparameters are to be computed by Hyperopt
+
+    For this configuration, the user must provide the "hyperparameter_tuning = 'hyperopt'" flag in the configuration file.
+    In this case, values for hyperparameters may be strings representing prior distributions instead of fixed values. (The use of both prior strings and fixed values is allowed.)
+    Values for such hyperparameters will be computed via the Hyperopt library by leveraging Bayesian Optimization techniques.
+
+    Attributes
+    ----------
+    _hyperopt_max_evals: int
+        The maximum number of iterations allowed for the Bayesian Optimization engine
+
+    _hyperopt_save_interval: int
+        The number of Hyperopt iterations after which a Pickle checkpoint file is periodically saved
+
+    _hyperopt_trained: bool
+        A flag indicating whether or not the optimal hyperparameters have already been computed by Hyperopt
+
+    Methods
+    -------
+    _objective_function()
+        The objective function to be passed to Hyperopt for minimization
+
+    _run_hyperopt()
+        Method that calls Hyperopt to find optimal hyperparameters
+
+    _train()
+        Build the model with the experiment configuration represented by this object
+
+    compute_estimations()
+        Compute the predictions for data points indicated in rows estimated by the regressor
+
+    print_model()
+        Print the representation of the generated model
+
+    _parse_prior()
+        TODO
     """
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         """
@@ -356,13 +421,30 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
 
     def _parse_prior(self, param_name, prior_ini):
         """
-        TODO
+        Interpret prior_ini string as a Hyperopt prior object
+
+        This method looks for priors with the following structure: loguniform(0.01,1).
+        If prior_ini cannot be interpreted as a prior object, it will be returned as-is, and it will be assumed that it is a point-wise parameter value.
+
+        Parameters
+        ----------
+        param_name: str
+            The name of the hyperparameter to be initialized
+
+        prior_ini: str (or object)
+            The string to be interpreted as a prior object; if this fails, it is interpreted as a point-wise parameter value instead
+
+        Return
+        ------
+        hyperopt prior object (or generic object)
+            The Hyperopt prior object, or the original prior_ini if interpretation was not successful
         """
         try:
             prior_type, prior_args_strg = prior_ini.replace(' ', '').replace(')', '').split('(')
             if not hasattr(hp, prior_type):
                 self._logger.error("Unrecognized prior type: %s", prior_type)
-                sys.exit(1)
+                raise ValueError()
+            # Recover arguments for the prior
             prior_args = [float(a) for a in prior_args_strg.split(',')]
             # Get log of parameter values when appropriate
             if prior_type.startswith('log') or prior_type.startswith('qlog'):
@@ -382,11 +464,40 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
 
 class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
     """
-    TODO
+    Experiment configuration wrapped for using both Hyperopt tuning and SFS selection
+
+    The class is a combination of the above two, for cases when both Hyperopt and SFS are requested.
+    A separate wrapper is needed because this combination requires SFS to be conducted manually, as it is intertwined with the Bayesian Optimization steps.
+    In particular, Hyperopt is used to optimize hyperparamaters of models with every possible set of features, and the best performing one is kept. 
+
+    Methods
+    -------
+    _get_standard_evaluator()
+        Return the wrapper that applies scorer to model to evaluate it
+
+    _get_cv_evaluator()
+        Return the wrapper that applies cross-validation with scorer to model to evaluate it
+
+    print_model()
+        Print the representation of the generated model
+
+    _train()
+        Build the model with the experiment configuration represented by this object
     """
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         """
-        TODO
+        campaign_configuration: dict of str: dict of str: str
+            The set of options specified by the user though command line and campaign configuration files
+
+        regression_inputs: RegressionInputs
+            The input of the regression problem to be solved
+
+        prefix: list of str
+            The information used to identify this experiment
+
+        wrapped_experiment_configuration: ExperimentConfiguration
+            The regressor to be used in conjunction with sequential feature selection
+
         """
         super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
         SFSExperimentConfiguration._check_num_features(self)
@@ -445,6 +556,8 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
     def _train(self):
         """
         Build the model with the experiment configuration represented by this object
+
+        This method manually implements Feature Selection in order for it to work with Hyperopt parameter optimization
         """
         if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
             SFSExperimentConfiguration._train(self)

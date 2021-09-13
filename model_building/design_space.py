@@ -1152,9 +1152,7 @@ class HyperoptExpConfsGenerator(ExpConfsGenerator):
 
 class HyperoptSFSExpConfsGenerator(ExpConfsGenerator):
     """
-    Generator for using both Hyperopt tuning and SFS selection in alternate steps
-
-    The class is a combination of the above two, for cases when both Hyperopt and SFS are requested. A separate wrapper is needed because this combination requires a particular experiment configuration to handle both tasks in alternating steps
+    Generator for using both Hyperopt tuning and SFS selection
 
     Attributes
     ----------

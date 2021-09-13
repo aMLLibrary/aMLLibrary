@@ -120,6 +120,9 @@ class ExperimentConfiguration(abc.ABC):
     _regressor
         The actual object performing the regression; it is intialized by the subclasses and its type depends on the particular technique
 
+    _hyperparameters: dict of str: object
+        The hyperparameter values for the technique regressor
+
     Methods
     -------
     train()
