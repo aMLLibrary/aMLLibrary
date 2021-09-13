@@ -32,6 +32,7 @@ import pickle
 import model_building.experiment_configuration as ec
 
 
+
 class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
     """
     TODO
@@ -51,58 +52,9 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
             The regressor to be used in conjunction with sequential feature selection
 
         """
-        super().__init__(campaign_configuration, None, regression_inputs, prefix)
-
-
-class SFSExperimentConfiguration(WrapperExperimentConfiguration):
-    """
-    Class representing a single experiment configuration for SFS coupled with a generic regression
-
-    Attributes
-    ----------
-    _wrapped_experiment_configuration : ExperimentConfiguration
-        The regressor to be used in conjunction with sequential feature selection
-
-    _sfs: SequentialFeatureSelector
-        The actual sequential feature selector implemented by mlxtend library
-
-    Methods
-    -------
-    _compute_signature()
-        Compute the signature (i.e., an univocal identifier) of this experiment
-
-    _train()
-        Performs the actual building of the linear model
-
-    compute_estimations()
-        Compute the estimated values for a give set of data
-
-    print_model()
-        Print the representation of the generated model
-    """
-    def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
-        """
-        campaign_configuration: dict of str: dict of str: str
-            The set of options specified by the user though command line and campaign configuration files
-
-        regression_inputs: RegressionInputs
-            The input of the regression problem to be solved
-
-        prefix: list of str
-            The information used to identify this experiment
-
-        wrapped_experiment_configuration: ExperimentConfiguration
-            The regressor to be used in conjunction with sequential feature selection
-
-        """
         self._wrapped_experiment_configuration = wrapped_experiment_configuration
-        super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
-        temp_xdata, temp_ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
-        # if the maximum number of required features is greater than the number of existing features, exit
-        if self._campaign_configuration['FeatureSelection']['max_features'] > temp_xdata.shape[1]:
-            self._logger.error("ERROR: The maximum number of required features must be in range(1, %d)", temp_xdata.shape[1]+1)
-            sys.exit(-10)
         self.technique = self._wrapped_experiment_configuration.technique
+        super().__init__(campaign_configuration, None, regression_inputs, prefix)
 
     def _compute_signature(self, prefix):
         """
@@ -118,49 +70,6 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
             The signature of the experiment
         """
         return self._wrapped_experiment_configuration.get_signature()
-
-    def _train(self):
-        """
-        Build the model with the experiment configuration represented by this object
-        """
-        verbose = 2 if self._campaign_configuration['General']['debug'] else 0
-        self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self._wrapped_experiment_configuration.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(ec.mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
-        xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
-        # set the maximum number of required features to the minimum between itself and the number of existing features
-        if self._campaign_configuration['FeatureSelection']['max_features'] > xdata.shape[1]:
-            self._logger.info("Reduced maximum number of features from %d to %d", self._sfs.k_features[1], xdata.shape[1])
-            self._sfs.k_features = (1,xdata.shape[1])
-        # Perform feature selection
-        self._sfs.fit(xdata, ydata)
-        x_cols = list(self._sfs.k_feature_names_)
-        self._logger.debug("Selected features: %s", str(x_cols))
-        # Use the selected features to retrain the regressor, after restoring column names
-        filtered_xdata = self._sfs.transform(xdata)  # is an np.array
-        filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_cols)
-        self.set_x_columns(x_cols)
-        self._wrapped_experiment_configuration.get_regressor().fit(filtered_xdata, ydata)
-
-    def compute_estimations(self, rows):
-        """
-        Compute the predictions for data points indicated in rows estimated by the regressor
-
-        Parameters
-        ----------
-        rows: list of integers
-            The set of rows to be considered
-        """
-        xdata, ydata = self._regression_inputs.get_xy_data(rows)
-        ret = self._wrapped_experiment_configuration.get_regressor().predict(xdata)
-        self._logger.debug("Using regressor on %s: %s vs %s", str(xdata), str(ydata), str(ret))
-
-        return ret
-
-    def print_model(self):
-        """
-        Print the representation of the generated model
-        """
-        return "".join(("Selected features: ", str(self.get_x_columns()), "\n",
-                        self._wrapped_experiment_configuration.print_model()))
 
     def initialize_regressor(self):
         """
@@ -205,6 +114,101 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
 
 
 
+
+class SFSExperimentConfiguration(WrapperExperimentConfiguration):
+    """
+    Class representing a single experiment configuration for SFS coupled with a generic regression
+
+    Attributes
+    ----------
+    _wrapped_experiment_configuration : ExperimentConfiguration
+        The regressor to be used in conjunction with sequential feature selection
+
+    _sfs: SequentialFeatureSelector
+        The actual sequential feature selector implemented by mlxtend library
+
+    Methods
+    -------
+    _compute_signature()
+        Compute the signature (i.e., an univocal identifier) of this experiment
+
+    _train()
+        Performs the actual building of the linear model
+
+    compute_estimations()
+        Compute the estimated values for a give set of data
+
+    print_model()
+        Print the representation of the generated model
+    """
+    def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
+        """
+        campaign_configuration: dict of str: dict of str: str
+            The set of options specified by the user though command line and campaign configuration files
+
+        regression_inputs: RegressionInputs
+            The input of the regression problem to be solved
+
+        prefix: list of str
+            The information used to identify this experiment
+
+        wrapped_experiment_configuration: ExperimentConfiguration
+            The regressor to be used in conjunction with sequential feature selection
+
+        """
+        super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
+        temp_xdata, temp_ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
+        # if the maximum number of required features is greater than the number of existing features, exit
+        if self._campaign_configuration['FeatureSelection']['max_features'] > temp_xdata.shape[1]:
+            self._logger.error("ERROR: The maximum number of required features must be in range(1, %d)", temp_xdata.shape[1]+1)
+            sys.exit(-10)
+
+    def _train(self):
+        """
+        Build the model with the experiment configuration represented by this object
+        """
+        verbose = 2 if self._campaign_configuration['General']['debug'] else 0
+        self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self._wrapped_experiment_configuration.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(ec.mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
+        xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
+        # set the maximum number of required features to the minimum between itself and the number of existing features
+        if self._campaign_configuration['FeatureSelection']['max_features'] > xdata.shape[1]:
+            self._logger.info("Reduced maximum number of features from %d to %d", self._sfs.k_features[1], xdata.shape[1])
+            self._sfs.k_features = (1,xdata.shape[1])
+        # Perform feature selection
+        self._sfs.fit(xdata, ydata)
+        x_cols = list(self._sfs.k_feature_names_)
+        self._logger.debug("Selected features: %s", str(x_cols))
+        # Use the selected features to retrain the regressor, after restoring column names
+        filtered_xdata = self._sfs.transform(xdata)  # is an np.array
+        filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_cols)
+        self.set_x_columns(x_cols)
+        self._wrapped_experiment_configuration.get_regressor().fit(filtered_xdata, ydata)
+
+    def compute_estimations(self, rows):
+        """
+        Compute the predictions for data points indicated in rows estimated by the regressor
+
+        Parameters
+        ----------
+        rows: list of integers
+            The set of rows to be considered
+        """
+        xdata, ydata = self._regression_inputs.get_xy_data(rows)
+        ret = self._wrapped_experiment_configuration.get_regressor().predict(xdata)
+        self._logger.debug("Using regressor on %s: %s vs %s", str(xdata), str(ydata), str(ret))
+
+        return ret
+
+    def print_model(self):
+        """
+        Print the representation of the generated model
+        """
+        return "".join(("Selected features: ", str(self.get_x_columns()), "\n",
+                        self._wrapped_experiment_configuration.print_model()))
+
+
+
+
 class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
     """
     TODO
@@ -213,31 +217,13 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         """
         TODO
         """
-        self._wrapped_experiment_configuration = wrapped_experiment_configuration
         super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
-        self.technique = self._wrapped_experiment_configuration.technique
         self._hyperopt_max_evals = campaign_configuration['General']['hyperopt_max_evals']
         if 'hyperopt_save_interval' in campaign_configuration['General']:
             self._hyperopt_save_interval = campaign_configuration['General']['hyperopt_save_interval']
         else:
             self._hyperopt_save_interval = 0
         self._hyperopt_trained = False
-
-
-    def _compute_signature(self, prefix):
-        """
-        Compute the signature associated with this experiment configuration
-
-        Parameters
-        ----------
-        prefix: list of str
-            The signature of this experiment configuration without considering hyperparameters
-
-        Returns
-        -------
-            The signature of the experiment
-        """
-        return self._wrapped_experiment_configuration.get_signature()
 
     def _objective_function(self, params):
         """
@@ -362,44 +348,6 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
                         str(self._wrapped_experiment_configuration._hyperparameters),
                         "\n",
                         self._wrapped_experiment_configuration.print_model()))
-
-    def initialize_regressor(self):
-        """
-        Initialize the regressor object for the experiments
-        """
-        self._wrapped_experiment_configuration.initialize_regressor()
-
-    def get_regressor(self):
-        """
-        Return the regressor associated with this (wrapped) experiment configuration
-        """
-        return self._wrapped_experiment_configuration.get_regressor()
-
-    def get_default_parameters(self):
-        return self._wrapped_experiment_configuration.get_default_parameters()
-
-    def get_x_columns(self):
-        """
-        Return the columns used in the regression
-
-        Return
-        ------
-        list of str:
-            the columns used in the regression
-        """
-        return self._wrapped_experiment_configuration.get_x_columns()
-
-    def set_x_columns(self, x_cols):
-        """
-        Set the columns to be used in the regression
-
-        Parameters
-        ----------
-        x_cols: list of str
-            the columns to be used in the regression
-        """
-        super().set_x_columns(x_cols)
-        self._wrapped_experiment_configuration.set_x_columns(x_cols)
 
     def _parse_prior(self, param_name, prior_ini):
         """
