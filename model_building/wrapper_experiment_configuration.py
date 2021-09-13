@@ -32,7 +32,29 @@ import pickle
 import model_building.experiment_configuration as ec
 
 
-class SFSExperimentConfiguration(ec.ExperimentConfiguration):
+class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
+    """
+    TODO
+    """
+    def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
+        """
+        campaign_configuration: dict of str: dict of str: str
+            The set of options specified by the user though command line and campaign configuration files
+
+        regression_inputs: RegressionInputs
+            The input of the regression problem to be solved
+
+        prefix: list of str
+            The information used to identify this experiment
+
+        wrapped_experiment_configuration: ExperimentConfiguration
+            The regressor to be used in conjunction with sequential feature selection
+
+        """
+        super().__init__(campaign_configuration, None, regression_inputs, prefix)
+
+
+class SFSExperimentConfiguration(WrapperExperimentConfiguration):
     """
     Class representing a single experiment configuration for SFS coupled with a generic regression
 
@@ -74,7 +96,7 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
 
         """
         self._wrapped_experiment_configuration = wrapped_experiment_configuration
-        super().__init__(campaign_configuration, None, regression_inputs, prefix)
+        super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
         temp_xdata, temp_ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         # if the maximum number of required features is greater than the number of existing features, exit
         if self._campaign_configuration['FeatureSelection']['max_features'] > temp_xdata.shape[1]:
@@ -183,7 +205,7 @@ class SFSExperimentConfiguration(ec.ExperimentConfiguration):
 
 
 
-class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
+class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
     """
     TODO
     """
@@ -192,7 +214,7 @@ class HyperoptExperimentConfiguration(ec.ExperimentConfiguration):
         TODO
         """
         self._wrapped_experiment_configuration = wrapped_experiment_configuration
-        super().__init__(campaign_configuration, None, regression_inputs, prefix)
+        super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
         self.technique = self._wrapped_experiment_configuration.technique
         self._hyperopt_max_evals = campaign_configuration['General']['hyperopt_max_evals']
         if 'hyperopt_save_interval' in campaign_configuration['General']:

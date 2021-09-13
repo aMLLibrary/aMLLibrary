@@ -36,7 +36,7 @@ import model_building.random_forest_experiment_configuration as rf
 import model_building.stepwise_experiment_configuration as sw
 import model_building.svr_experiment_configuration as svr
 import model_building.xgboost_experiment_configuration as xgb
-import model_building.hyperopt_sfs_experiment_configuration as hpsfs
+import model_building.wrapper_experiment_configuration as wec
 
 
 class ExpConfsGenerator(abc.ABC):
@@ -1081,7 +1081,7 @@ class SFSExpConfsGenerator(ExpConfsGenerator):
         internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
         ret_list = []
         for wrapped_point in internal_list:
-            ret_list.append(hpsfs.SFSExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
+            ret_list.append(wec.SFSExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
         self._logger.info("<--")
         return ret_list
 
@@ -1142,7 +1142,7 @@ class HyperoptExpConfsGenerator(ExpConfsGenerator):
         internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
         ret_list = []
         for wrapped_point in internal_list:
-            ret_list.append(hpsfs.HyperoptExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
+            ret_list.append(wec.HyperoptExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
         self._logger.info("<--")
         return ret_list
 
@@ -1203,7 +1203,7 @@ class HyperoptSFSExpConfsGenerator(ExpConfsGenerator):
         internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
         ret_list = []
         for wrapped_point in internal_list:
-            ret_list.append(hpsfs.HyperoptSFSExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
+            ret_list.append(wec.HyperoptSFSExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
         self._logger.info("<--")
         return ret_list
 

@@ -215,10 +215,10 @@ class ExperimentConfiguration(abc.ABC):
             self._experiment_directory = os.path.join(self._experiment_directory, token)
         # Import here to avoid problems with circular dependencies
         # pylint: disable=import-outside-toplevel
-        import model_building.hyperopt_sfs_experiment_configuration as hsec
-        if (    not isinstance(self, hsec.SFSExperimentConfiguration)
-            and not isinstance(self, hsec.HyperoptExperimentConfiguration)
-            and not isinstance(self, hsec.HyperoptSFSExperimentConfiguration)
+        import model_building.wrapper_experiment_configuration as wec
+        if (    not isinstance(self, wec.SFSExperimentConfiguration)
+            and not isinstance(self, wec.HyperoptExperimentConfiguration)
+            and not isinstance(self, wec.HyperoptSFSExperimentConfiguration)
            ):
             # This is not a wrapper of another experiment: create experiment directory
             assert not os.path.exists(self._experiment_directory), self._experiment_directory
