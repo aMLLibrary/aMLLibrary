@@ -281,11 +281,22 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         Print the representation of the generated model
 
     _parse_prior()
-        TODO
+        Interpret prior_ini string as a Hyperopt prior object
     """
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         """
-        TODO
+        campaign_configuration: dict of str: dict of str: str
+            The set of options specified by the user though command line and campaign configuration files
+
+        regression_inputs: RegressionInputs
+            The input of the regression problem to be solved
+
+        prefix: list of str
+            The information used to identify this experiment
+
+        wrapped_experiment_configuration: ExperimentConfiguration
+            The regressor to be used in conjunction with sequential feature selection
+
         """
         super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
         self._hyperopt_max_evals = campaign_configuration['General']['hyperopt_max_evals']
