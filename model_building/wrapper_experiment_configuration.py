@@ -314,10 +314,9 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         status: str
             status value to report that the computation was successful
         """
-        X, y = params['X'], params['y']
-        del params['X'], params['y']
+        Xtrain, ytrain = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._wrapped_regressor.__init__(**params)
-        score = sklearn.model_selection.cross_val_score(self._wrapped_regressor, X, y, scoring='r2', cv=5).mean()
+        score = sklearn.model_selection.cross_val_score(self._wrapped_regressor, Xtrain, ytrain, scoring='r2', cv=5).mean()
         return {'loss': -score, 'status': STATUS_OK}
 
     def _run_hyperopt(self, params):
@@ -339,8 +338,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         best_params: dict of str: object
             the best hyperparameter configuration found by Hyperopt
         """
-        # Include datasets and temporarily disable output from fmin
-        params['X'], params['y'] = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
+        # Temporarily disable output from fmin
         logging.getLogger('hyperopt.tpe').propagate = False
         # Call Hyperopt optimizer
         if self._hyperopt_save_interval == 0:
@@ -368,7 +366,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         logging.getLogger('hyperopt.tpe').propagate = True
         # Recover 'lost' params entries whose values was set, and were thus not returned by fmin()
         for par in params:
-            if par not in ['X', 'y'] and par not in best_params:
+            if par not in best_params:
                 best_params[par] = params[par]
         best_params = self._wrapped_experiment_configuration.repair_hyperparameters(best_params)
         return best_params
@@ -602,9 +600,6 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
             candidate_models = []
             # STEP 2a: TRAIN ALL CANDIDATES WITH THIS DIM
             remaining_features = all_features.difference(selected_features)
-            # Pass training data
-            params['X'] = X_train
-            params['y'] = y_train
             # Call Hyperopt optimizer
             best_param = self._run_hyperopt(params)
             subsets_best_hyperparams.append(best_param)
