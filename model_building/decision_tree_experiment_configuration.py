@@ -1,6 +1,7 @@
 """
 Copyright 2019 Marco Lattuada
 Copyright 2019 Danilo Ardagna
+Copyright 2021 Bruno Guindani
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -51,11 +52,6 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.DT
-        self._regressor = dt.DecisionTreeRegressor(criterion=self._hyperparameters['criterion'],
-                                                   max_depth=self._hyperparameters['max_depth'],
-                                                   max_features=self._hyperparameters['max_features'],
-                                                   min_samples_split=self._hyperparameters['min_samples_split'],
-                                                   min_samples_leaf=self._hyperparameters['min_samples_leaf'])
 
     def _compute_signature(self, prefix):
         """
@@ -89,9 +85,6 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
 
-        # for idx, col_name in enumerate(self._regression_inputs.x_columns):
-        #    self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])
-
     def compute_estimations(self, rows):
         """
         Compute the estimations and the MAPE for runs in rows
@@ -107,3 +100,26 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         return self._regressor.predict(xdata)
+
+    def initialize_regressor(self):
+        """
+        Initialize the regressor object for the experiments
+        """
+        if not getattr(self, '_hyperparameters', None):
+            self._regressor = dt.DecisionTreeRegressor()
+        else:
+            self._regressor = dt.DecisionTreeRegressor(criterion=self._hyperparameters['criterion'],
+                                                       max_depth=self._hyperparameters['max_depth'],
+                                                       max_features=self._hyperparameters['max_features'],
+                                                       min_samples_split=self._hyperparameters['min_samples_split'],
+                                                       min_samples_leaf=self._hyperparameters['min_samples_leaf'])
+
+    def get_default_parameters(self):
+        """
+        Get a dictionary with all technique parameters with default values
+        """
+        return {'criterion': 'mse',
+                'max_depth': 3,
+                'max_features': 'auto',
+                'min_samples_split': 0.01,
+                'min_samples_leaf': 0.01}

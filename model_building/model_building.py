@@ -1,5 +1,6 @@
 """
 Copyright 2019 Marco Lattuada
+Copyright 2021 Bruno Guindani
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -71,7 +72,9 @@ class ModelBuilding:
 
     def process(self, campaign_configuration, regression_inputs, processes_number):
         """
-        Perform the actual regression
+        Perform the actual regression and prints out results
+
+        Regression results, including description of the best model and its performance metrics, are both printed on screen and saved to the results.txt file
 
         Parameters
         ----------
@@ -151,10 +154,15 @@ class ModelBuilding:
             # Set training set
             best_conf.set_training_data(all_data)
 
-            # Train
+            # Train and evaluate by several metrics
             best_conf.train()
             best_conf.evaluate()
-            self._logger.info("Validation MAPE on full dataset for %s: %s", technique, str(best_conf.mapes["validation"]))
+            self._logger.info("Validation metrics on full dataset for %s:", technique)
+            self._logger.info("-->")
+            self._logger.info("MAPE: %f", best_conf.mapes["validation"])
+            self._logger.info("RMSE: %f", best_conf.rmses["validation"])
+            self._logger.info("R^2 : %f", best_conf.r2s  ["validation"])
+            self._logger.info("<--")
 
             # Build the regressor
             best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)
@@ -163,11 +171,12 @@ class ModelBuilding:
             pickle.dump(best_regressors[technique], pickle_file)
             pickle_file.close()
         self._logger.info("<--Built the final regressors")
+        best_config = best_confs[best_technique]
         file_handler = logging.FileHandler(os.path.join(campaign_configuration['General']['output'], 'results'), 'a+')
         self._logger.addHandler(file_handler)
         self._logger.info("Best model:")
         self._logger.info("-->")
-        self._logger.info(best_conf.print_model())
+        self._logger.info(best_config.print_model())
         self._logger.info("<--")
         self._logger.removeHandler(file_handler)
         file_handler.close()

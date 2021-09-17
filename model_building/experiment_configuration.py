@@ -1,5 +1,6 @@
 """
 Copyright 2019 Marco Lattuada
+Copyright 2021 Bruno Guindani
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,6 +23,7 @@ from enum import Enum
 
 import numpy as np
 import matplotlib
+from sklearn.metrics import mean_squared_error, r2_score
 
 matplotlib.use('Agg')
 # pylint: disable=wrong-import-position
@@ -33,7 +35,7 @@ import custom_logger  # noqa: E402
 
 class Technique(Enum):
     """
-    Enum class listing the different regression techniques"
+    Enum class listing the different regression techniques
     """
     NONE = 0
     LR_RIDGE = 1
@@ -49,6 +51,28 @@ enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST:
                                Technique.DT: 'DecisionTree', Technique.RF: 'RandomForest',
                                Technique.SVR: 'SVR', Technique.NNLS: 'NNLS',
                                Technique.STEPWISE: 'Stepwise'}
+
+
+def mean_absolute_percentage_error(y_true, y_pred):
+    """
+    Compute the Mean Absolute Percentage Error (MAPE) of the given inputs
+
+    Parameters
+    ----------
+    y_true: numpy.array
+        The real values
+
+    y_pred: numpy.array
+        The predicted value
+
+    Return
+    ------
+    float
+        The computed MAPE
+    """
+    y_true, y_pred = np.array(y_true), np.array(y_pred)
+    return np.mean(np.abs((y_true - y_pred) / y_true))
+
 
 
 class ExperimentConfiguration(abc.ABC):
@@ -84,11 +108,20 @@ class ExperimentConfiguration(abc.ABC):
     mapes: dict of str: float
         The MAPE obtained on the different sets
 
+    rmses: dict of str: float
+        The Root Mean Squared Errors (RMSE) obtained on the different sets
+
+    r2s: dict of str: float
+        The R^2 scores obtained on the different sets
+
     _experiment_directory: str
         The directory where output of this experiment has to be stored
 
     _regressor
         The actual object performing the regression; it is intialized by the subclasses and its type depends on the particular technique
+
+    _hyperparameters: dict of str: object
+        The hyperparameter values for the technique regressor
 
     Methods
     -------
@@ -97,6 +130,12 @@ class ExperimentConfiguration(abc.ABC):
 
     _train()
         Actual internal implementation of the training process
+
+    initialize_regressor()
+        Initializes the regressor object for the experiments
+
+    get_default_parameters()
+        Get a dictionary with all technique parameters with default values
 
     evaluate()
         Compute the MAPE on the different input dataset
@@ -134,8 +173,14 @@ class ExperimentConfiguration(abc.ABC):
     get_hyperparameters()
         Return the values of the hyperparameters associated with this experiment configuration
 
+    repair_hyperparameters()
+        Repair hyperparameter values which cause the regressor to raise errors
+
     get_x_columns()
         Return the columns used in the regression
+
+    set_x_columns()
+        Set the columns to be used in the regression
 
     print_model()
         Prints in readable form the trained model; at the moment is not pure virtual since not all the subclasses implement it
@@ -163,6 +208,8 @@ class ExperimentConfiguration(abc.ABC):
         self._signature = self._compute_signature(prefix)
         self._logger = custom_logger.getLogger(self.get_signature_string())
         self.mapes = {}
+        self.rmses = {}
+        self.r2s = {}
         self._regressor = None
 
         # Create experiment directory
@@ -171,18 +218,23 @@ class ExperimentConfiguration(abc.ABC):
             self._experiment_directory = os.path.join(self._experiment_directory, token)
         # Import here to avoid problems with circular dependencies
         # pylint: disable=import-outside-toplevel
-        import model_building.sfs_experiment_configuration
-        if isinstance(self, model_building.sfs_experiment_configuration.SFSExperimentConfiguration) or 'FeatureSelection' not in self._campaign_configuration or 'method' not in self._campaign_configuration['FeatureSelection'] or self._campaign_configuration['FeatureSelection']['method'] != "SFS":
+        import model_building.wrapper_experiment_configuration as wec
+        if (    not isinstance(self, wec.SFSExperimentConfiguration)
+            and not isinstance(self, wec.HyperoptExperimentConfiguration)
+            and not isinstance(self, wec.HyperoptSFSExperimentConfiguration)
+           ):
+            # This is not a wrapper of another experiment: create experiment directory
             assert not os.path.exists(self._experiment_directory), self._experiment_directory
             os.makedirs(self._experiment_directory)
 
     def train(self):
         """
-        Builid the model with the experiment configuration represented by this object
+        Build the model with the experiment configuration represented by this object
 
         This public method wraps the private method which performs the actual work. In doing this it controls the start/stop of logging on file
         """
         self._start_file_logger()
+        self.initialize_regressor()
         self._train()
         self._stop_file_logger()
 
@@ -194,25 +246,49 @@ class ExperimentConfiguration(abc.ABC):
         The actual implementation is demanded to the subclasses
         """
 
+    @abc.abstractmethod
+    def initialize_regressor(self):
+        """
+        Initialize the regressor object for the experiments
+
+        The actual implementation is demanded to the subclasses
+        """
+
+    @abc.abstractmethod
+    def get_default_parameters(self):
+        """
+        Get a dictionary with all technique parameters with default values
+
+        The actual implementation is demanded to the subclasses
+        """
+
     def evaluate(self):
         """
-        Validate the model, i.e., compute the MAPE on the validation set, hp selection, training
+        Validate the model, i.e., compute the MAPE and other metrics on the validation set, hp selection, training
+
+        Values are stored in the appropriate class members
         """
         self._start_file_logger()
 
         for set_name in ["validation", "hp_selection", "training"]:
             rows = self._regression_inputs.inputs_split[set_name]
-            self._logger.debug("Computing MAPE on %s set", set_name)
+            self._logger.debug("Computing metrics on %s set", set_name)
             predicted_y = self.compute_estimations(rows)
             real_y = self._regression_inputs.data.loc[rows, self._regression_inputs.y_column].values.astype(np.float64)
             if self._regression_inputs.y_column in self._regression_inputs.scalers:
                 y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
                 predicted_y = y_scaler.inverse_transform(predicted_y)
                 real_y = y_scaler.inverse_transform(real_y)
-            difference = real_y - predicted_y
-            self.mapes[set_name] = np.mean(np.abs(np.divide(difference, real_y)))
             self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
+            # Mean Absolute Percentage Error
+            self.mapes[set_name] = mean_absolute_percentage_error(real_y, predicted_y)
             self._logger.debug("MAPE on %s set is %f", set_name, self.mapes[set_name])
+            # Root Mean Squared Error
+            self.rmses[set_name] = mean_squared_error(real_y, predicted_y, squared=False)
+            self._logger.debug("RMSE on %s set is %f", set_name, self.rmses[set_name])
+            # R-squared metric
+            self.r2s[set_name] = r2_score(real_y, predicted_y)
+            self._logger.debug("R^2  on %s set is %f", set_name, self.r2s[set_name])
 
         self._stop_file_logger()
 
@@ -291,7 +367,9 @@ class ExperimentConfiguration(abc.ABC):
     @abc.abstractmethod
     def compute_estimations(self, rows):
         """
-        Compute the estimations and the MAPE for runs in rows
+        Compute the predictions for data points indicated in rows estimated by the regressor
+
+        The actual implementation is demanded to the subclasses
 
         Parameters
         ----------
@@ -357,6 +435,8 @@ class ExperimentConfiguration(abc.ABC):
         ------
         The regressor wrapped in this experiment configuration
         """
+        if self._regressor is None:
+            self.initialize_regressor()
         return self._regressor
 
     def get_hyperparameters(self):
@@ -368,8 +448,26 @@ class ExperimentConfiguration(abc.ABC):
         """
         return copy.deepcopy(self._hyperparameters)
 
+    def repair_hyperparameters(self, hypers):
+        """
+        Repair and return hyperparameter values which cause the regressor to raise errors
+
+        Parameters
+        ----------
+        hypers: dict of str: object
+            the hyperparameters to be repaired
+
+        Return
+        ------
+        dict of str: object
+            the repaired hyperparameters
+        """
+        return copy.deepcopy(hypers)
+
     def get_x_columns(self):
         """
+        Return the columns used in the regression
+
         Return
         ------
         list of str:
@@ -377,9 +475,20 @@ class ExperimentConfiguration(abc.ABC):
         """
         return copy.deepcopy(self._regression_inputs.x_columns)
 
+    def set_x_columns(self, x_cols):
+        """
+        Set the columns to be used in the regression
+
+        Parameters
+        ----------
+        x_cols: list of str
+            the columns to be used in the regression
+        """
+        self._regression_inputs.x_columns = x_cols
+
     def print_model(self):
         """
-        Method which prints the representation of the generated model as an empty string when the subclass does not override this method
+        Print the representation of the generated model, as an empty string when the subclass does not override this method
         """
         return ""
 

@@ -1,6 +1,7 @@
 """
 Copyright 2019 Marco Lattuada
 Copyright 2019 Danilo Ardagna
+Copyright 2021 Bruno Guindani
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,10 +15,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import copy
 import os
 import warnings
 
-import eli5
 import xgboost as xgb
 
 import model_building.experiment_configuration as ec
@@ -51,7 +52,6 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.XGBOOST
-        self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', n_jobs=1)
 
     def _compute_signature(self, prefix):
         """
@@ -86,31 +86,17 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
             warnings.simplefilter("ignore")
             self._regressor.fit(xdata, ydata)
         self._logger.debug("---Model built")
-
-        # Da simone
-
-        expl = eli5.xgboost.explain_weights_xgboost(self._regressor, top=None)  # feature_names= XXX self.feature_names XXX
-        expl_weights = eli5.format_as_text(expl)
-        self._logger.debug("---Features Importance Computed")  # OK
-        target = open(os.path.join(self._experiment_directory, "explanations.txt"), 'w')
-        target.write(expl_weights)
-        target.close()
-
-        # for idx, col_name in enumerate(self._regression_inputs.x_columns):
-        #    self._logger.debug("The coefficient for %s is %f", col_name, self._linear_regression.coef_[idx])
+        for key, val in self.get_weights_dict().items():
+            self._logger.debug("The weight for %s is %f", key, val)
 
     def compute_estimations(self, rows):
         """
-        Compute the estimations and the MAPE for runs in rows
+        Compute the predictions for data points indicated in rows estimated by the regressor
 
         Parameters
         ----------
-        rows: list of integer
-            The list of the input data to be considered
-
-        Returns
-        -------
-            The values predicted by the associated regressor
+        rows: list of integers
+            The set of rows to be considered
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         self._regressor.set_params(nthread=1)
@@ -118,8 +104,52 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         return self._regressor.predict(xdata)
 
     def print_model(self):
+        return "".join(("XGBoost weights: ", str(self.get_weights_dict())))
+
+    def initialize_regressor(self):
+        """
+        Initialize the regressor object for the experiments
+        """
+        if not getattr(self, '_hyperparameters', None):
+            self._regressor = xgb.XGBRegressor()
+        else:
+            self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', n_jobs=1)
+
+    def get_default_parameters(self):
+        """
+        Get a dictionary with all technique parameters with default values
+        """
+        return {'learning_rate': 0.1,
+                'max_depth': 100,
+                'gamma': 0.25,
+                'min_child_weight': 1,
+                'n_estimators': 500}
+
+    def repair_hyperparameters(self, hypers):
+        """
+        Repair and return hyperparameter values which cause the regressor to raise errors
+
+        Parameters
+        ----------
+        hypers: dict of str: object
+            the hyperparameters to be repaired
+
+        Return
+        ------
+        dict of str: object
+            the repaired hyperparameters
+        """
+        new_hypers = copy.deepcopy(hypers)
+        for key in ['max_depth', 'min_child_weight', 'n_estimators']:
+            new_hypers[key] = int(new_hypers[key])
+        return new_hypers
+
+    def get_weights_dict(self):
+        """
+        Return a dictionary containing the regressor's normalized importance weights for each feature
+        """
         weights = self._regressor.get_booster().get_fscore()
         weights_sum = sum(weights.values())
         for key in weights:
             weights[key] /= weights_sum
-        return "".join(("XGBoost weights: ", str(weights)))
+        return weights

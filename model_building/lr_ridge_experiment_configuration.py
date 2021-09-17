@@ -1,5 +1,6 @@
 """
 Copyright 2019 Marco Lattuada
+Copyright 2021 Bruno Guindani
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -54,7 +55,6 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         assert prefix
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.LR_RIDGE
-        self._regressor = lr.Ridge(alpha=self._hyperparameters['alpha'])
 
     def _compute_signature(self, prefix):
         """
@@ -83,21 +83,17 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
-        for idx, col_name in enumerate(self._regression_inputs.x_columns):
+        for idx, col_name in enumerate(self.get_x_columns()):
             self._logger.debug("The coefficient for %s is %f", col_name, self._regressor.coef_[idx])
 
     def compute_estimations(self, rows):
         """
-        Compute the estimations and the MAPE for runs in rows
+        Compute the predictions for data points indicated in rows estimated by the regressor
 
         Parameters
         ----------
-        rows: list of integer
-            The list of the input data to be considered
-
-        Returns
-        -------
-            The values predicted by the associated regressor
+        rows: list of integers
+            The set of rows to be considered
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         return self._regressor.predict(xdata)
@@ -108,9 +104,24 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         """
         ret_string = ""
         coefficients = self._regressor.coef_
-        for column, coefficient in zip(self._regression_inputs.x_columns, coefficients):
+        for column, coefficient in zip(self.get_x_columns(), coefficients):
             if ret_string != "":
                 ret_string = ret_string + " + "
             ret_string = ret_string + "(" + str(coefficient) + "*" + column + ")"
         ret_string = ret_string + " + (" + str(self._regressor.intercept_) + ")"
         return ret_string
+
+    def initialize_regressor(self):
+        """
+        Initialize the regressor object for the experiments
+        """
+        if not getattr(self, '_hyperparameters', None):
+            self._regressor = lr.Ridge()
+        else:
+            self._regressor = lr.Ridge(alpha=self._hyperparameters['alpha'])
+
+    def get_default_parameters(self):
+        """
+        Get a dictionary with all technique parameters with default values
+        """
+        return {'alpha': 0.1}
