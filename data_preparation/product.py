@@ -17,6 +17,7 @@ limitations under the License.
 import itertools
 
 import numpy as np
+import pandas as pd
 
 import data_preparation.data_preparation
 
@@ -78,7 +79,8 @@ class Product(data_preparation.data_preparation.DataPreparation):
                 base = self._compute_column_name(combination[:-1])
                 new_column = np.array(outputs.data[base]) * np.array(outputs.data[combination[-1]])
                 new_feature_name = self._compute_column_name(combination)
-                outputs.data[new_feature_name] = new_column
+                new_column_df = pd.DataFrame(new_column, columns=[new_feature_name])
+                outputs.data = pd.concat([outputs.data, new_column_df], axis=1)
                 outputs.x_columns.append(new_feature_name)
 
         return outputs
