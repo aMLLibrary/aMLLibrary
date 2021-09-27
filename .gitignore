@@ -1,11 +1,16 @@
-*swp
+# Python cache files
 *__pycache__
+
+# Library output files
+output_*
+
+# Folders to ignore
 log
 etc
-inputs/agora
-output*
+old
+
+# Miscellaneous
+*swp
 /.idea/
 .mypy_cache/
-*orig
 *.pdf
-old
