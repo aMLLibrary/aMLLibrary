@@ -295,7 +295,7 @@ class SequenceDataProcessing:
                 regressor = pickle.load(pickle_file)
                 pickle_file.close()
                 predicted_y = regressor.predict(check_data)
-                mape = ec.mean_absolute_percentage_error(real_y, predicted_y)
+                mape = mean_absolute_percentage_error(real_y, predicted_y)
                 self._logger.info("---MAPE of %s: %s", technique, str(mape))
 
             self._logger.info("<--Performed self check")
