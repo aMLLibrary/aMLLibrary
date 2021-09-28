@@ -889,7 +889,7 @@ class KFoldExpConfsGenerator(SelectionValidationExpConfsGenerator):
             if fold == self._k - 1:
                 fold_testing_idx = remaining
             else:
-                fold_testing_idx = set(self._random_generator.sample(remaining, fold_size))
+                fold_testing_idx = set(self._random_generator.sample(list(remaining), fold_size))
 
             fold_training_idx = all_training_idx - fold_testing_idx
             remaining = remaining - fold_testing_idx
