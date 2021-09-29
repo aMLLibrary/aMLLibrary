@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BASE_OUTPUT_FOLD=outputs/output_gpudata_11_extrap_P_hyperopt
+BASE_OUTPUT_FOLD=outputs/output_gpudata_12_extrap_P_hyperopt_sfs
 mkdir $BASE_OUTPUT_FOLD
 
 for config in example_configurations/gpudata/extrapolation_P/*.ini; do
