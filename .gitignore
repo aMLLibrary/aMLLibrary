@@ -1,6 +1,9 @@
 # Python cache files
 *__pycache__
 
+# Folders of datasets
+inputs/*/*
+
 # Library output files
 output_*
 
