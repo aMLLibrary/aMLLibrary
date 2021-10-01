@@ -130,7 +130,6 @@ class SequenceDataProcessing:
         self.conf['General']['debug'] = str(debug)
         self.conf['General']['generate_plots'] = str(generate_plots)
         self.conf['General']['details'] = str(details)
-        self._campaign_configuration = {}
         self.load_campaign_configuration()
 
         # Check if output path already exist
