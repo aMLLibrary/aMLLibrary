@@ -272,9 +272,9 @@ class SequenceDataProcessing:
             self._logger.debug("Current data frame is:\n%s", str(data_processing))
             self._logger.info("<--")
 
-        data_processing.data.to_csv(os.path.join(self.conf['General']['output'], "preprocessed.csv"))
+        data_processing.data.to_csv(os.path.join(self._campaign_configuration['General']['output'], "preprocessed.csv"))
 
-        regressor = self._model_building.process(self._campaign_configuration, data_processing, int(self.conf['General']['j']))
+        regressor = self._model_building.process(self._campaign_configuration, data_processing, int(self._campaign_configuration['General']['j']))
 
         end = time.time()
         execution_time = str(end - start)
