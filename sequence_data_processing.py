@@ -68,7 +68,7 @@ class SequenceDataProcessing:
         The random generator used in the whole application both to generate random numbers and to initialize other random generators
     """
 
-    def __init__(self, configuration_file, debug=False, seed=0, output="output", j=1, generate_plots=False, self_check=True, details=False):
+    def __init__(self, input_configuration, debug=False, seed=0, output="output", j=1, generate_plots=False, self_check=True, details=False):
         """
         Constructor of the class
 
@@ -78,8 +78,8 @@ class SequenceDataProcessing:
 
         Parameters
         ----------
-        configuration_file: str
-            The configuration file describing the experimental campaign to be performed
+        input_configuration: str or dict
+            The configuration file describing the experimental campaign to be performed, or a dictionary with the same structure
 
         debug: bool
             True if debug messages should be printed
@@ -115,27 +115,34 @@ class SequenceDataProcessing:
             logging.basicConfig(level=logging.INFO)
         self._logger = custom_logger.getLogger(__name__)
 
-        # Check if the configuration file exists
-        if not os.path.exists(configuration_file):
-            self._logger.error("%s does not exist", configuration_file)
-            sys.exit(-1)
-
-        general_args = {'configuration_file': configuration_file,
-                        'output': output,
-                        'seed': str(seed),
-                        'j': str(j),
-                        'debug': str(debug),
-                        'generate_plots': str(generate_plots),
-                        'details': str(details)
-                       }
-        self.load_campaign_configuration(configuration_file, general_args)
+        # Read campaign configuration
+        if isinstance(input_configuration, str):
+            # Read configuration from the file indicated by the argument
+            if not os.path.exists(input_configuration):
+                self._logger.error("%s does not exist", input_configuration)
+                sys.exit(-1)
+            general_args = {'configuration_file': input_configuration, 'output': output,
+                            'seed': str(seed), 'j': str(j), 'debug': str(debug),
+                            'generate_plots': str(generate_plots), 'details': str(details)
+                           }
+            self.load_campaign_configuration(input_configuration, general_args)
+        elif isinstance(input_configuration, dict):
+            # Read configuration from the argument dict
+            self._campaign_configuration = input_configuration
+            general_args = {'output': output, 'seed': seed, 'j': j, 'debug': debug,
+                            'generate_plots': generate_plots, 'details': details
+                           }
+            self._campaign_configuration['General'].update(general_args)
+        else:
+            self._logger.error("input_configuration must be a path string to a configuration file or a dictionary")
 
         # Check if output path already exist
         if os.path.exists(output):
             self._logger.error("%s already exists", output)
             sys.exit(1)
         os.mkdir(self._campaign_configuration['General']['output'])
-        shutil.copyfile(configuration_file, os.path.join(output, 'configuration_file.ini'))
+        if isinstance(input_configuration, str):
+            shutil.copyfile(input_configuration, os.path.join(output, 'configuration_file.ini'))
         confpars = cp.ConfigParser()
         confpars.read_dict(self._campaign_configuration)
         confpars.write(open(os.path.join(output, "enriched_configuration_file.ini"), 'w'))
