@@ -20,6 +20,7 @@ import os
 import pickle
 import sys
 import pandas as pd
+from sklearn.metrics import mean_absolute_percentage_error
 
 import custom_logger
 import sequence_data_processing
@@ -81,11 +82,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         os.mkdir(self._output_folder)
 
         # Read config file
-        self.conf = cp.ConfigParser()
-        self.conf.optionxform = str
-        self.conf.read(config_file)
-        self._campaign_configuration = {}
-        self.load_campaign_configuration()
+        self.load_campaign_configuration(config_file)
 
         # Read data
         self._logger.info("-->Executing data load")
@@ -115,7 +112,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         self._logger.info("Saved to %s", str(yy_file))
 
         # Compute and output MAPE
-        mape = self.compute_mape(yy, yy_pred)
+        mape = mean_absolute_percentage_error(yy, yy_pred)
         self._logger.info("---MAPE = %s", str(mape))
         if mape_to_file:
           mape_file = os.path.join(self._output_folder, 'mape.txt')

@@ -36,11 +36,11 @@ def main():
 
     Usage example:
     First, produce the original model with
-    $ (pipenv run) python run.py -c example_configurations/faas.ini -o output_faas
+    $ python3 run.py -c example_configurations/faas_test.ini -o output_test
     Then, use the predict() from file...
-    $ (pipenv run) python predict.py -c example_configurations/faas_predict.ini -r output_faas/LRRidge.pickle -o output_faas_predict
+    $ python3 predict.py -c example_configurations/faas_predict.ini -r output_test/LRRidge.pickle -o output_test_predict
     ...or the inline predict_from_df():
-    $ (pipenv run) python predict.py -r output_faas/LRRidge.pickle -o output_faas_predict
+    $ python3 predict.py -r output_test/LRRidge.pickle -o output_test_predict_2
     """
     parser = argparse.ArgumentParser(description="Perform prediction on new data using the provided models")
     parser.add_argument("-r", "--regressor",    help="binary regressor file to be used", required=True)
