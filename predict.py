@@ -51,22 +51,22 @@ def main():
     args = parser.parse_args()
 
     # Build object
-    predictor_obj = Predictor(regressor_file=args.regressor,
-                              output_folder=args.output,
-                              debug=args.debug
-                              )
+    predictor_obj = Predictor(regressor_file=args.regressor, output_folder=args.output, debug=args.debug)
 
-    # For inline prediction on dataframe
-    xx = pd.DataFrame(data=[[0.2224,2.0000,2.3852,600],
-                            [0.2330,1.9669,2.3044,600]],
-                      columns='Lambda,warm_service_time,cold_service_time,expiration_time'.split(',')
-                      )
-    yy = predictor_obj.predict_from_df(xx)
-
-    # Prediction from file
-    predictor_obj.predict(config_file=args.config_file,
-                          mape_to_file=args.mape_to_file
+    # Perform prediction
+    if args.config_file:
+        # prediction reading from a config file
+        predictor_obj.predict(config_file=args.config_file, mape_to_file=args.mape_to_file)
+    else:
+        # example of inline prediction on dataframe
+        xx = pd.DataFrame(data=[[0.2224,2.0000,2.3852,600],
+                                [0.2330,1.9669,2.3044,600]],
+                          columns='Lambda,warm_service_time,cold_service_time,expiration_time'.split(',')
                           )
+        yy = predictor_obj.predict_from_df(xx)
+    print("End of predict.py")
+
+
 
 if __name__ == '__main__':
     main()
