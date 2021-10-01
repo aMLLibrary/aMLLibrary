@@ -120,17 +120,15 @@ class SequenceDataProcessing:
             self._logger.error("%s does not exist", configuration_file)
             sys.exit(-1)
 
-        self.conf = cp.ConfigParser()
-        self.conf.optionxform = str
-        self.conf.read(configuration_file)
-        self.conf['General']['configuration_file'] = configuration_file
-        self.conf['General']['output'] = output
-        self.conf['General']['seed'] = str(seed)
-        self.conf['General']['j'] = str(j)
-        self.conf['General']['debug'] = str(debug)
-        self.conf['General']['generate_plots'] = str(generate_plots)
-        self.conf['General']['details'] = str(details)
-        self.load_campaign_configuration()
+        general_args = {'configuration_file': configuration_file,
+                        'output': output,
+                        'seed': str(seed),
+                        'j': str(j),
+                        'debug': str(debug),
+                        'generate_plots': str(generate_plots),
+                        'details': str(details)
+                       }
+        self.load_campaign_configuration(configuration_file, general_args)
 
         # Check if output path already exist
         if os.path.exists(output):
@@ -138,7 +136,9 @@ class SequenceDataProcessing:
             sys.exit(1)
         os.mkdir(self._campaign_configuration['General']['output'])
         shutil.copyfile(configuration_file, os.path.join(output, 'configuration_file.ini'))
-        self.conf.write(open(os.path.join(output, "enriched_configuration_file.ini"), 'w'))
+        confpars = cp.ConfigParser()
+        confpars.read_dict(self._campaign_configuration)
+        confpars.write(open(os.path.join(output, "enriched_configuration_file.ini"), 'w'))
 
         # Check that validation method has been specified
         if 'validation' not in self._campaign_configuration['General']:
@@ -213,16 +213,29 @@ class SequenceDataProcessing:
 
         self._model_building = model_building.model_building.ModelBuilding(self.random_generator.random())
 
-    def load_campaign_configuration(self):
+    def load_campaign_configuration(self, configuration_file, general_args={}):
         """
-        Load the campaign configuration from the self.conf member, a ConfigParser object, and store all information into a member dictionary called self._campaign_configuration
+        Load the campaign configuration from configuration_file to the member dictionary, self._campaign_configuration
+
+        Parameters
+        ----------
+        configuration_file: str
+            The configuration file describing the experimental campaign to be performed
+        general_args: dict of str: str
+            Arguments to add to the "General" section of the campaign configuration
         """
+
+        confpars = cp.ConfigParser()
+        confpars.optionxform = str
+        confpars.read(configuration_file)
+
+        for key, val in general_args.items():
+            confpars['General'][key] = val
 
         self._campaign_configuration = {}
-
-        for section in self.conf.sections():
+        for section in confpars.sections():
             self._campaign_configuration[section] = {}
-            for item in self.conf.items(section):
+            for item in confpars.items(section):
                 try:
                     self._campaign_configuration[section][item[0]] = ast.literal_eval(item[1])
                 except (ValueError, SyntaxError):
