@@ -49,6 +49,7 @@ for dev in devices:
 
     # Modify config
     config['DataPreparation']['input_path'] = f'"{dataset_file_path}"'
+    config['General']['extrapolation_columns'] = str({"Layer": lay-1})
 
     # Save config to file
     with open(config_file_path, 'w') as f:
