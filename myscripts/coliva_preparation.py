@@ -41,7 +41,7 @@ for dev in devices:
                                      f'j{lay}_ML_input.csv')
     it00 = str(lay).zfill(2)
     config_file_path = os.path.join(config_dev_subfolder,
-                                    f'{new_name}_{it00}.ini')
+                                    f'sfs_{new_name}_{it00}.ini')
 
     # Read blueprint configuration file (refreshed at each iteration)
     config = configparser.ConfigParser()
