@@ -310,9 +310,9 @@ class SequenceDataProcessing:
             check_data = check_data.drop(columns=[self._campaign_configuration['General']['y']])
             for technique in self._campaign_configuration['General']['techniques']:
                 pickle_file_name = os.path.join(self._campaign_configuration['General']['output'], technique + ".pickle")
-                pickle_file = open(pickle_file_name, "rb")
-                regressor = pickle.load(pickle_file)
-                pickle_file.close()
+                with open(pickle_file_name, "rb") as pickle_file:
+                    regressor = pickle.load(pickle_file)
+
                 predicted_y = regressor.predict(check_data)
                 mape = mean_absolute_percentage_error(real_y, predicted_y)
                 self._logger.info("---MAPE of %s: %s", technique, str(mape))

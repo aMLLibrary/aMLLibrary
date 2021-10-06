@@ -167,9 +167,9 @@ class ModelBuilding:
             # Build the regressor
             best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)
             pickle_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + ".pickle")
-            pickle_file = open(pickle_file_name, "wb")
-            pickle.dump(best_regressors[technique], pickle_file)
-            pickle_file.close()
+            with open(pickle_file_name, "wb") as pickle_file:
+                pickle.dump(best_regressors[technique], pickle_file, protocol=4)
+
         self._logger.info("<--Built the final regressors")
         best_config = best_confs[best_technique]
         file_handler = logging.FileHandler(os.path.join(campaign_configuration['General']['output'], 'results'), 'a+')

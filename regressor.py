@@ -67,6 +67,23 @@ class Regressor:
         self._scalers = scalers
         self._logger = custom_logger.getLogger(__name__)
 
+    def __getstate__(self):
+        """
+        Auxilixiary function used by pickle. Overridden to avoid problems with logger lock
+        """
+        temp_d = self.__dict__.copy()
+        if '_logger' in temp_d:
+            temp_d['_logger'] = temp_d['_logger'].name
+        return temp_d
+
+    def __setstate__(self, temp_d):
+        """
+        Auxilixiary function used by pickle. Overridden to avoid problems with logger lock
+        """
+        if '_logger' in temp_d:
+            temp_d['_logger'] = custom_logger.getLogger(temp_d['_logger'])
+        self.__dict__.update(temp_d)
+
     def predict(self, inputs):
         """
         Perform the prediction on a set of input data
