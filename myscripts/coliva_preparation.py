@@ -9,7 +9,7 @@ if os.getcwd() == os.path.dirname(__file__):
   os.chdir(os.pardir)
 
 # Initialize list of devices
-layers_to_keep = (3,5,6,8,9,10,12,13,14,16,17,18,20)
+layers_to_keep = (3,5,6,8,9,10,12,13,14,16,17,18)
 old_to_new_name = {
     'Odroid___VGG16': 'odroid',
     'RaspberryPi3___VGG16': 'rp3',
