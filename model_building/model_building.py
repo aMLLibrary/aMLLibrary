@@ -108,8 +108,8 @@ class ModelBuilding:
             self._logger.info("<--")
         else:
             self._logger.info("-->Run experiments (in parallel)")
-            pool = multiprocessing.Pool(processes_number)
-            expconfs = list(tqdm.tqdm(pool.imap(process_wrapper, expconfs), total=len(expconfs)))
+            with multiprocessing.Pool(processes_number) as pool:
+                expconfs = list(tqdm.tqdm(pool.imap(process_wrapper, expconfs), total=len(expconfs)))
             self._logger.info("<--")
 
         self._logger.info("-->Collecting results")

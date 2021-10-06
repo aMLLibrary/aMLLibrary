@@ -101,12 +101,11 @@ class Results:
             self._logger.info("<--")
         else:
             self._logger.info("-->Evaluate experiments (in parallel)")
-            pool = multiprocessing.Pool(processes_number)
-            self._exp_confs = list(tqdm.tqdm(pool.imap(evaluate_wrapper, self._exp_confs), total=len(self._exp_confs)))
-            if bool(self._campaign_configuration['General']['generate_plots']):
-                pool = multiprocessing.Pool(processes_number)
-                self._exp_confs = list(tqdm.tqdm(pool.imap(plot_wrapper, self._exp_confs), total=len(self._exp_confs)))
-            self._logger.info("<--")
+            with multiprocessing.Pool(processes_number) as pool:
+                self._exp_confs = list(tqdm.tqdm(pool.imap(evaluate_wrapper, self._exp_confs), total=len(self._exp_confs)))
+                if bool(self._campaign_configuration['General']['generate_plots']):
+                    self._exp_confs = list(tqdm.tqdm(pool.imap(plot_wrapper, self._exp_confs), total=len(self._exp_confs)))
+                self._logger.info("<--")
 
         self.raw_results = {}
         for exp_conf in self._exp_confs:
