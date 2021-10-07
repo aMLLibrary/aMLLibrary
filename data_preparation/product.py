@@ -79,6 +79,10 @@ class Product(data_preparation.data_preparation.DataPreparation):
                 base = self._compute_column_name(combination[:-1])
                 new_column = np.array(outputs.data[base]) * np.array(outputs.data[combination[-1]])
                 new_feature_name = self._compute_column_name(combination)
+                # Skip product if the combined name already exists
+                if new_feature_name in outputs.data.columns:
+                    self._logger.warning("%s column already exists, skipping product of features %s", new_feature_name, combination)
+                    continue
                 new_column_df = pd.DataFrame(new_column, columns=[new_feature_name])
                 outputs.data = pd.concat([outputs.data, new_column_df], axis=1)
                 outputs.x_columns.append(new_feature_name)
