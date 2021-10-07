@@ -9,7 +9,7 @@ if os.getcwd() == os.path.dirname(__file__):
   os.chdir(os.pardir)
 
 # Initialize relevant paths
-base_datasets_folder = os.path.join('..', '..', 'aml_outputs', 'output_coliva')
+base_datasets_folder = os.path.join('/home/bruno/DEIB_Dropbox/aml', 'aml_outputs', 'output_coliva')
 
 # Initialize list of used techniques
 techniques = ('XGBOOST', 'LR_RIDGE')
@@ -25,6 +25,8 @@ for dev in os.listdir(base_datasets_folder):
   df = pd.DataFrame(columns=techniques)
   # Loop over iterations of device
   for expp in os.listdir(dev_folder):
+    if 'sfs' in expp or '20' in expp:
+        continue
     exp_num = int(expp.replace(dev+'_', ''))
     results_file_path = os.path.join(dev_folder, expp, 'results')
     # Read results from file
@@ -56,5 +58,5 @@ for idx, dev in enumerate(dfs):
   ax.grid(axis='y')
   ax.legend()
 
-fig.savefig("coliva_plots.pdf")
+#fig.savefig("coliva_plots.pdf")
 fig.savefig("coliva_plots.png")
