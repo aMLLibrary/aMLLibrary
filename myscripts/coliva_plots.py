@@ -25,11 +25,13 @@ for dev in os.listdir(base_datasets_folder):
   df = pd.DataFrame(columns=techniques)
   # Loop over iterations of device
   for expp in os.listdir(dev_folder):
-    if 'sfs' in expp or '20' in expp:
+    if 'sfs' in expp or '20' in expp:  # or 'sfs' not in expp ...
         continue
-    exp_num = int(expp.replace(dev+'_', ''))
+    exp_num = int(expp.replace(dev+'_', ''))  # or 'sfs_'+dev...
     results_file_path = os.path.join(dev_folder, expp, 'results')
     # Read results from file
+    if not os.path.exists(results_file_path):
+        continue
     with open(results_file_path, 'r') as f:
       for lin in f.readlines():
         result_str = '      Best result for Technique.'
@@ -59,4 +61,4 @@ for idx, dev in enumerate(dfs):
   ax.legend()
 
 #fig.savefig("coliva_plots.pdf")
-fig.savefig("coliva_plots.png")
+fig.savefig("coliva_plots.png")  # or ..._sfs.png
