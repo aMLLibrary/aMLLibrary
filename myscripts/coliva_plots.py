@@ -53,9 +53,12 @@ for idx, dev in enumerate(dfs):
   ax.set_title(dev)
   df = dfs[dev]
   for tech in df.columns:
-    ax.scatter(df.index, df[tech], marker='.', label=tech)
+    if tech == 'XGBOOST':
+        ax.scatter(df.index, df[tech], s=40, label=tech)
+    else:
+        ax.scatter(df.index, df[tech], s=10, label=tech)
   ax.set_xlabel("Iteration")
-  ax.set_xticks(tuple(range(1,21)))
+  ax.set_xticks(tuple(range(1,19)))
   ax.set_ylabel("MAPE")
   ax.grid(axis='y')
   ax.legend()
