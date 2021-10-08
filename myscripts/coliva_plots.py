@@ -9,6 +9,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 if os.getcwd() == os.path.dirname(__file__):
   os.chdir(os.pardir)
 
+SFS = True
+
 # Initialize relevant paths
 base_datasets_folder = os.path.join('/home/bruno/DEIB_Dropbox/aml', 'aml_outputs', 'output_coliva')
 
@@ -26,9 +28,12 @@ for dev in os.listdir(base_datasets_folder):
   df = pd.DataFrame(columns=techniques)
   # Loop over iterations of device
   for expp in os.listdir(dev_folder):
-    if 'sfs' in expp or '20' in expp:  # or 'sfs' not in expp ...
+    check = ('sfs' not in expp) if SFS else ('sfs' in expp)
+    if check or '20' in expp:
         continue
-    exp_num = int(expp.replace(dev+'_', ''))  # or 'sfs_'+dev...
+    rm = ('sfs_'+dev+'_') if SFS else (dev+'_')
+    print(rm)
+    exp_num = int(expp.replace(rm, ''))
     results_file_path = os.path.join(dev_folder, expp, 'results')
     # Read results from file
     if not os.path.exists(results_file_path):
@@ -49,6 +54,8 @@ for dev in os.listdir(base_datasets_folder):
 
 # Plot results
 fig = plt.figure(figsize=(10,15))
+suptit = 'Hyperopt + SFS' if SFS else 'Hyperopt'
+fig.suptitle(suptit)
 for idx, dev in enumerate(dfs):
   ax = fig.add_subplot(3,1,idx+1)
   ax.set_title(dev)
@@ -68,5 +75,6 @@ for idx, dev in enumerate(dfs):
   ax.grid(axis='y', which='minor', alpha=0.25)
   ax.legend()
 
-#fig.savefig("coliva_plots.pdf")
-fig.savefig("coliva_plots.png")  # or ..._sfs.png
+filename = "coliva_plots_sfs.png" if SFS else "coliva_plots.png"
+fig.savefig(filename)
+print("Saved to", filename)
