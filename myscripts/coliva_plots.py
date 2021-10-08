@@ -59,9 +59,9 @@ suptit = 'Hyperopt + SFS' if SFS else 'Hyperopt'
 fig.suptitle(suptit, y=0.92, size=14)
 for idx, dev in enumerate(dfs):
   ax = fig.add_subplot(3,1,idx+1)
-  ax.set_title(dev)
+  maxx = np.max(df[tech])
+  ax.set_title(f"{dev} (max MAPE = {maxx})")
   df = dfs[dev]
-  maxx = np.max(df[techniques])[0]
   for tech in df.columns:
     if tech == 'XGBOOST':
         ax.scatter(df.index, df[tech], s=40, label=tech)
