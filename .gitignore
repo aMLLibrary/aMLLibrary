@@ -17,3 +17,4 @@ old
 /.idea/
 .mypy_cache/
 *.pdf
+*.png
