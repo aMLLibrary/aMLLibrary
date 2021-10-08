@@ -16,6 +16,7 @@ base_datasets_folder = os.path.join('/home/bruno/DEIB_Dropbox/aml', 'aml_outputs
 
 # Initialize list of used techniques
 techniques = ['XGBOOST', 'LR_RIDGE']
+layers_to_keep = (3,5,6,8,9,10,12,13,14,16,17,18)
 
 # Initialize results dataframes
 dfs = {}
@@ -67,9 +68,10 @@ for idx, dev in enumerate(dfs):
     else:
         ax.scatter(df.index, df[tech], s=10, label=tech)
   ax.set_xlabel("Iteration")
-  ax.set_xticks(tuple(range(1,19)))
-  ax.set_yticks(np.arange(0.0, maxx, 0.5), minor=False)
-  ax.set_yticks(np.arange(0.0, maxx, 0.25), minor=True)
+  ax.set_xticks(layers_to_keep)
+  ax.set_ylim((0.0, 1.0))
+  ax.set_yticks(np.arange(0.0, 1.0, 0.5), minor=False)
+  ax.set_yticks(np.arange(0.0, 1.0, 0.25), minor=True)
   ax.set_ylabel("MAPE")
   ax.grid(axis='y', which='major', alpha=1.0)
   ax.grid(axis='y', which='minor', alpha=0.25)
