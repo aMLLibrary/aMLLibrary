@@ -9,7 +9,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 if os.getcwd() == os.path.dirname(__file__):
   os.chdir(os.pardir)
 
-SFS = True
+SFS = False
 
 # Initialize relevant paths
 base_datasets_folder = os.path.join('/home/bruno/DEIB_Dropbox/aml', 'aml_outputs', 'output_coliva')
@@ -55,7 +55,7 @@ for dev in os.listdir(base_datasets_folder):
 # Plot results
 fig = plt.figure(figsize=(10,15))
 suptit = 'Hyperopt + SFS' if SFS else 'Hyperopt'
-fig.suptitle(suptit)
+fig.suptitle(suptit, y=0.92, size=14)
 for idx, dev in enumerate(dfs):
   ax = fig.add_subplot(3,1,idx+1)
   ax.set_title(dev)
