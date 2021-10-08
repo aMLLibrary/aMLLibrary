@@ -15,7 +15,7 @@ SFS = False
 base_datasets_folder = os.path.join('/home/bruno/DEIB_Dropbox/aml', 'aml_outputs', 'output_coliva')
 
 # Initialize list of used techniques
-techniques = ['XGBOOST', 'LR_RIDGE']
+techniques = ['LR_RIDGE', 'XGBOOST']
 layers_to_keep = (3,5,6,8,9,10,12,13,14,16,17,18)
 
 # Initialize results dataframes
