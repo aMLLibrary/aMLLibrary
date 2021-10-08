@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -12,7 +13,7 @@ if os.getcwd() == os.path.dirname(__file__):
 base_datasets_folder = os.path.join('/home/bruno/DEIB_Dropbox/aml', 'aml_outputs', 'output_coliva')
 
 # Initialize list of used techniques
-techniques = ('XGBOOST', 'LR_RIDGE')
+techniques = ['XGBOOST', 'LR_RIDGE']
 
 # Initialize results dataframes
 dfs = {}
@@ -52,6 +53,7 @@ for idx, dev in enumerate(dfs):
   ax = fig.add_subplot(3,1,idx+1)
   ax.set_title(dev)
   df = dfs[dev]
+  maxx = np.max(df[techniques])[0]
   for tech in df.columns:
     if tech == 'XGBOOST':
         ax.scatter(df.index, df[tech], s=40, label=tech)
@@ -59,8 +61,11 @@ for idx, dev in enumerate(dfs):
         ax.scatter(df.index, df[tech], s=10, label=tech)
   ax.set_xlabel("Iteration")
   ax.set_xticks(tuple(range(1,19)))
+  ax.set_yticks(np.arange(0.0, maxx, 0.5), minor=False)
+  ax.set_yticks(np.arange(0.0, maxx, 0.25), minor=True)
   ax.set_ylabel("MAPE")
-  ax.grid(axis='y')
+  ax.grid(axis='y', which='major', alpha=1.0)
+  ax.grid(axis='y', which='minor', alpha=0.25)
   ax.legend()
 
 #fig.savefig("coliva_plots.pdf")
