@@ -64,9 +64,9 @@ for idx, dev in enumerate(dfs):
   df = dfs[dev]
   for tech in df.columns:
     if tech == 'XGBOOST':
-        ax.scatter(df.index, df[tech], s=40, label=tech)
+        ax.scatter(df.index, df[tech], label=tech, marker='x')
     else:
-        ax.scatter(df.index, df[tech], s=10, label=tech)
+        ax.scatter(df.index, df[tech], label=tech)
   ax.set_xlabel("Iteration")
   ax.set_xticks(layers_to_keep)
   ax.set_ylim((0.0, 1.0))
