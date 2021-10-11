@@ -69,7 +69,7 @@ class Product(data_preparation.data_preparation.DataPreparation):
         features = sorted(set(inputs.x_columns))
 
         for degree in range(2, max_degree + 1):
-            combinations = itertools.combinations(features, degree)
+            combinations = itertools.combinations_with_replacement(features, degree)
             for combination in combinations:
                 if data_preparation.inversion.Inversion.check_reciprocal(combination):
                     continue
@@ -95,4 +95,4 @@ class Product(data_preparation.data_preparation.DataPreparation):
         Static method used to compute the name of the new columns
         """
 
-        return "_".join(combination)
+        return "__".join(combination)
