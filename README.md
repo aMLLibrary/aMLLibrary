@@ -19,7 +19,7 @@ optional arguments:
   -g, --generate-plots  Generate plots
   -t, --self-check      Predict the input data with the generate regressor
 
-Example of configuration files can be found under example_configurations directory
+Example of configuration files can be found under `example_configurations` directory.
 
 
 ## Docker image
@@ -43,3 +43,7 @@ This library is integrated with the Hyperopt package for hyperparameter tuning v
 This search mode is activated by inserting the `hyperparameter_tuning = Hyperopt` flag in the "General" section of the configuration file, as well as appropriate `hyperopt_max_evals` and `hyperopt_save_interval` values.
 When using Hyperopt, strings representing prior distributions, such as `'loguniform(0.01,1)'`, may be assigned to hyperparameters instead of the usual lists of values used in grid search mode.
 Such strings refer to and are interpreted as Hyperopt prior objects, assuming they are appropriately formatted; please head to https://github.com/hyperopt/hyperopt/wiki/FMin#21-parameter-expressions for more information.
+
+Note that logarithm-based distributions follow a different notation in `a-MLLibrary` configuration files than in the Hyperopt library, for the sake of clarity.
+For instance, the string `'loguniform(a,b)'` in a configuration file means a log-uniform distribution with support `[a,b]`, whereas an equivalent distribution in Hyperopt notation would be `'loguniform(e^a,e^b)'` instead.
+(`a-MLLibrary` performs this conversion of parameter notation automatically.)
