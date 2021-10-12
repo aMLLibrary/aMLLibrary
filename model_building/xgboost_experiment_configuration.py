@@ -140,7 +140,7 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
             the repaired hyperparameters
         """
         new_hypers = copy.deepcopy(hypers)
-        for key in ['max_depth', 'min_child_weight', 'n_estimators']:
+        for key in ['max_depth', 'n_estimators']:
             new_hypers[key] = int(new_hypers[key])
         return new_hypers
 
