@@ -8,9 +8,12 @@ inputs/*/*
 output_*
 
 # Folders to ignore
-log
-etc
-old
+log/
+etc/
+local/
+old/
+temp/
+tmp/
 
 # Miscellaneous
 *swp
