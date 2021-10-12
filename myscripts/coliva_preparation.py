@@ -19,7 +19,7 @@ devices = tuple(old_to_new_name.keys())
 
 # Initialize relevant paths
 datasets_folder = os.path.join('inputs', 'coliva')
-configs_folder = os.path.join('example_configurations', 'coliva')
+configs_folder = os.path.join('example_configurations', 'coliva', 'next')
 configs_blueprint_path = os.path.join('example_configurations', 'coliva',
                                       'blueprint.ini')
 
@@ -41,7 +41,7 @@ for dev in devices:
                                      f'j{lay}_ML_input.csv')
     it00 = str(lay).zfill(2)
     config_file_path = os.path.join(config_dev_subfolder,
-                                    f'sfs_{new_name}_{it00}.ini')
+                                    f'{new_name}_{it00}.ini')
 
     # Read blueprint configuration file (refreshed at each iteration)
     config = configparser.ConfigParser()
