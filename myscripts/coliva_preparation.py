@@ -8,6 +8,9 @@ import numpy as np
 if os.getcwd() == os.path.dirname(__file__):
   os.chdir(os.pardir)
 
+SFS = True
+ALL_LAYERS = False
+
 # Initialize list of devices
 layers_to_keep = (3,5,6,8,9,10,12,13,14,16,17,18)
 old_to_new_name = {
@@ -20,8 +23,9 @@ devices = tuple(old_to_new_name.keys())
 # Initialize relevant paths
 datasets_folder = os.path.join('inputs', 'coliva')
 configs_folder = os.path.join('example_configurations', 'coliva', 'next')
-configs_blueprint_path = os.path.join('example_configurations', 'coliva',
-                                      'blueprint.ini')
+blueprint_file_name = 'blueprint_sfs.ini' if SFS else 'blueprint.ini'
+blueprint_file_path = os.path.join('example_configurations', 'coliva',
+                                      blueprint_file_name)
 
 # Loop over devices
 for dev in devices:
@@ -40,12 +44,14 @@ for dev in devices:
     dataset_file_path = os.path.join(dataset_dev_subfolder,
                                      f'j{lay}_ML_input.csv')
     it00 = str(lay).zfill(2)
+    config_file_name = f'sfs_{new_name}_{it00}.ini' if SFS else \
+                           f'{new_name}_{it00}.ini'
     config_file_path = os.path.join(config_dev_subfolder,
-                                    f'{new_name}_{it00}.ini')
+                                    config_file_name)
 
     # Read blueprint configuration file (refreshed at each iteration)
     config = configparser.ConfigParser()
-    config.read(configs_blueprint_path)
+    config.read(blueprint_file_path)
 
     # Modify config
     config['DataPreparation']['input_path'] = f'"{dataset_file_path}"'
