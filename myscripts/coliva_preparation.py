@@ -34,6 +34,8 @@ blueprint_file_path = os.path.join('example_configurations', 'coliva',
 
 # Loop over devices
 for dev in devices:
+  if dev == 'RaspberryPi3___VGG16' and ANALYSIS_TYPE == 'all':
+    continue
   print("\n", ">>>>>", dev)
   # Get files paths
   dataset_dev_subfolder = os.path.join(datasets_folder, dev)
