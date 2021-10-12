@@ -1,11 +1,12 @@
 #!/bin/bash
 
-BASE_OUTPUT_FOLD=outputs/output_coliva
+ANALYSIS_TYPE='all'
+BASE_OUTPUT_FOLD="outputs/output_coliva_$ANALYSIS_TYPE"
 mkdir $BASE_OUTPUT_FOLD
 
-for app in example_configurations/coliva/*; do
+for app in example_configurations/coliva/$ANALYSIS_TYPE/*; do
   APP_NAME=$(basename $app)
-  if [ "$APP_NAME" == "blueprint.ini" ]; then
+  if [ "${APP_NAME#*.}" == "ini" ]; then
     continue
   fi
   mkdir $BASE_OUTPUT_FOLD/$APP_NAME
