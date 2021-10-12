@@ -8,8 +8,8 @@ import numpy as np
 if os.getcwd() == os.path.dirname(__file__):
   os.chdir(os.pardir)
 
-SFS = True
-ALL_LAYERS = False
+SFS = False
+ANALYSIS_TYPE = 'all'  # 'next' or 'all'
 
 # Initialize list of devices
 layers_to_keep = (3,5,6,8,9,10,12,13,14,16,17,18)
@@ -22,7 +22,12 @@ devices = tuple(old_to_new_name.keys())
 
 # Initialize relevant paths
 datasets_folder = os.path.join('inputs', 'coliva')
-configs_folder = os.path.join('example_configurations', 'coliva', 'next')
+if ANALYSIS_TYPE not in ('next', 'all'):
+    exit("Nope")
+configs_folder = os.path.join('example_configurations', 'coliva',
+                              ANALYSIS_TYPE)
+if not os.path.isdir(configs_folder):
+  os.mkdir(configs_folder)
 blueprint_file_name = 'blueprint_sfs.ini' if SFS else 'blueprint.ini'
 blueprint_file_path = os.path.join('example_configurations', 'coliva',
                                       blueprint_file_name)
@@ -41,13 +46,16 @@ for dev in devices:
 
   # Loop over files of different iterations
   for lay in layers_to_keep:
+    if ANALYSIS_TYPE == 'next':
+        csv_layer = lay
+    elif ANALYSIS_TYPE == 'all':
+        csv_layer = layers_to_keep[-1]
     dataset_file_path = os.path.join(dataset_dev_subfolder,
-                                     f'j{lay}_ML_input.csv')
+                                     f'j{csv_layer}_ML_input.csv')
     it00 = str(lay).zfill(2)
     config_file_name = f'sfs_{new_name}_{it00}.ini' if SFS else \
                            f'{new_name}_{it00}.ini'
-    config_file_path = os.path.join(config_dev_subfolder,
-                                    config_file_name)
+    config_file_path = os.path.join(config_dev_subfolder, config_file_name)
 
     # Read blueprint configuration file (refreshed at each iteration)
     config = configparser.ConfigParser()
