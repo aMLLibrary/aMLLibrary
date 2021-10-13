@@ -11,7 +11,7 @@ if os.getcwd() == os.path.dirname(__file__):
 
 # Initialize relevant paths
 root_folder_path = os.path.join('/home/bruno/DEIB_Dropbox/aml',
-  'aml_outputs', 'output_coliva', 'extrapolation_vgg19')
+    'aml_outputs', 'output_coliva', 'extrapolation_vgg19')
 
 # Initialize list of used techniques
 devices = ('rp3', 'tegrax2')
