@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import copy
+import operator
 import os
 import warnings
 
@@ -104,7 +105,12 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         return self._regressor.predict(xdata)
 
     def print_model(self):
-        return "".join(("XGBoost weights: ", str(self.get_weights_dict())))
+        sorted_weights = dict(sorted(self.get_weights_dict().items(), key=operator.itemgetter(1), reverse=True))
+        ret = "XGBoost weights: {\n"
+        for key, val in sorted_weights.items():
+            ret += "    " + str(round(val, 3)) + " " + key + "\n"
+        ret += "}"
+        return ret
 
     def initialize_regressor(self):
         """
