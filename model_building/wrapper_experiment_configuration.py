@@ -407,7 +407,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
             self._wrapped_experiment_configuration._train()
             return
-        self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()
+        self._wrapped_regressor = self.get_regressor()
         # Get hyperparameters dictionary, with fixed values or Hyperopt priors
         prior_dict = self._wrapped_experiment_configuration._hyperparameters
         params = self._wrapped_experiment_configuration.get_default_parameters()
@@ -433,7 +433,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
             The set of rows to be considered
         """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
-        ret = self._wrapped_experiment_configuration.get_regressor().predict(xdata)
+        ret = self.get_regressor().predict(xdata)
         self._logger.debug("Using regressor on %s: %s vs %s", str(xdata), str(ydata), str(ret))
         return ret
 
@@ -589,7 +589,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
             SFSExperimentConfiguration._train(self)
             return
-        self._wrapped_regressor = self._wrapped_experiment_configuration.get_regressor()
+        self._wrapped_regressor = self.get_regressor()
         # Read parameter priors
         prior_dict = self._wrapped_experiment_configuration._hyperparameters
         params = self._wrapped_experiment_configuration.get_default_parameters()
@@ -663,4 +663,4 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         self._wrapped_experiment_configuration._hyperparameters = subsets_best_hyperparams[idx_best]
         self._logger.debug("Selected features: %s", str(best_features))
         self.set_x_columns(best_features)
-        self._wrapped_experiment_configuration.get_regressor().fit(X_train[best_features], y_train)
+        self.get_regressor().fit(X_train[best_features], y_train)
