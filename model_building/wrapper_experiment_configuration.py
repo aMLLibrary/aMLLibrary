@@ -422,6 +422,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         self._wrapped_experiment_configuration._regressor = self._wrapped_regressor
         self._wrapped_experiment_configuration._hyperparameters = best_param
         self._wrapped_experiment_configuration._train()
+        self.get_regressor().aml_features = self.get_x_columns()
 
     def compute_estimations(self, rows):
         """

@@ -230,6 +230,8 @@ class ExperimentConfiguration(abc.ABC):
         self._start_file_logger()
         self.initialize_regressor()
         self._train()
+        if self._regressor and not hasattr(self._regressor, 'aml_features'):
+            self._regressor.aml_features = self.get_x_columns()
         self._stop_file_logger()
         with open(regressor_path, 'wb') as f:
             pickle.dump(self.get_regressor(), f)
