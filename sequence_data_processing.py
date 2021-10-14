@@ -21,7 +21,6 @@ This module defines the SequenceDataProcessing class which is the only class tha
 """
 import ast
 import configparser as cp
-import glob
 import logging
 import os
 import pickle
@@ -103,6 +102,7 @@ class SequenceDataProcessing:
         details: bool
             True if the results of the single experiments should be added
         """
+        self._done_file_flag = os.path.join(output, 'done')
 
         self._data_preprocessing_list = []
 
@@ -138,8 +138,7 @@ class SequenceDataProcessing:
             self._logger.error("input_configuration must be a path string to a configuration file or a dictionary")
 
         # Check if output path already exist
-        final_regressor_path = os.path.join(output, '*.pickle')
-        if os.path.exists(output) and glob.glob(final_regressor_path):
+        if os.path.exists(output) and os.path.exists(self._done_file_flag):
             self._logger.error("%s already exists", output)
             sys.exit(1)
         if not os.path.exists(output):
@@ -321,5 +320,8 @@ class SequenceDataProcessing:
                 self._logger.info("---MAPE of %s: %s", technique, str(mape))
 
             self._logger.info("<--Performed self check")
+
+        # Flag file for successful execution
+        os.mknod(self._done_file_flag)
 
         return regressor
