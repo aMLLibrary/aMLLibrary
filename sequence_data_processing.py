@@ -21,6 +21,7 @@ This module defines the SequenceDataProcessing class which is the only class tha
 """
 import ast
 import configparser as cp
+import glob
 import logging
 import os
 import pickle
@@ -137,10 +138,12 @@ class SequenceDataProcessing:
             self._logger.error("input_configuration must be a path string to a configuration file or a dictionary")
 
         # Check if output path already exist
-        if os.path.exists(output):
+        final_regressor_path = os.path.join(output, '*.pickle')
+        if os.path.exists(output) and glob.glob(final_regressor_path):
             self._logger.error("%s already exists", output)
             sys.exit(1)
-        os.mkdir(self._campaign_configuration['General']['output'])
+        if not os.path.exists(output):
+            os.mkdir(self._campaign_configuration['General']['output'])
         if isinstance(input_configuration, str):
             shutil.copyfile(input_configuration, os.path.join(output, 'configuration_file.ini'))
         confpars = cp.ConfigParser()

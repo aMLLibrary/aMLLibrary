@@ -18,6 +18,7 @@ limitations under the License.
 import abc
 import copy
 import logging
+import pickle
 import os
 from enum import Enum
 
@@ -146,6 +147,9 @@ class ExperimentConfiguration(abc.ABC):
     get_regressor()
         Return the regressor associated with this experiment configuration
 
+    set_regressor()
+        Set the regressor associated with this experiment configuration
+
     get_technique()
         Return the technique associated with this experiment configuration
 
@@ -203,8 +207,9 @@ class ExperimentConfiguration(abc.ABC):
             and not isinstance(self, wec.HyperoptSFSExperimentConfiguration)
            ):
             # This is not a wrapper of another experiment: create experiment directory
-            assert not os.path.exists(self._experiment_directory), self._experiment_directory
-            os.makedirs(self._experiment_directory)
+            assert self._experiment_directory
+            if not os.path.exists(self._experiment_directory):
+                os.makedirs(self._experiment_directory)
 
     def train(self):
         """
@@ -212,10 +217,19 @@ class ExperimentConfiguration(abc.ABC):
 
         This public method wraps the private method which performs the actual work. In doing this it controls the start/stop of logging on file
         """
-        self._start_file_logger()
-        self.initialize_regressor()
-        self._train()
-        self._stop_file_logger()
+        regressor_path = os.path.join(self._experiment_directory, 'regressor.pickle')
+        # Fault tolerance mechanism for interrupted runs
+        if os.path.exists(regressor_path):
+            with open(regressor_path, 'rb') as f:
+                self.set_regressor(pickle.load(f))
+            return
+        else:
+            self._start_file_logger()
+            self.initialize_regressor()
+            self._train()
+            self._stop_file_logger()
+            with open(regressor_path, 'wb') as f:
+                pickle.dump(self.get_regressor(), f)
 
     @abc.abstractmethod
     def _train(self):
@@ -417,6 +431,17 @@ class ExperimentConfiguration(abc.ABC):
         if self._regressor is None:
             self.initialize_regressor()
         return self._regressor
+
+    def set_regressor(self, reg):
+        """
+        Set the regressor associated with this experiment configuration
+
+        Parameters
+        ----------
+        reg: regressor object
+            the regressor to be set in this experiment configuration
+        """
+        self._regressor = reg
 
     def get_hyperparameters(self):
         """

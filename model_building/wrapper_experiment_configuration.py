@@ -56,6 +56,9 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
     get_regressor()
         Return the regressor associated with this (wrapped) experiment configuration
 
+    set_regressor()
+        Set the regressor associated with this (wrapped) experiment configuration
+
     get_default_parameters()
         Get a dictionary with all technique parameters with default values
 
@@ -115,6 +118,18 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
             the regressor associated with this (wrapped) experiment configuration
         """
         return self._wrapped_experiment_configuration.get_regressor()
+
+    def set_regressor(self, reg):
+        """
+        Set the regressor associated with this (wrapped) experiment configuration
+
+        Parameters
+        ----------
+        reg: regressor object
+            the regressor to be set in this (wrapped) experiment configuration
+        """
+        self._wrapped_regressor = reg
+        self._wrapped_experiment_configuration._regressor = reg
 
     def get_default_parameters(self):
         """
