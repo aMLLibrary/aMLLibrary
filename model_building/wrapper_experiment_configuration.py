@@ -181,7 +181,7 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         Performs the actual building of the linear model
 
     compute_estimations()
-        Compute the estimated values for a give set of data
+        Compute the estimated values for a given set of data
 
     print_model()
         Print the representation of the generated model
@@ -663,4 +663,16 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         self._wrapped_experiment_configuration._hyperparameters = subsets_best_hyperparams[idx_best]
         self._logger.debug("Selected features: %s", str(best_features))
         self.set_x_columns(best_features)
+        self.get_regressor().aml_features = best_features
         self.get_regressor().fit(X_train[best_features], y_train)
+
+    def compute_estimations(self, rows):
+        """
+        Compute the predictions for data points indicated in rows estimated by the regressor
+
+        Parameters
+        ----------
+        rows: list of integers
+            The set of rows to be considered
+        """
+        return SFSExperimentConfiguration.compute_estimations(self, rows)
