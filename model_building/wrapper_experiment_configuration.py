@@ -256,7 +256,7 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         """
         Print the representation of the generated model
         """
-        return "".join(("Selected features: ", str(self.get_x_columns()), "\n",
+        return "".join(("Selected features: ", str(self.get_regressor().aml_features), "\n",
                         self._wrapped_experiment_configuration.print_model()))
 
 

@@ -104,7 +104,8 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         """
         ret_string = ""
         coefficients = self._regressor.coef_
-        for column, coefficient in zip(self.get_x_columns(), coefficients):
+        assert len(self._regressor.aml_features) == len(coefficients)
+        for column, coefficient in zip(self._regressor.aml_features, coefficients):
             if ret_string != "":
                 ret_string = ret_string + " + "
             ret_string = ret_string + "(" + str(coefficient) + "*" + column + ")"
