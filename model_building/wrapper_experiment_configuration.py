@@ -218,7 +218,7 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         verbose = 2 if self._campaign_configuration['General']['debug'] else 0
-        self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self._wrapped_experiment_configuration.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
+        self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         # set the maximum number of required features to the minimum between itself and the number of existing features
         if self._campaign_configuration['FeatureSelection']['max_features'] > xdata.shape[1]:
@@ -232,7 +232,8 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         filtered_xdata = self._sfs.transform(xdata)  # is an np.array
         filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_cols)
         self.set_x_columns(x_cols)
-        self._wrapped_experiment_configuration.get_regressor().fit(filtered_xdata, ydata)
+        self.get_regressor().aml_features = x_cols
+        self.get_regressor().fit(filtered_xdata, ydata)
 
     def compute_estimations(self, rows):
         """
@@ -244,8 +245,10 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
             The set of rows to be considered
         """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
-        ret = self._wrapped_experiment_configuration.get_regressor().predict(xdata)
-        self._logger.debug("Using regressor on %s: %s vs %s", str(xdata), str(ydata), str(ret))
+        features = self.get_regressor().aml_features
+        filtered_xdata = xdata[features]
+        ret = self.get_regressor().predict(filtered_xdata)
+        self._logger.debug("Using regressor on %s: %s vs %s", str(filtered_xdata), str(ydata), str(ret))
 
         return ret
 
