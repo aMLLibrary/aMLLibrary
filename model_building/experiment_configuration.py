@@ -220,16 +220,19 @@ class ExperimentConfiguration(abc.ABC):
         regressor_path = os.path.join(self._experiment_directory, 'regressor.pickle')
         # Fault tolerance mechanism for interrupted runs
         if os.path.exists(regressor_path):
-            with open(regressor_path, 'rb') as f:
-                self.set_regressor(pickle.load(f))
-            return
-        else:
-            self._start_file_logger()
-            self.initialize_regressor()
-            self._train()
-            self._stop_file_logger()
-            with open(regressor_path, 'wb') as f:
-                pickle.dump(self.get_regressor(), f)
+            try:
+                with open(regressor_path, 'rb') as f:
+                    self.set_regressor(pickle.load(f))
+                return
+            except EOFError:
+                # Run was interrupted in the middle of writing the regressor to file: we restart the experiment
+                pass
+        self._start_file_logger()
+        self.initialize_regressor()
+        self._train()
+        self._stop_file_logger()
+        with open(regressor_path, 'wb') as f:
+            pickle.dump(self.get_regressor(), f)
 
     @abc.abstractmethod
     def _train(self):
