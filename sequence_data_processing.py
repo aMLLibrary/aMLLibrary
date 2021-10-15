@@ -300,6 +300,8 @@ class SequenceDataProcessing:
 
         end = time.time()
         execution_time = str(end - start)
+        file_handler = logging.FileHandler(os.path.join(self._campaign_configuration['General']['output'], 'results'), 'a+')
+        self._logger.addHandler(file_handler)
         self._logger.info("<--Execution Time : %s", execution_time)
 
         if self._self_check:
