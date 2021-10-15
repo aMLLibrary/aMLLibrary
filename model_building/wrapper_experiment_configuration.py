@@ -442,9 +442,11 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         """
         Print the representation of the generated model
         """
-        return "".join(("Optimal hyperparameter(s) found with hyperopt: ",
-                        str(self._wrapped_experiment_configuration._hyperparameters),
-                        "\n",
+        hypers = self._wrapped_experiment_configuration._hyperparameters.copy()
+        for key in hypers:
+            if isinstance(hypers[key], float):
+                hypers[key] = round(hypers[key], 3)
+        return "".join(("Optimal hyperparameter(s) found with hyperopt: ", str(hypers), "\n",
                         self._wrapped_experiment_configuration.print_model()))
 
     def _parse_prior(self, param_name, prior_ini):
@@ -576,8 +578,15 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         """
         Print the representation of the generated model
         """
-        return "".join(("Optimal hyperparameter(s) found with hyperopt: ",
-                        str(self._wrapped_experiment_configuration._hyperparameters),
+    def print_model(self):
+        """
+        Print the representation of the generated model
+        """
+        hypers = self._wrapped_experiment_configuration._hyperparameters.copy()
+        for key in hypers:
+            if isinstance(hypers[key], float):
+                hypers[key] = round(hypers[key], 3)
+        return "".join(("Optimal hyperparameter(s) found with hyperopt: ", str(hypers),
                         "\nSelected features: ", str(self.get_x_columns()), "\n",
                         self._wrapped_experiment_configuration.print_model()))
 
