@@ -123,7 +123,11 @@ class ModelBuilding:
 
         best_confs, best_technique = results.get_bests()
         best_regressors = {}
+
+        file_handler = logging.FileHandler(os.path.join(campaign_configuration['General']['output'], 'results'), 'a+')
+        self._logger.addHandler(file_handler)
         self._logger.info("-->Building the final regressors")
+        self._logger.removeHandler(file_handler)
 
         # Create a shadow copy
         all_data = regression_inputs.copy()
@@ -157,12 +161,15 @@ class ModelBuilding:
             # Train and evaluate by several metrics
             best_conf.train()
             best_conf.evaluate()
+
+            self._logger.addHandler(file_handler)
             self._logger.info("Validation metrics on full dataset for %s:", technique)
             self._logger.info("-->")
             self._logger.info("MAPE: %f", best_conf.mapes["validation"])
             self._logger.info("RMSE: %f", best_conf.rmses["validation"])
             self._logger.info("R^2 : %f", best_conf.r2s  ["validation"])
             self._logger.info("<--")
+            self._logger.removeHandler(file_handler)
 
             # Build the regressor
             best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)
@@ -170,10 +177,9 @@ class ModelBuilding:
             with open(pickle_file_name, "wb") as pickle_file:
                 pickle.dump(best_regressors[technique], pickle_file, protocol=4)
 
+        self._logger.addHandler(file_handler)
         self._logger.info("<--Built the final regressors")
         best_config = best_confs[best_technique]
-        file_handler = logging.FileHandler(os.path.join(campaign_configuration['General']['output'], 'results'), 'a+')
-        self._logger.addHandler(file_handler)
         self._logger.info("Best model:")
         self._logger.info("-->")
         self._logger.info(best_config.print_model())
