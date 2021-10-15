@@ -2,6 +2,7 @@
 Library for the generation of regression models.
 The main script of the library is run.py:
 
+```
 usage: run.py [-h] -c CONFIGURATION_FILE [-d] [-s SEED] [-o OUTPUT] [-j J]
               [-g] [-t]
 
@@ -18,6 +19,7 @@ optional arguments:
   -j J                  The number of processes to be used
   -g, --generate-plots  Generate plots
   -t, --self-check      Predict the input data with the generate regressor
+```
 
 Example of configuration files can be found under `example_configurations` directory.
 
