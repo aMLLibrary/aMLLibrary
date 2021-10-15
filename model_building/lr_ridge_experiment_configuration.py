@@ -108,8 +108,10 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         for column, coefficient in zip(self._regressor.aml_features, coefficients):
             if ret_string != "":
                 ret_string = ret_string + " + "
-            ret_string = ret_string + "(" + str(coefficient) + "*" + column + ")"
-        ret_string = ret_string + " + (" + str(self._regressor.intercept_) + ")"
+            coeff = str(round(coefficient, 3))
+            ret_string = ret_string + "(" + str(coeff) + "*" + column + ")"
+        coeff = str(round(self._regressor.intercept_, 3))
+        ret_string = ret_string + " + (" + coeff + ")"
         return ret_string
 
     def initialize_regressor(self):
