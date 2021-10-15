@@ -4,7 +4,7 @@ The main script of the library is run.py:
 
 ```
 usage: run.py [-h] -c CONFIGURATION_FILE [-d] [-s SEED] [-o OUTPUT] [-j J]
-              [-g] [-t]
+              [-g] [-t] [-l]
 
 Perform exploration of regression techniques
 
@@ -19,6 +19,7 @@ optional arguments:
   -j J                  The number of processes to be used
   -g, --generate-plots  Generate plots
   -t, --self-check      Predict the input data with the generate regressor
+  -l, --details         Print results of the single experiments
 ```
 
 Example of configuration files can be found under `example_configurations` directory.
