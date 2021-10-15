@@ -1,6 +1,6 @@
 # a-MLLibrary
 Library for the generation of regression models.
-The main script of the library is run.py:
+The main script of the library is `run.py`:
 
 ```
 usage: run.py [-h] -c CONFIGURATION_FILE [-d] [-s SEED] [-o OUTPUT] [-j J]
