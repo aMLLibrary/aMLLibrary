@@ -5,13 +5,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
+SFS = False
+
 # Allows running this script from both this folder and from root folder
 if os.getcwd() == os.path.dirname(__file__):
   os.chdir(os.pardir)
 
 # Initialize relevant paths
-root_folder_path = os.path.join('/home/bruno/DEIB_Dropbox/aml',
-    'aml_outputs', 'output_coliva', 'extrapolation_vgg19')
+root_folder_name = 'extrapolation_vgg19_sfs' if SFS else 'extrapolation_vgg19'
+root_folder_path = os.path.join('/home/bruno/DEIB_Dropbox/aml', 'outputs',
+                                'output_coliva', root_folder_name)
 
 # Initialize list of used techniques
 devices = ('rp3', 'tegrax2')
@@ -59,6 +62,7 @@ for idx, dev in enumerate(devices):
     ax.grid(axis='y', which='minor', alpha=0.25)
     ax.legend()
 
-filename = "coliva_plots_extrapolation.png"
+filename = "coliva_plots_extrapolation_sfs.png" if SFS else \
+           "coliva_plots_extrapolation.png"
 fig.savefig(filename)
 print("Saved to", filename)
