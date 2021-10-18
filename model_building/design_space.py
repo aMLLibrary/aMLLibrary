@@ -190,7 +190,7 @@ class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
         list of ExperimentConfiguration
             a list of the experiment configurations to be evaluated
         """
-        self._logger.info("-->Generating experiments by MultiTechniquesExpConfsGenerator")
+        self._logger.debug("-->Generating experiments by MultiTechniquesExpConfsGenerator")
         return_list = []
         assert self._generators
 
@@ -253,7 +253,7 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
         list of ExperimentConfiguration
             a list of the experiment configurations to be evaluated
         """
-        self._logger.info("-->Generating experiments by TechniqueExpConfsGenerator %s", ec.enum_to_configuration_label[self._technique])
+        self._logger.debug("-->Generating experiments by TechniqueExpConfsGenerator %s", ec.enum_to_configuration_label[self._technique])
         assert prefix
         first_key = ""
         # We expect that hyperparameters for a technique are stored in campaign_configuration[first_key]
@@ -382,14 +382,14 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
         list of ExperimentConfiguration
             a list of the experiment configurations to be evaluated
         """
-        self._logger.info("-->Generating experiments by RepeatedExpConfsGenerator")
+        self._logger.debug("-->Generating experiments by RepeatedExpConfsGenerator")
         return_list = []
         assert self._generators
 
         for key, generator in self._generators.items():
             new_prefix = prefix.copy()
             new_prefix.append(key)
-            self._logger.info("-->Generating experiments for run %s", str(key))
+            self._logger.debug("-->Generating experiments for run %s", str(key))
             return_list.extend(generator.generate_experiment_configurations(new_prefix, regression_inputs))
             self._logger.info("<--")
 
@@ -591,7 +591,7 @@ class XGBoostFeatureSelectionExpConfsGenerator(ExpConfsGenerator):
         list of ExperimentConfiguration
             a list of the experiment configurations to be evaluated
         """
-        self._logger.info("-->Generating experiments by XGBoostFeatureSelectionExpConfsGenerator")
+        self._logger.debug("-->Generating experiments by XGBoostFeatureSelectionExpConfsGenerator")
         xgboost_feature_selection = data_preparation.xgboost_feature_selection.XGBoostFeatureSelection(self._campaign_configuration, prefix)
         local_regression_inputs = copy.copy(regression_inputs)
         local_regression_inputs = xgboost_feature_selection.process(local_regression_inputs)
@@ -650,7 +650,7 @@ class AllExpConfsGenerator(SelectionValidationExpConfsGenerator):
         list of ExperimentConfiguration
             a list of the experiment configurations to be evaluated
         """
-        self._logger.info("-->Generating experiments by AllExpConfsGenerator")
+        self._logger.debug("-->Generating experiments by AllExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("All")
         local_regression_inputs = copy.copy(regression_inputs)
@@ -717,7 +717,7 @@ class ExtrapolationExpConfsGenerator(SelectionValidationExpConfsGenerator):
         list of ExperimentConfiguration
             a list of the experiment configurations to be evaluated
         """
-        self._logger.info("-->Generating experiments by ExtrapolationExpConfsGenerator")
+        self._logger.debug("-->Generating experiments by ExtrapolationExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("Extrapolation")
         local_regression_inputs = copy.copy(regression_inputs)
@@ -782,7 +782,7 @@ class HoldOutExpConfsGenerator(SelectionValidationExpConfsGenerator):
         list of ExperimentConfiguration
             a list of the experiment configurations to be evaluated
         """
-        self._logger.info("-->Generating experiments by HoldOutExpConfsGenerator")
+        self._logger.debug("-->Generating experiments by HoldOutExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("HoldOut")
         local_regression_inputs = regression_inputs.copy()
@@ -864,7 +864,7 @@ class KFoldExpConfsGenerator(SelectionValidationExpConfsGenerator):
         list of ExperimentConfiguration
             a list of the experiment configurations to be evaluated
         """
-        self._logger.info("-->Generating experiments by KFoldExpConfsGenerator")
+        self._logger.debug("-->Generating experiments by KFoldExpConfsGenerator")
         assert prefix
 
         if len(regression_inputs.inputs_split["training"]) < self._k:
@@ -878,7 +878,7 @@ class KFoldExpConfsGenerator(SelectionValidationExpConfsGenerator):
         remaining = set(all_training_idx)
 
         for fold in range(0, self._k):
-            self._logger.info("-->Generating experiments for fold %s", str(fold))
+            self._logger.debug("-->Generating experiments for fold %s", str(fold))
             assert prefix
             fold_prefix = copy.copy(prefix)
             assert fold_prefix
@@ -950,7 +950,7 @@ class NormalizationExpConfsGenerator(ExpConfsGenerator):
         list of ExperimentConfiguration
             a list of the experiment configurations to be evaluated
         """
-        self._logger.info("-->Generating experiments by NormalizationExpConfsGenerator")
+        self._logger.debug("-->Generating experiments by NormalizationExpConfsGenerator")
         normalizer = data_preparation.normalization.Normalization(self._campaign_configuration)
         local_regression_inputs = copy.copy(regression_inputs)
         local_regression_inputs = normalizer.process(local_regression_inputs)
@@ -1077,7 +1077,7 @@ class SFSExpConfsGenerator(ExpConfsGenerator):
         list of ExperimentConfiguration
             a list of the experiment configurations to be evaluated
         """
-        self._logger.info("-->Generating experiments by SFSExpConfsGenerator")
+        self._logger.debug("-->Generating experiments by SFSExpConfsGenerator")
         internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
         ret_list = []
         for wrapped_point in internal_list:
@@ -1138,7 +1138,7 @@ class HyperoptExpConfsGenerator(ExpConfsGenerator):
         list of ExperimentConfiguration
             a list of the experiment configurations to be evaluated
         """
-        self._logger.info("-->Generating experiments by HyperoptExpConfsGenerator")
+        self._logger.debug("-->Generating experiments by HyperoptExpConfsGenerator")
         internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
         ret_list = []
         for wrapped_point in internal_list:
@@ -1197,7 +1197,7 @@ class HyperoptSFSExpConfsGenerator(ExpConfsGenerator):
         list of ExperimentConfiguration
             a list of the experiment configurations to be evaluated
         """
-        self._logger.info("-->Generating experiments by HyperoptSFSExpConfsGenerator")
+        self._logger.debug("-->Generating experiments by HyperoptSFSExpConfsGenerator")
         internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
         ret_list = []
         for wrapped_point in internal_list:
