@@ -48,7 +48,13 @@ def main():
     parser.add_argument("-x", "--execute", help="execute the experiments instead of performing a dry run", default=False, action="store_true")
     args = parser.parse_args()
 
-    # Get parameters
+    # Get command-line options for run.py
+    extra_options = []
+    if args.debug:
+        extra_options.append('-d')
+    if int(args.j) > 1:
+        extra_options.extend(('-j', args.j))
+    # Get command-line options for this script
     project_name = args.PROJECT_NAME
     dry_run = not args.execute
     if dry_run:
@@ -84,8 +90,9 @@ def main():
             exper_config_path = os.path.join(device_config_fold, config_name)
             config_name_no_ext = config_name[:-4]
             exper_output_path = os.path.join(device_output_fold, config_name_no_ext)
-            cmd_run = ' '.join(('python3', 'run.py', '-c', exper_config_path,
-                                                     '-o', exper_output_path))
+            cmd_run = ' '.join(['python3', 'run.py'] + extra_options +
+                               ['-c', exper_config_path,
+                                '-o', exper_output_path])
             use_command(cmd_run, dry_run)
 
 
