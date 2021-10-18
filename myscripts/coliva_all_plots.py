@@ -30,10 +30,15 @@ for dev in os.listdir(base_datasets_folder):
   df = pd.DataFrame(columns=techniques)
   # Loop over iterations of device
   for expp in os.listdir(dev_folder):
-    check = ('sfs' not in expp) if SFS else ('sfs' in expp)
-    if check or '20' in expp:
+    if dev == 'tegrax2':
+        skip = ('nosfs' in expp) if SFS else ('nosfs' not in expp)
+    else:
+        skip = ('sfs' not in expp) if SFS else ('sfs' in expp)
+    if skip or '20' in expp:
         continue
     rm = ('sfs_'+dev+'_') if SFS else (dev+'_')
+    if dev == 'tegrax2':
+        rm = 'nosfs_'+dev+'_'
     exp_num = int(expp.replace(rm, ''))
     results_file_path = os.path.join(dev_folder, expp, 'results')
     # Read results from file
@@ -70,8 +75,8 @@ for idx, dev in enumerate(dfs):
   ax.set_xlabel("Iteration")
   ax.set_xticks(layers_to_keep)
   ax.set_ylim((0.0, 1.0))
-  ax.set_yticks(np.arange(0.0, 1.0, 0.5), minor=False)
-  ax.set_yticks(np.arange(0.0, 1.0, 0.25), minor=True)
+  ax.set_yticks(np.arange(0.0, 1.01, 0.5), minor=False)
+  ax.set_yticks(np.arange(0.0, 1.01, 0.25), minor=True)
   ax.set_ylabel("MAPE")
   ax.grid(axis='y', which='major', alpha=1.0)
   ax.grid(axis='y', which='minor', alpha=0.25)
