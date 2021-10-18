@@ -77,7 +77,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         """
         # Check if output path already exist
         if os.path.exists(self._output_folder):
-            self._logger.error("%s already exists", self._output_folder)
+            self._logger.error("%s already exists. Terminating the program...", self._output_folder)
             sys.exit(1)
         os.mkdir(self._output_folder)
 

@@ -139,7 +139,7 @@ class SequenceDataProcessing:
 
         # Check if output path already exist
         if os.path.exists(output) and os.path.exists(self._done_file_flag):
-            self._logger.error("%s already exists", output)
+            self._logger.error("%s already exists. Terminating the program...", output)
             sys.exit(1)
         if not os.path.exists(output):
             os.mkdir(self._campaign_configuration['General']['output'])
