@@ -41,7 +41,9 @@ for dev in devices:
 
 # Plot results
 fig = plt.figure(figsize=(10,15))
-fig.suptitle('Extrapolation from VGG16 to VGG19', y=0.92, size=14)
+tit = 'Extrapolation from VGG16 to VGG19 with SFS' if SFS else \
+      'Extrapolation from VGG16 to VGG19'
+fig.suptitle(tit, y=0.92, size=14)
 for idx, dev in enumerate(devices):
     df = dfs[dev]
     ax = fig.add_subplot(2,1,idx+1)
