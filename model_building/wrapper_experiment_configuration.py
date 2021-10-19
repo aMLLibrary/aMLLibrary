@@ -578,10 +578,6 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         """
         Print the representation of the generated model
         """
-    def print_model(self):
-        """
-        Print the representation of the generated model
-        """
         hypers = self._wrapped_experiment_configuration._hyperparameters.copy()
         for key in hypers:
             if isinstance(hypers[key], float):

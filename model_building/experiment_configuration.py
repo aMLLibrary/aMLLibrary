@@ -166,7 +166,7 @@ class ExperimentConfiguration(abc.ABC):
         Set the columns to be used in the regression
 
     print_model()
-        Prints in readable form the trained model; at the moment is not pure virtual since not all the subclasses implement it
+        Print the representation of the generated model
     """
 
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
@@ -497,7 +497,9 @@ class ExperimentConfiguration(abc.ABC):
 
     def print_model(self):
         """
-        Print the representation of the generated model, as an empty string when the subclass does not override this method
+        Print the representation of the generated model, as an empty string if not overridden by the subclass
+
+        This is not a pure virtual method since not all the subclasses implement it
         """
         return ""
 

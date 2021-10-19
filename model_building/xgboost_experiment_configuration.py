@@ -39,6 +39,21 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
 
     compute_estimations()
         Compute the estimated values for a give set of data
+
+    print_model()
+        Print the representation of the generated model
+
+    initialize_regressor()
+        Initialize the regressor object for the experiments
+
+    get_default_parameters()
+        Get a dictionary with all technique parameters with default values
+
+    repair_hyperparameters()
+        Repair and return hyperparameter values which cause the regressor to raise errors
+
+    get_weights_dict()
+        Return a dictionary containing the regressor's normalized importance weights for each feature
     """
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
@@ -105,6 +120,9 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         return self._regressor.predict(xdata)
 
     def print_model(self):
+        """
+        Print the representation of the generated model
+        """
         sorted_weights = dict(sorted(self.get_weights_dict().items(), key=operator.itemgetter(1), reverse=True))
         ret = "XGBoost weights: {\n"
         for key, val in sorted_weights.items():

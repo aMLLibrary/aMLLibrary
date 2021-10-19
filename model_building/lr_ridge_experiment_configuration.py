@@ -36,7 +36,7 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         Compute the estimated values for a give set of data
 
     print_model()
-        Prints the model
+        Print the representation of the generated model
     """
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
@@ -100,7 +100,7 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
 
     def print_model(self):
         """
-        Print the model
+        Print the representation of the generated model
         """
         ret_string = ""
         coefficients = self._regressor.coef_
