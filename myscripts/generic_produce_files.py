@@ -10,15 +10,13 @@ Blueprint script to produce .ini files, which can also be integrated to produce
 .csv files.
 """
 
-def main():
-    # User parameters
-    configs_fold = 'example_configurations/coliva/all'
-    datasets_fold = 'inputs/coliva'
-    blueprint_config_path = 'example_configurations/coliva/blueprint.ini'
-    devices = ('Odroid___VGG16', 'RaspberryPi3___VGG16', 'TegraX2___VGG16')
+_configs_fold = 'example_configurations/coliva/all'
+_datasets_fold = 'inputs/coliva'
+_blueprint_config_path = 'example_configurations/coliva/blueprint.ini'
+_devices = ('Odroid___VGG16', 'RaspberryPi3___VGG16', 'TegraX2___VGG16')
 
-    ##########################################################################
 
+def produce_files(configs_fold, datasets_fold, blueprint_config_path, devices):
     # Allows running this script from both this folder and from root folder
     if os.getcwd() == os.path.dirname(__file__):
         os.chdir(os.pardir)
@@ -35,7 +33,7 @@ def main():
         # Loop over files of different iterations for the device
         for dataset_name in os.listdir(device_dataset_fold):
             # Find integer in the dataset name
-            integer = int(re.search(r'\d+', dataset_name).group())
+            integer = int(re.findall(r'\d+', dataset_name)[-1])
             int00 = str(integer).zfill(3)
             # Build paths for dataset and config file
             dataset_file_path = os.path.join(device_dataset_fold, dataset_name)
@@ -57,4 +55,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    produce_files(_configs_fold, _datasets_fold, _blueprint_config_path,
+                  _devices)
