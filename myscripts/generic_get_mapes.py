@@ -35,7 +35,8 @@ def get_mapes(output_fold):
                         mape = float(line_list[4].replace(mape_str, ''))
                         # print(integer, tech, mape, sep=" -- ")
                         df.loc[integer, tech] = mape
-        dfs[device] = df.sort_index(inplace=True)
+        df.sort_index(inplace=True)
+        dfs[device] = df
         print(df)
 
     return dfs
