@@ -21,7 +21,7 @@ import model_building.stepwisefit as sw
 
 class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
     """
-    Class representing a single experiment configuration for stepwise + linear regression
+    Class representing a single experiment configuration for the Draper-Smith (1966) stepwise selection + linear regression technique
 
     Methods
     -------
@@ -33,6 +33,9 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
 
     compute_estimations()
         Compute the estimated values for a give set of data
+
+    print_model()
+        Print the representation of the generated model
     """
 
     def __init__(self, campaign_configuration, hyper_parameters, input_data, prefix):
@@ -99,6 +102,22 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         return self._regressor.predict(xdata)
+
+    def print_model(self):
+        """
+        Print the representation of the generated model
+        """
+        ret_string = ""
+        coefficients = self._regressor.coef_
+        assert len(self._regressor.k_feature_names_) == len(coefficients)
+        for column, coefficient in zip(self._regressor.k_feature_names_, coefficients):
+            if ret_string != "":
+                ret_string = ret_string + " + "
+            coeff = str(round(coefficient, 3))
+            ret_string = ret_string + "(" + str(coeff) + "*" + column + ")"
+        coeff = str(round(self._regressor.intercept_, 3))
+        ret_string = ret_string + " + (" + coeff + ")"
+        return ret_string
 
     def initialize_regressor(self):
         """
