@@ -68,7 +68,7 @@ class Stepwise:
         self.intercept_ = None
         self.k_feature_names_ = None
 
-    def fit(self, X, y):
+    def fit(self, Xinput, y):
         """
         https://sourceforge.net/p/octave/statistics/ci/default/tree/inst/stepwisefit.m
 
@@ -78,6 +78,14 @@ class Stepwise:
         y
             The expected results
         """
+        # Remove columns with all identical values, since they break down the correlation matrix
+        columns_to_keep = []
+        for col in Xinput.columns:
+            if Xinput[col].min() != Xinput[col].max():
+                columns_to_keep.append(col)
+        X = Xinput[columns_to_keep]
+
+        # Initialize relevant variables
         regressors = len(X.columns)
         go_on = True
         residuals = y
