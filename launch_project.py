@@ -24,6 +24,7 @@ def use_command(cmd, dry_run=True):
     print(cmd)
     if not dry_run:
         subprocess.call(cmd, shell=True, executable='/bin/bash')
+        print()
 
 
 def main():
