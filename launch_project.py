@@ -28,22 +28,17 @@ def use_command(cmd, dry_run=True):
 
 
 def main():
-    # Initialize relevant paths 
-    script_fold = os.path.dirname(os.path.abspath(__file__))
-    all_configs_rel_fold = 'example_configurations'
-    all_outputs_rel_fold = 'outputs'
-
-    desc = ''.join((
-        "Performs multiple experiments which are located in subfolders of the ",
-        all_configs_rel_fold, "/PROJECT_NAME folder. ",
-        "Each subfolder may represent a device, application, or some other form of ",
-        "independent unit within the project. The structure of the output folders will ",
-        "reflect the one of PROJECT_NAME. The default behaviour is performing a dry run ",
-        "which simply prints commands rather than executing them. To actually run the ",
-        "experiments, please add the -x option."
-    ))
+    desc = ("Performs multiple experiments which are located in subfolders of CONFIG_FOLDER."
+            " Each subfolder may represent a device, application, or some other form of "
+            "independent unit within the project. The structure of the output folders will "
+            "reflect the one of CONFIG_FOLDER, i.e. it will have the same path as "
+            "CONFIG_FOLDER, but with OUPUT replacing the highest-level folder. The default "
+            "behaviour is performing a dry run which simply prints commands rather than "
+            "executing them. To actually run the experiments, please add the -x option."
+    )
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument("PROJECT_NAME", help=("subfolder of " + all_configs_rel_fold + " for both .ini and output files"))
+    parser.add_argument("CONFIG_FOLDER", help=("folder which contains all subfolders of .ini files"))
+    parser.add_argument("-o", "--output", help="root folder for all output folders (default: outputs)", default="outputs")
     parser.add_argument("-d", "--debug", help="enable debug messages", default=False, action="store_true")
     parser.add_argument("-j", help="number of parallel processes to be used", default=1)
     parser.add_argument("-x", "--execute", help="execute the experiments instead of performing a dry run", default=False, action="store_true")
@@ -56,19 +51,22 @@ def main():
     if int(args.j) > 1:
         extra_options.extend(('-j', args.j))
     # Get command-line options for this script
-    project_name = args.PROJECT_NAME
+    root_config_rel_fold = args.CONFIG_FOLDER
+    config_split = os.path.normpath(root_config_rel_fold).split(os.sep)
+    config_split[0] = args.output
+    print(config_split)
+    root_output_rel_fold = os.path.join(*config_split)
     dry_run = not args.execute
     if dry_run:
         print("Performing dry run... (add -x option to actually run the experiments)")
 
     # Initialize output directory
-    root_output_rel_fold = os.path.join(all_outputs_rel_fold, project_name)
+    script_fold = os.path.dirname(os.path.abspath(__file__))
     root_output_abs_fold = os.path.join(script_fold, root_output_rel_fold)
     cmd_mkdir_1 = ' '.join(('mkdir', '-pv', root_output_rel_fold))
     use_command(cmd_mkdir_1, dry_run)
 
     # Loop over devices
-    root_config_rel_fold = os.path.join(all_configs_rel_fold, project_name)
     for device_name in sorted(os.listdir(root_config_rel_fold)):
         # Initialize device-specific folders
         device_config_fold = os.path.join(root_config_rel_fold, device_name)
