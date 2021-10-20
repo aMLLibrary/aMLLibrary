@@ -38,14 +38,14 @@ def main():
     -l, --details: increase the verbosity of the library. In particular, results in terms of MAPE on different sets are printed for all the built regressors and not only for the best one.
     """
     parser = argparse.ArgumentParser(description="Perform exploration of regression techniques")
-    parser.add_argument('-c', "--configuration-file", help="The configuration file for the infrastructure", required=True)
-    parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
-    parser.add_argument('-s', "--seed", help="The seed", default=0)
-    parser.add_argument('-o', "--output", help="The output where all the models will be stored", default="output")
-    parser.add_argument('-j', help="The number of processes to be used", default=1)
-    parser.add_argument('-g', "--generate-plots", help="Generate plots", default=False, action="store_true")
-    parser.add_argument('-t', "--self-check", help="Predict the input data with the generate regressor", default=False, action="store_true")
-    parser.add_argument('-l', "--details", help="Print results of the single experiments", default=False, action="store_true")
+    parser.add_argument('-c', "--configuration-file", help="configuration file for the infrastructure", required=True)
+    parser.add_argument('-d', "--debug", help="enable debug messages", default=False, action="store_true")
+    parser.add_argument('-s', "--seed", help="RNG seed", default=0)
+    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="output")
+    parser.add_argument('-j', help="number of processes to be used", default=1)
+    parser.add_argument('-g', "--generate-plots", help="generate plots", default=False, action="store_true")
+    parser.add_argument('-t', "--self-check", help="predict the input data with the generate regressor", default=False, action="store_true")
+    parser.add_argument('-l', "--details", help="print results of the single experiments", default=False, action="store_true")
     args = parser.parse_args()
 
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
