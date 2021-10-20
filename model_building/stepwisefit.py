@@ -139,14 +139,23 @@ class Stepwise:
                 idx = numpy.argmin(z, axis=None)
                 # Perform hypothesis test
                 if z_min < t_ratio:  # which means you accept to remove the feature
-                    dropped = True
-                    del self.k_feature_names_[idx]
-                    current_data = X.loc[:, self.k_feature_names_]
-                    b, b_int, r = self._regress(current_data, y)
-                    residuals = pandas.Series(r, name="r")
+                    new_features = self.k_feature_names_.copy()
+                    del new_features[idx]
+                    cur_dat = X.loc[:, new_features]
+                    try:
+                        b_new, b_int_new, r_new = self._regress(cur_dat, y)
+                        dropped = True
+                    except:  # in case of ill-conditioned matrices or other numerical issues
+                        dropped = False
+                    if dropped:
+                        b = b_new
+                        b_int = b_int_new
+                        residuals = pandas.Series(r_new, name="r")
+                        self.k_feature_names_ = new_features
+                        current_data = cur_dat
 
             go_on = added or dropped
-            # end of while loop
+        # end of while loop
 
         # Save trained coefficients
         if self._add_intercept:
