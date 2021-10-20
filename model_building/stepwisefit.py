@@ -1,5 +1,6 @@
 """
 Copyright 2019 Eugenio Gianniti
+Copyright 2021 Bruno Guindani
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -93,42 +94,47 @@ class Stepwise:
         self.k_feature_names_ = []
         n = len(residuals)
 
+        # Loop until nothing happens, or the iteration budget has run dry
         while go_on and counter < self._max_iterations:
             counter += 1
             added = False
             dropped = False
 
+            # Try and add a feature
             if len(self.k_feature_names_) < regressors:
+                # Find candidate features and their correlation matrix
                 not_in_use = [c for c in X.columns if c not in self.k_feature_names_]
                 possible_additions = X.loc[:, not_in_use]
                 rho = possible_additions.join(residuals).corr()
+                # Find optimal feature
                 most_correlated = rho.iloc[-1, :-1].abs().idxmax(axis="columns")
                 current_columns = self.k_feature_names_ + [most_correlated]
                 current_data = X.loc[:, current_columns]
+                # Perform regression and hypothesis test
                 b_new, b_int_new, r_new = self._regress(current_data, y)
                 z_new = numpy.abs(b_new[-1] / (b_int_new[-1, 1] - b_new[-1]))
-
-                if z_new > 1:  # which means you accept
+                if z_new > 1:  # which means you accept to add the feature
                     added = True
                     b = b_new
                     b_int = b_int_new
                     residuals = pandas.Series(r_new, name="r")
                     self.k_feature_names_.append(most_correlated)
 
+            # Try and remove a feature
             if self.k_feature_names_:
+                # Find candidate features
                 variables = len(self.k_feature_names_)
                 dof = n - variables - 1 if self._add_intercept else n - variables
                 t_ratio = stats.t.ppf(1 - self._p_to_discard / 2, dof) / stats.t.ppf(1 - self._p_to_add / 2, dof)
-
                 if self._add_intercept:
                     z = numpy.abs(b[1:] / (b_int[1:, 1] - b[1:]))
                 else:
                     z = numpy.abs(b / (b_int[:, 1] - b))
-
+                # Find optimal feature
                 z_min = numpy.min(z, axis=None)
                 idx = numpy.argmin(z, axis=None)
-
-                if z_min < t_ratio:
+                # Perform hypothesis test
+                if z_min < t_ratio:  # which means you accept to remove the feature
                     dropped = True
                     del self.k_feature_names_[idx]
                     current_data = X.loc[:, self.k_feature_names_]
@@ -136,13 +142,16 @@ class Stepwise:
                     residuals = pandas.Series(r, name="r")
 
             go_on = added or dropped
+            # end of while loop
 
+        # Save trained coefficients
         if self._add_intercept:
             self.intercept_ = b[0]
             self.coef_ = b[1:]
         else:
             self.intercept_ = 0.0
             self.coef_ = b
+
 
     def _regress(self, X_df, y_df):
         """
@@ -151,7 +160,6 @@ class Stepwise:
         X = X_df.to_numpy()
         y = y_df.to_numpy()
         n = y.size
-
         if self._add_intercept:
             X = numpy.c_[numpy.ones(n), X]
 
@@ -171,14 +179,13 @@ class Stepwise:
 
         return beta, beta_interval, residuals
 
+
     def predict(self, X_df):
         X = X_df.loc[:, self.k_feature_names_]
         n = len(X.index)
-
         if self._add_intercept:
             X = numpy.c_[numpy.ones(n), X]
             b = numpy.r_[self.intercept_, self.coef_]
         else:
             b = self.coef_
-
         return numpy.dot(X, b)
