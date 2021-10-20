@@ -111,10 +111,14 @@ class Stepwise:
                 current_columns = self.k_feature_names_ + [most_correlated]
                 current_data = X.loc[:, current_columns]
                 # Perform regression and hypothesis test
-                b_new, b_int_new, r_new = self._regress(current_data, y)
-                z_new = numpy.abs(b_new[-1] / (b_int_new[-1, 1] - b_new[-1]))
-                if z_new > 1:  # which means you accept to add the feature
-                    added = True
+                try:
+                    b_new, b_int_new, r_new = self._regress(current_data, y)
+                    z_new = numpy.abs(b_new[-1] / (b_int_new[-1, 1] - b_new[-1]))
+                    if z_new > 1:  # which means you accept to add the feature
+                        added = True
+                except:  # in case of ill-conditioned matrices or other numerical issues
+                    added = False
+                if added:
                     b = b_new
                     b_int = b_int_new
                     residuals = pandas.Series(r_new, name="r")
