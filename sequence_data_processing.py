@@ -119,6 +119,7 @@ class SequenceDataProcessing:
         # Read campaign configuration
         if isinstance(input_configuration, str):
             # Read configuration from the file indicated by the argument
+            self.input_configuration_file = input_configuration
             if not os.path.exists(input_configuration):
                 self._logger.error("%s does not exist", input_configuration)
                 sys.exit(-1)
@@ -129,6 +130,7 @@ class SequenceDataProcessing:
             self.load_campaign_configuration(input_configuration, general_args)
         elif isinstance(input_configuration, dict):
             # Read configuration from the argument dict
+            self.input_configuration_file = None
             self._campaign_configuration = input_configuration
             general_args = {'output': output, 'seed': seed, 'j': j, 'debug': debug,
                             'generate_plots': generate_plots, 'details': details
@@ -323,7 +325,9 @@ class SequenceDataProcessing:
 
             self._logger.info("<--Performed self check")
 
-        # Flag file for successful execution
+        # Final output and creation of success flag file
+        if self.input_configuration_file:
+            self._logger.info("End of experiment %s", self.input_configuration_file)
         os.mknod(self._done_file_flag)
 
         return regressor
