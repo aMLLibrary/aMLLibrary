@@ -161,6 +161,9 @@ class Results:
                     # Compute which is the best technique
                     if not overall_run_best or temp.mapes["hp_selection"] < overall_run_best.mapes["hp_selection"]:
                         overall_run_best = temp
+                if not overall_run_best:
+                    self._logger.error("No valid model was found")
+                    exit(1)
                 if unused_techniques:
                     self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
                 self._logger.info("<--Overall best result is %s", overall_run_best.get_signature()[3:])
@@ -219,6 +222,9 @@ class Results:
                     if not overall_run_best or run_tec_set[run][technique]["hp_selection"] < overall_run_best[1]["hp_selection"]:
                         overall_run_best = (technique, run_tec_set[run][technique], run_tec_set[run][technique]['rmses'], run_tec_set[run][technique]['r2s'])
 
+                if not overall_run_best:
+                    self._logger.error("No valid model was found")
+                    exit(1)
                 if unused_techniques:
                     self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
                 self._logger.info("<--Overall best result is %s", overall_run_best[0])
@@ -278,6 +284,9 @@ class Results:
                     if not overall_run_best or temp[1]["hp_selection"] < overall_run_best[2]["hp_selection"]:
                         overall_run_best = (technique, temp[0], temp[1])
 
+                if not overall_run_best:
+                    self._logger.error("No valid model was found")
+                    exit(1)
                 if unused_techniques:
                     self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
                 self._logger.info("<--Overall best result is %s %s", overall_run_best[0], overall_run_best[1])
@@ -360,6 +369,9 @@ class Results:
                     if not overall_run_best or run_tec_set[run][technique]["hp_selection"] < overall_run_best[1]["hp_selection"]:
                         overall_run_best = (technique, run_tec_set[run][technique])
 
+                if not overall_run_best:
+                    self._logger.error("No valid model was found")
+                    exit(1)
                 if unused_techniques:
                     self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
                 self._logger.info("<--Overall best result is %s", overall_run_best[0])
