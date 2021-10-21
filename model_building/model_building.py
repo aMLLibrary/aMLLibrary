@@ -134,9 +134,9 @@ class ModelBuilding:
         results.collect_data()
         self._logger.info("<--Collected")
 
-        for metric, mapes in results.raw_results.items():
+        for signature, mapes in results.raw_results.items():
             for experiment_configuration, mape in mapes.items():
-                self._logger.debug("%s of %s is %f", metric, experiment_configuration, mape)
+                self._logger.debug("%s: MAPE on %s set is %f", signature, experiment_configuration, mape)
 
         best_confs, best_technique = results.get_bests()
         best_regressors = {}
