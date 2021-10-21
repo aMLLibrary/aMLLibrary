@@ -106,7 +106,7 @@ class Stepwise(BaseEstimator):
             added = False
             dropped = False
 
-            # Try and add a feature
+            # Try and add a feature, if there is any not added yet
             if len(self.k_feature_names_) < n_regressors:
                 # Find candidate features and their correlation matrix
                 not_in_use = [c for c in X.columns if c not in self.k_feature_names_]
@@ -130,7 +130,7 @@ class Stepwise(BaseEstimator):
                     residuals = pd.Series(r_new, name="r")
                     self.k_feature_names_.append(most_correlated)
 
-            # Try and remove a feature
+            # Try and remove a feature, if there is any to remove
             if self.k_feature_names_:
                 # Find candidate features
                 variables = len(self.k_feature_names_)
