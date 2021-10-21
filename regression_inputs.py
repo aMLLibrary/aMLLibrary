@@ -87,7 +87,7 @@ class RegressionInputs:
         ret = "x_columns: " + str(self.x_columns) + " - y_column: " + self.y_column + "\n"
         for name, values in self.inputs_split.items():
             ret = ret + name + ": " + str(values) + "\n"
-        ret = ret + self.data.to_string()
+        ret = ret + "Dimensions: " + str(self.data.shape)
         return ret
 
     def _get_data(self, rows, columns):
