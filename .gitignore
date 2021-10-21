@@ -22,3 +22,4 @@ tmp/
 .mypy_cache/
 *.pdf
 *.png
+00.ini
