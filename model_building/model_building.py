@@ -157,7 +157,7 @@ class ModelBuilding:
         for technique in best_confs:
             best_conf = best_confs[technique]
             # Get information about the used x_columns
-            all_data.x_columns = best_conf.get_x_columns()
+            all_data.x_columns = best_conf.get_regressor().aml_features
 
             if 'normalization' in campaign_configuration['DataPreparation'] and campaign_configuration['DataPreparation']['normalization']:
                 # Restore non-normalized columns
