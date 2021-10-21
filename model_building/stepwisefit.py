@@ -15,14 +15,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import numpy
+import numpy as np
 import pandas
 from scipy import linalg, stats
 
 
 class Stepwise:
     """
-    Implementation of the stepwise technique
+    Implementation of the Draper-Smith (1966) stepwise selection + linear regression technique
 
     Attributes
     ----------
@@ -38,13 +38,13 @@ class Stepwise:
     _max_iterations: integer
         The maximum number of iterations of the algorithm of adding features
 
-    coef
+    coef_: numpy.array
         The coefficients of the linear model
 
-    intercept: float
+    intercept_: float
         The value of the intercept term of the linear model
 
-    k_feature_names: list of str
+    k_feature_names_: list of str
         The list of selected features
     """
     def __init__(self, p_enter=0.05, p_remove=0.1, fit_intercept=True, max_iter=100):
@@ -71,15 +71,19 @@ class Stepwise:
 
     def fit(self, Xinput, y):
         """
+        Trains the model on the input data
+
         https://sourceforge.net/p/octave/statistics/ci/default/tree/inst/stepwisefit.m
 
-        X
+        Parameters
+        ----------
+        Xinput: pandas.DataFrame
             The input of the regression
 
-        y
+        y: pandas.DataFrame
             The expected results
         """
-        # Remove columns with all identical values, since they break down the correlation matrix
+        # Remove columns with all identical values, to avoid issues with the correlation matrix
         columns_to_keep = []
         for col in Xinput.columns:
             if Xinput[col].min() != Xinput[col].max():
@@ -113,7 +117,7 @@ class Stepwise:
                 # Perform regression and hypothesis test
                 try:
                     b_new, b_int_new, r_new = self._regress(current_data, y)
-                    z_new = numpy.abs(b_new[-1] / (b_int_new[-1, 1] - b_new[-1]))
+                    z_new = np.abs(b_new[-1] / (b_int_new[-1, 1] - b_new[-1]))
                     if z_new > 1:  # which means you accept to add the feature
                         added = True
                 except:  # in case of ill-conditioned matrices or other numerical issues
@@ -131,12 +135,12 @@ class Stepwise:
                 dof = n - variables - 1 if self._add_intercept else n - variables
                 t_ratio = stats.t.ppf(1 - self._p_to_discard / 2, dof) / stats.t.ppf(1 - self._p_to_add / 2, dof)
                 if self._add_intercept:
-                    z = numpy.abs(b[1:] / (b_int[1:, 1] - b[1:]))
+                    z = np.abs(b[1:] / (b_int[1:, 1] - b[1:]))
                 else:
-                    z = numpy.abs(b / (b_int[:, 1] - b))
+                    z = np.abs(b / (b_int[:, 1] - b))
                 # Find optimal feature
-                z_min = numpy.min(z, axis=None)
-                idx = numpy.argmin(z, axis=None)
+                z_min = np.min(z, axis=None)
+                idx = np.argmin(z, axis=None)
                 # Perform hypothesis test
                 if z_min < t_ratio:  # which means you accept to remove the feature
                     new_features = self.k_feature_names_.copy()
@@ -168,7 +172,26 @@ class Stepwise:
 
     def _regress(self, X_df, y_df):
         """
+        Perform regression on the input data
+
         https://sourceforge.net/p/octave/statistics/ci/default/tree/inst/regress.m
+
+        Parameters
+        ----------
+        X_df: pandas.DataFrame
+            The input of the regression
+
+        y_df: pandas.DataFrame
+            The expected results
+
+        Returns
+        -------
+        beta: numpy.array
+            The estimated coefficients of the linear regression
+        beta_interval: numpy.array
+            The confidence interval for beta
+        residuals: numpy.array
+            The residuals of the model
         """
         X = X_df.to_numpy()
         y = y_df.to_numpy()
@@ -185,20 +208,33 @@ class Stepwise:
         SSE = residuals.T.dot(residuals)
         MSE = SSE / dof
         t_alpha_2 = stats.t.ppf(self._p_to_add / 2, dof)
-        c = numpy.diag(linalg.inv(R.T.dot(R)))
+        c = np.diag(linalg.inv(R.T.dot(R)))
         # delta is negative, because alpha is small and t_alpha_2 negative
-        delta = t_alpha_2 * numpy.sqrt(MSE * c)
-        beta_interval = numpy.c_[beta + delta, beta - delta]
+        delta = t_alpha_2 * np.sqrt(MSE * c)
+        beta_interval = np.c_[beta + delta, beta - delta]
 
         return beta, beta_interval, residuals
 
 
     def predict(self, X_df):
+        """
+        Perform the prediction on a set of input data
+
+        Parameters
+        ----------
+        X_df: pandas.DataFrame
+            The input on which prediction has to be applied
+
+        Returns
+        -------
+        numpy.array
+            The values predicted by the trained model
+        """
         X = X_df.loc[:, self.k_feature_names_]
         n = len(X.index)
         if self._add_intercept:
-            X = numpy.c_[numpy.ones(n), X]
-            b = numpy.r_[self.intercept_, self.coef_]
+            X = np.c_[np.ones(n), X]
+            b = np.r_[self.intercept_, self.coef_]
         else:
             b = self.coef_
-        return numpy.dot(X, b)
+        return np.dot(X, b)
