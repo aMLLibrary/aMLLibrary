@@ -106,6 +106,9 @@ class ModelBuilding:
             for exp in tqdm.tqdm(expconfs, dynamic_ncols=True):
                 try:
                     exp.train()
+                except KeyboardInterrupt:
+                    self._logger.info("Received KeyboardInterrupt. Terminating the program...")
+                    exit(1)
                 except:
                     self._logger.debug("Warning: current experiment raised an error. It will be ignored.")
             self._logger.info("<--")
