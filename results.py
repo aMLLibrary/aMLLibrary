@@ -80,6 +80,7 @@ class Results:
             The list of the run experiment configurations
         """
         self._campaign_configuration = campaign_configuration
+        self.techniques = campaign_configuration['General']['techniques']
         self._exp_confs = exp_confs
         self.raw_results: Dict[str, Dict] = {}
         self._logger = custom_logger.getLogger(__name__)
@@ -147,16 +148,21 @@ class Results:
 
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
+                unused_techniques = self.techniques
                 self._logger.info("-->Printing results for run %s", str(run))
                 overall_run_best = None
                 # Print data of single techniques
                 for technique in run_tec_best_conf[run]:
                     temp = run_tec_best_conf[run][technique]
+                    if ec.enum_to_configuration_label[technique] in unused_techniques:
+                        unused_techniques.remove(ec.enum_to_configuration_label[technique])
                     self._logger.info("---Best result for %s - Configuration is %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", technique, temp.get_signature()[4:], temp.mapes["training"], temp.mapes["hp_selection"], temp.mapes["validation"])
 
                     # Compute which is the best technique
                     if not overall_run_best or temp.mapes["hp_selection"] < overall_run_best.mapes["hp_selection"]:
                         overall_run_best = temp
+                if unused_techniques:
+                    self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
                 self._logger.info("<--Overall best result is %s", overall_run_best.get_signature()[3:])
                 self._logger.info("Metrics for best result:")
                 self._logger.info("-->")
@@ -200,16 +206,21 @@ class Results:
                             run_tec_set[run][tec]['r2s'][set_name] = run_fold_tec_best_conf[run][fold][tec].r2s[set_name]
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
+                unused_techniques = self.techniques
                 self._logger.info("Printing results for run %s", str(run))
                 overall_run_best = ()
                 # Print data of single techniques
                 for technique in run_tec_set[run]:
+                    if ec.enum_to_configuration_label[technique] in unused_techniques:
+                        unused_techniques.remove(ec.enum_to_configuration_label[technique])
                     self._logger.info("---Best result for %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", technique, run_tec_set[run][technique]["training"], run_tec_set[run][technique]["hp_selection"], run_tec_set[run][technique]["validation"])
 
                     # Compute which is the best technique
                     if not overall_run_best or run_tec_set[run][technique]["hp_selection"] < overall_run_best[1]["hp_selection"]:
                         overall_run_best = (technique, run_tec_set[run][technique], run_tec_set[run][technique]['rmses'], run_tec_set[run][technique]['r2s'])
 
+                if unused_techniques:
+                    self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
                 self._logger.info("<--Overall best result is %s", overall_run_best[0])
                 self._logger.info("Metrics for best result:")
                 self._logger.info("-->")
@@ -253,17 +264,22 @@ class Results:
 
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
+                unused_techniques = self.techniques
                 self._logger.info("Printing results for run %s", run)
                 overall_run_best = ()  # (technique, configuration, mapes)
                 # Print data of single techniques
                 for technique in run_tec_best_conf[run]:
                     temp = run_tec_best_conf[run][technique]
+                    if ec.enum_to_configuration_label[technique] in unused_techniques:
+                        unused_techniques.remove(ec.enum_to_configuration_label[technique])
                     self._logger.info("---Best result for %s - Configuration is %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", technique, temp[0], temp[1]["training"], temp[1]["hp_selection"], temp[1]["validation"])
 
                     # Compute which is the best technique
                     if not overall_run_best or temp[1]["hp_selection"] < overall_run_best[2]["hp_selection"]:
                         overall_run_best = (technique, temp[0], temp[1])
 
+                if unused_techniques:
+                    self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
                 self._logger.info("<--Overall best result is %s %s", overall_run_best[0], overall_run_best[1])
                 self._logger.info("Metrics for best result:")
                 self._logger.info("-->")
@@ -330,16 +346,22 @@ class Results:
 
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
+                unused_techniques = self.techniques
                 self._logger.info("Printing results for run %s", run)
                 overall_run_best = ()
                 # Print data of single techniques
                 for technique in run_tec_set[run]:
+                    print(">>", technique)
+                    if ec.enum_to_configuration_label[technique] in unused_techniques:
+                        unused_techniques.remove(ec.enum_to_configuration_label[technique])
                     self._logger.info("---Best result for %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", technique, run_tec_set[run][technique]["training"], run_tec_set[run][technique]["hp_selection"], run_tec_set[run][technique]["validation"])
 
                     # Compute which is the best technique
                     if not overall_run_best or run_tec_set[run][technique]["hp_selection"] < overall_run_best[1]["hp_selection"]:
                         overall_run_best = (technique, run_tec_set[run][technique])
 
+                if unused_techniques:
+                    self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
                 self._logger.info("<--Overall best result is %s", overall_run_best[0])
                 self._logger.info("Metrics for best result:")
                 self._logger.info("-->")
