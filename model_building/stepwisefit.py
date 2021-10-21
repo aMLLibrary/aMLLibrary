@@ -92,7 +92,7 @@ class Stepwise(BaseEstimator):
         X = Xinput[columns_to_keep]
 
         # Initialize relevant variables
-        regressors = len(X.columns)
+        n_regressors = len(X.columns)
         go_on = True
         residuals = y
         counter = 0
@@ -106,7 +106,7 @@ class Stepwise(BaseEstimator):
             dropped = False
 
             # Try and add a feature
-            if len(self.k_feature_names_) < regressors:
+            if len(self.k_feature_names_) < n_regressors:
                 # Find candidate features and their correlation matrix
                 not_in_use = [c for c in X.columns if c not in self.k_feature_names_]
                 possible_additions = X.loc[:, not_in_use]
