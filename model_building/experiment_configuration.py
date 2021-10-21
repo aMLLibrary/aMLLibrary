@@ -194,6 +194,7 @@ class ExperimentConfiguration(abc.ABC):
         self.rmses = {}
         self.r2s = {}
         self._regressor = None
+        self.trained = False
 
         # Create experiment directory
         self._experiment_directory = self._campaign_configuration['General']['output']
@@ -230,6 +231,7 @@ class ExperimentConfiguration(abc.ABC):
         self._start_file_logger()
         self.initialize_regressor()
         self._train()
+        self.trained = True
         if self._regressor and not hasattr(self._regressor, 'aml_features'):
             self._regressor.aml_features = self.get_x_columns()
         self._stop_file_logger()

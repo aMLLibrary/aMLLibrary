@@ -104,7 +104,10 @@ class ModelBuilding:
         if processes_number == 1:
             self._logger.info("-->Run experiments (sequentially)")
             for exp in tqdm.tqdm(expconfs, dynamic_ncols=True):
-                exp.train()
+                try:
+                    exp.train()
+                except:
+                    self._logger.debug("Warning: current experiment raised an error. It will be ignored.")
             self._logger.info("<--")
         else:
             self._logger.info("-->Run experiments (in parallel)")

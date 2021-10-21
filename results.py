@@ -95,6 +95,8 @@ class Results:
         if processes_number == 1:
             self._logger.info("-->Evaluate experiments (sequentially)")
             for exp_conf in tqdm.tqdm(self._exp_confs, dynamic_ncols=True):
+                if not exp_conf.trained:
+                    continue
                 exp_conf.evaluate()
                 if bool(self._campaign_configuration['General']['generate_plots']):
                     exp_conf.generate_plots()
@@ -132,6 +134,8 @@ class Results:
 
             # Hyperparameter search
             for conf in self._exp_confs:
+                if not conf.trained:
+                    continue
                 run = int(conf.get_signature()[0].replace("run_", ""))
                 technique = conf.technique
                 run_tec_conf_set[run][technique][str(conf.get_signature()[4:])] = conf.mapes
@@ -166,6 +170,8 @@ class Results:
 
             # Hyperparameter search inside each fold
             for conf in self._exp_confs:
+                if not conf.trained:
+                    continue
                 run = int(conf.get_signature()[0].replace("run_", ""))
                 fold = int(conf.get_signature()[1].replace("f", ""))
                 technique = conf.technique
@@ -219,6 +225,8 @@ class Results:
 
             # Hyperparameter search aggregating over folders
             for conf in self._exp_confs:
+                if not conf.trained:
+                    continue
                 run = int(conf.get_signature()[0].replace("run_", ""))
                 fold = int(conf.get_signature()[2].replace("f", ""))
                 technique = conf.technique
@@ -269,6 +277,8 @@ class Results:
 
             # Hyperparameter search aggregating over internal folders
             for conf in self._exp_confs:
+                if not conf.trained:
+                    continue
                 run = int(conf.get_signature()[0].replace("run_", ""))
                 ext_fold = int(conf.get_signature()[2].replace("f", ""))
                 technique = conf.technique
@@ -342,6 +352,8 @@ class Results:
         best_confs = {}
         best_technique = None
         for conf in self._exp_confs:
+            if not conf.trained:
+                continue
             technique = conf.technique
             if technique not in best_confs or conf.mapes["validation"] < best_confs[technique].mapes["validation"]:
                 best_confs[technique] = conf
