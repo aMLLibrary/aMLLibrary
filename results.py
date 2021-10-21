@@ -30,12 +30,14 @@ import model_building.experiment_configuration as ec
 
 
 def evaluate_wrapper(experiment_configuration):
-    experiment_configuration.evaluate()
+    if experiment_configuration.trained:
+        experiment_configuration.evaluate()
     return experiment_configuration
 
 
 def plot_wrapper(experiment_configuration):
-    experiment_configuration.generate_plots()
+    if experiment_configuration.trained:
+        experiment_configuration.generate_plots()
     return experiment_configuration
 
 

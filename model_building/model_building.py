@@ -29,11 +29,6 @@ import regressor
 import results as re
 
 
-def process_wrapper(experiment_configuration):
-    experiment_configuration.train()
-    return experiment_configuration
-
-
 class ModelBuilding:
     """
     Entry point of the model building phase, i.e., where all the regressions are actually performed
@@ -56,6 +51,8 @@ class ModelBuilding:
 
     Methods
     ------
+    _process_wrapper()
+        Wrapper used internally for parallel execution of experiments
     process()
         Generates the set of expriment configurations to be evaluated
     """
@@ -69,6 +66,20 @@ class ModelBuilding:
         """
         self._random_generator = random.Random(seed)
         self._logger = custom_logger.getLogger(__name__)
+
+    def _process_wrapper(self, experiment_configuration):
+        """
+        Wrapper used internally for parallel execution of experiments
+        """
+        try:
+            experiment_configuration.train()
+            return experiment_configuration
+        except KeyboardInterrupt:
+            self._logger.info("Received KeyboardInterrupt. Terminating the program...")
+            exit(1)
+        except:
+            self._logger.debug("Warning: current experiment raised an error. It will be ignored.")
+            return experiment_configuration
 
     def process(self, campaign_configuration, regression_inputs, processes_number):
         """
@@ -115,7 +126,7 @@ class ModelBuilding:
         else:
             self._logger.info("-->Run experiments (in parallel)")
             with multiprocessing.Pool(processes_number) as pool:
-                expconfs = list(tqdm.tqdm(pool.imap(process_wrapper, expconfs), total=len(expconfs)))
+                expconfs = list(tqdm.tqdm(pool.imap(self._process_wrapper, expconfs), total=len(expconfs)))
             self._logger.info("<--")
 
         self._logger.info("-->Collecting results")
