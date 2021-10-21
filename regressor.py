@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import numpy
+import numpy as np
 
 import custom_logger
 import data_preparation.column_selection
@@ -143,7 +143,7 @@ class Regressor:
                     continue
                 self._logger.debug("---Applying scaler to %s", column)
                 data_to_be_normalized = raw_data[column].to_numpy()
-                data_to_be_normalized = numpy.reshape(data_to_be_normalized, (-1, 1))
+                data_to_be_normalized = np.reshape(data_to_be_normalized, (-1, 1))
                 normalized_data = self._scalers[column].transform(data_to_be_normalized)
                 raw_data[column] = normalized_data
 

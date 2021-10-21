@@ -17,7 +17,7 @@ limitations under the License.
 import os
 import sys
 
-import pandas
+import pandas as pd
 
 import data_preparation.data_preparation
 import regression_inputs
@@ -76,7 +76,7 @@ class DataLoading(data_preparation.data_preparation.DataPreparation):
                 self._logger.error("%s not found", input_path)
                 sys.exit(-1)
 
-        data_frame = pandas.read_csv(input_path)
+        data_frame = pd.read_csv(input_path)
 
         self._campaign_configuration['Features'] = {}
         self._campaign_configuration['Features']['Original_feature_names'] = []

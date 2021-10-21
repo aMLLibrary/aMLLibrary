@@ -16,7 +16,7 @@ limitations under the License.
 """
 
 import numpy as np
-import pandas
+import pandas as pd
 from scipy import linalg, stats
 
 
@@ -125,7 +125,7 @@ class Stepwise:
                 if added:
                     b = b_new
                     b_int = b_int_new
-                    residuals = pandas.Series(r_new, name="r")
+                    residuals = pd.Series(r_new, name="r")
                     self.k_feature_names_.append(most_correlated)
 
             # Try and remove a feature
@@ -154,7 +154,7 @@ class Stepwise:
                     if dropped:
                         b = b_new
                         b_int = b_int_new
-                        residuals = pandas.Series(r_new, name="r")
+                        residuals = pd.Series(r_new, name="r")
                         self.k_feature_names_ = new_features
                         current_data = cur_dat
 
@@ -197,7 +197,7 @@ class Stepwise:
         y = y_df.to_numpy()
         n = y.size
         if self._add_intercept:
-            X = numpy.c_[numpy.ones(n), X]
+            X = np.c_[np.ones(n), X]
 
         Q, R = linalg.qr(X, mode="economic")
         beta = linalg.solve(R, Q.T.dot(y))

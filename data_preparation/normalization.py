@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import numpy
+import numpy as np
 import sklearn.compose
 import sklearn.preprocessing
 
@@ -77,11 +77,11 @@ class Normalization(dp.DataPreparation):
             data.scaled_columns.append(column)
 
             normalization_support = filtered_data[column].to_numpy()
-            normalization_support = numpy.reshape(normalization_support, (-1, 1))
+            normalization_support = np.reshape(normalization_support, (-1, 1))
             data.scalers[column] = sklearn.preprocessing.StandardScaler().fit(normalization_support)
 
             data_to_be_normalized = data.data[column].to_numpy()
-            data_to_be_normalized = numpy.reshape(data_to_be_normalized, (-1, 1))
+            data_to_be_normalized = np.reshape(data_to_be_normalized, (-1, 1))
             normalized_data = data.scalers[column].transform(data_to_be_normalized)
             data.data["original_" + column] = data.data[column]
             data.data[column] = normalized_data

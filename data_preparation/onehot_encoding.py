@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import pandas
+import pandas as pd
 
 import data_preparation.data_preparation
 
@@ -66,7 +66,7 @@ class OnehotEncoding(data_preparation.data_preparation.DataPreparation):
 
         for categorical_col in categorical_cols:
             original_columns = data.data.columns
-            data.data = pandas.get_dummies(data.data, columns=[categorical_col], prefix=[categorical_col + "_class"], dtype=bool)
+            data.data = pd.get_dummies(data.data, columns=[categorical_col], prefix=[categorical_col + "_class"], dtype=bool)
             new_columns = list(set(data.data.columns) - set(original_columns))
             old_column_index = data.x_columns.index(categorical_col)
             data.x_columns[old_column_index:old_column_index + 1] = new_columns
