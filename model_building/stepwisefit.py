@@ -98,6 +98,7 @@ class Stepwise(BaseEstimator):
         counter = 0
         self.k_feature_names_ = []
         n = len(residuals)
+        b = np.zeros(0)
 
         # Loop until nothing happens, or the iteration budget has run dry
         while go_on and counter < self.max_iter:
@@ -163,7 +164,7 @@ class Stepwise(BaseEstimator):
         # end of while loop
 
         # Save trained coefficients
-        if self.fit_intercept:
+        if len(b) > 0 and self.fit_intercept:
             self.intercept_ = b[0]
             self.coef_ = b[1:]
         else:
