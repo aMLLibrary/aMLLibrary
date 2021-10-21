@@ -82,7 +82,7 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
         """
         assert isinstance(prefix, list)
         signature = prefix.copy()
-        possible_flags = ["p_enter", "p_remove", "max_iter", "fit_intercept"]
+        possible_flags = ["p_to_add", "p_to_remove", "max_iter", "fit_intercept"]
         hp_flags = {
             label: self._hyperparameters[label]
             for label in possible_flags
@@ -126,7 +126,7 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
         if not getattr(self, '_hyperparameters', None):
             self._regressor = sw.Stepwise()
         else:
-            possible_flags = ["p_enter", "p_remove", "max_iter", "fit_intercept"]
+            possible_flags = ["p_to_add", "p_to_remove", "max_iter", "fit_intercept"]
             hp_flags = {
                 label: self._hyperparameters[label]
                 for label in possible_flags
@@ -138,7 +138,7 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
         """
         Get a dictionary with all technique parameters with default values
         """
-        return {'p_enter': 0.05,
-                'p_remove': 0.1,
+        return {'p_to_add': 0.05,
+                'p_to_remove': 0.1,
                 'fit_intercept': True,
                 'max_iter': 100}

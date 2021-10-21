@@ -17,25 +17,26 @@ limitations under the License.
 
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator
 from scipy import linalg, stats
 
 
-class Stepwise:
+class Stepwise(BaseEstimator):
     """
     Implementation of the Draper-Smith (1966) stepwise selection + linear regression technique
 
     Attributes
     ----------
-    _p_to_add: float
+    p_to_add: float
         The minimum significance to add a feature
 
-    _p_to_discard: float
+    p_to_remove: float
         The maximum significance to not remove a feature
 
-    _add_intercept: book
+    fit_intercept: bool
         True if a constant term has to be added to the linear model
 
-    _max_iterations: integer
+    max_iter: integer
         The maximum number of iterations of the algorithm of adding features
 
     coef_: numpy.array
@@ -47,12 +48,12 @@ class Stepwise:
     k_feature_names_: list of str
         The list of selected features
     """
-    def __init__(self, p_enter=0.05, p_remove=0.1, fit_intercept=True, max_iter=100):
+    def __init__(self, p_to_add=0.05, p_to_remove=0.1, fit_intercept=True, max_iter=100):
         """
-        p_enter: float
+        p_to_add: float
             The minimum significance to add a feature
 
-        p_remove: float
+        p_to_remove: float
             The maximum significance to not remove a feature
 
         fit_intercept: bool
@@ -61,10 +62,10 @@ class Stepwise:
         max_iter: integer
             The maximum number of iterations
         """
-        self._p_to_add = p_enter
-        self._p_to_discard = p_remove
-        self._add_intercept = fit_intercept
-        self._max_iterations = max_iter
+        self.p_to_add = p_to_add
+        self.p_to_remove = p_to_remove
+        self.fit_intercept = fit_intercept
+        self.max_iter = max_iter
         self.coef_ = None
         self.intercept_ = None
         self.k_feature_names_ = None
@@ -99,7 +100,7 @@ class Stepwise:
         n = len(residuals)
 
         # Loop until nothing happens, or the iteration budget has run dry
-        while go_on and counter < self._max_iterations:
+        while go_on and counter < self.max_iter:
             counter += 1
             added = False
             dropped = False
@@ -132,9 +133,9 @@ class Stepwise:
             if self.k_feature_names_:
                 # Find candidate features
                 variables = len(self.k_feature_names_)
-                dof = n - variables - 1 if self._add_intercept else n - variables
-                t_ratio = stats.t.ppf(1 - self._p_to_discard / 2, dof) / stats.t.ppf(1 - self._p_to_add / 2, dof)
-                if self._add_intercept:
+                dof = n - variables - 1 if self.fit_intercept else n - variables
+                t_ratio = stats.t.ppf(1 - self.p_to_remove / 2, dof) / stats.t.ppf(1 - self.p_to_add / 2, dof)
+                if self.fit_intercept:
                     z = np.abs(b[1:] / (b_int[1:, 1] - b[1:]))
                 else:
                     z = np.abs(b / (b_int[:, 1] - b))
@@ -162,7 +163,7 @@ class Stepwise:
         # end of while loop
 
         # Save trained coefficients
-        if self._add_intercept:
+        if self.fit_intercept:
             self.intercept_ = b[0]
             self.coef_ = b[1:]
         else:
@@ -196,7 +197,7 @@ class Stepwise:
         X = X_df.to_numpy()
         y = y_df.to_numpy()
         n = y.size
-        if self._add_intercept:
+        if self.fit_intercept:
             X = np.c_[np.ones(n), X]
 
         Q, R = linalg.qr(X, mode="economic")
@@ -207,7 +208,7 @@ class Stepwise:
         dof = n - p
         SSE = residuals.T.dot(residuals)
         MSE = SSE / dof
-        t_alpha_2 = stats.t.ppf(self._p_to_add / 2, dof)
+        t_alpha_2 = stats.t.ppf(self.p_to_add / 2, dof)
         c = np.diag(linalg.inv(R.T.dot(R)))
         # delta is negative, because alpha is small and t_alpha_2 negative
         delta = t_alpha_2 * np.sqrt(MSE * c)
@@ -232,7 +233,7 @@ class Stepwise:
         """
         X = X_df.loc[:, self.k_feature_names_]
         n = len(X.index)
-        if self._add_intercept:
+        if self.fit_intercept:
             X = np.c_[np.ones(n), X]
             b = np.r_[self.intercept_, self.coef_]
         else:
