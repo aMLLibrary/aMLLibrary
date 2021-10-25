@@ -325,9 +325,7 @@ class SequenceDataProcessing:
 
             self._logger.info("<--Performed self check")
 
-        # Final output and creation of success flag file
-        if self.input_configuration_file:
-            self._logger.info("End of experiment %s", self.input_configuration_file)
+        # Create success flag file
         os.mknod(self._done_file_flag)
 
         return regressor
