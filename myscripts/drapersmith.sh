@@ -4,7 +4,7 @@ BASE_OUTPUT_FOLD="outputs/gpudata/drapersmith"
 rm -rf $BASE_OUTPUT_FOLD
 mkdir  $BASE_OUTPUT_FOLD
 
-for conf in example_configurations/gpudata/stepwise_extrapolation_P/stepwise/*.ini; do
+for conf in example_configurations/gpudata/stepwise_extrapolation_P/*/resnet50_pt.ini; do
   NAME=$(basename $conf)
   NAME="${NAME%.*}"
   OUTPUT_FOLD=$BASE_OUTPUT_FOLD/$NAME
