@@ -17,6 +17,7 @@ limitations under the License.
 
 import model_building.experiment_configuration as ec
 import model_building.stepwisefit as sw
+import pandas as pd
 
 
 class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
@@ -62,6 +63,10 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
         self._logger.debug("Building model for %s", self._signature)
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
+        #xdata1, ydata1 = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
+        #xdata2, ydata2 = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["hp_selection"])
+        #xdata = pd.concat([xdata1, xdata2])
+        #ydata = pd.concat([ydata1, ydata2])
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
         for beta, col_name in zip(self._regressor.coef_, self._regressor.k_feature_names_):
