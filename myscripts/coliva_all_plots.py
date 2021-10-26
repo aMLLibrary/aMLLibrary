@@ -37,7 +37,7 @@ for dev in os.listdir(base_datasets_folder):
     if skip or '20' in expp:
         continue
     rm = ('sfs_'+dev+'_') if SFS else (dev+'_')
-    if dev == 'tegrax2':
+    if dev == 'tegrax2' and not SFS:
         rm = 'nosfs_'+dev+'_'
     exp_num = int(expp.replace(rm, ''))
     results_file_path = os.path.join(dev_folder, expp, 'results')
@@ -47,9 +47,10 @@ for dev in os.listdir(base_datasets_folder):
     with open(results_file_path, 'r') as f:
       for lin in f.readlines():
         result_str = '      Best result for Technique.'
+        result_str2 = 'Best result for Technique.'
         mape_str = 'Validation MAPE is '
-        if result_str in lin:
-          line_list = lin.replace(result_str, '').split(' - ')
+        if result_str in lin or result_str2 in lin:
+          line_list = lin.replace(result_str, '').replace(result_str2, '').split(' - ')
           tech = line_list[0]
           mape = float(line_list[4].replace(mape_str, ''))
           print(exp_num, tech, mape, sep=" -- ")
