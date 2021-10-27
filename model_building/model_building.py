@@ -71,15 +71,17 @@ class ModelBuilding:
         """
         Wrapper used internally for parallel execution of experiments
         """
-        try:
+        if self.debug:
+            # Do not use try-except mechanism
             experiment_configuration.train()
-            return experiment_configuration
-        except KeyboardInterrupt:
-            self._logger.info("Received KeyboardInterrupt. Terminating the program...")
-            exit(1)
-        except:
-            self._logger.debug("Warning: current experiment raised an error. It will be ignored.")
-            return experiment_configuration
+        else:
+            try:
+                experiment_configuration.train()
+            except KeyboardInterrupt as ki:
+                raise ki
+            except:
+                pass
+        return experiment_configuration
 
     def process(self, campaign_configuration, regression_inputs, processes_number):
         """
@@ -103,6 +105,7 @@ class ModelBuilding:
         Regressor
             The best regressor of the best technique
         """
+        self.debug = campaign_configuration['General']['debug']
         self._logger.info("-->Generate generators")
         factory = gf.GeneratorsFactory(campaign_configuration, self._random_generator.random())
         top_generator = factory.build()
@@ -115,13 +118,16 @@ class ModelBuilding:
         if processes_number == 1:
             self._logger.info("-->Run experiments (sequentially)")
             for exp in tqdm.tqdm(expconfs, dynamic_ncols=True):
-                try:
+                if self.debug:
+                    # Do not use try-except mechanism
                     exp.train()
-                except KeyboardInterrupt:
-                    self._logger.info("Received KeyboardInterrupt. Terminating the program...")
-                    exit(1)
-                except:
-                    self._logger.debug("Warning: current experiment raised an error. It will be ignored.")
+                else:
+                    try:
+                        exp.train()
+                    except KeyboardInterrupt as ki:
+                        raise ki
+                    except:
+                        pass
             self._logger.info("<--")
         else:
             self._logger.info("-->Run experiments (in parallel)")
