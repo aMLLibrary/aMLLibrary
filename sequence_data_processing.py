@@ -146,10 +146,10 @@ class SequenceDataProcessing:
         if not os.path.exists(output):
             os.mkdir(self._campaign_configuration['General']['output'])
         if isinstance(input_configuration, str):
-            shutil.copyfile(input_configuration, os.path.join(output, 'configuration_file.ini'))
+            shutil.copyfile(input_configuration, os.path.join(output, 'configuration.ini'))
         confpars = cp.ConfigParser()
         confpars.read_dict(self._campaign_configuration)
-        confpars.write(open(os.path.join(output, "enriched_configuration_file.ini"), 'w'))
+        confpars.write(open(os.path.join(output, 'configuration_enriched.ini'), 'w'))
 
         # Check that validation method has been specified
         if 'validation' not in self._campaign_configuration['General']:
@@ -264,7 +264,7 @@ class SequenceDataProcessing:
         Only a single regressor is returned: the best model of the best technique.
 
         These are the main steps:
-        - data are preprocessed and dumped to preprocessed.csv
+        - data are preprocessed and dumped to data_preprocessed.csv
         - design space exploration of the required models (i.e., the models specified in the configuration file) is performed
         - eventually, best model is used to predict all the data
         - best model is returned
@@ -296,7 +296,8 @@ class SequenceDataProcessing:
             self._logger.debug("Current data frame is:\n%s", str(data_processing))
             self._logger.info("<--")
 
-        data_processing.data.to_csv(os.path.join(self._campaign_configuration['General']['output'], "preprocessed.csv"))
+        shutil.copyfile(self._campaign_configuration['DataPreparation']['input_path'], os.path.join(self._campaign_configuration['General']['output'], 'data.csv'))
+        data_processing.data.to_csv(os.path.join(self._campaign_configuration['General']['output'], 'data_preprocessed.csv'))
 
         regressor = self._model_building.process(self._campaign_configuration, data_processing, int(self._campaign_configuration['General']['j']))
 

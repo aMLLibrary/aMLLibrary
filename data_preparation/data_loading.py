@@ -62,17 +62,17 @@ class DataLoading(data_preparation.data_preparation.DataPreparation):
         input_path = self._campaign_configuration['DataPreparation']['input_path']
         self._logger.info("Input reading: %s", input_path)
         if not os.path.exists(input_path):
-            # The absolute path of the current script
-            abs_script = os.path.abspath(sys.argv[0])
+            # # The absolute path of the current script
+            # abs_script = os.path.abspath(sys.argv[0])
 
-            # The root directory of the script
-            abs_root = os.path.dirname(abs_script)
+            # # The root directory of the script
+            # abs_root = os.path.dirname(abs_script)
 
-            new_input_path = os.path.join(abs_root, "inputs", input_path)
-            if os.path.exists(new_input_path):
-                self._logger.warning("%s not found. Trying %s", input_path, new_input_path)
-                input_path = new_input_path
-            else:
+            # new_input_path = os.path.join(abs_root, "inputs", input_path)
+            # if os.path.exists(new_input_path):
+            #     self._logger.warning("%s not found. Trying %s", input_path, new_input_path)
+            #     input_path = new_input_path
+            # else:
                 self._logger.error("%s not found", input_path)
                 sys.exit(-1)
 
