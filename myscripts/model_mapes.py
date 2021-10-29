@@ -38,6 +38,7 @@ def get_model_mapes(output_fold, shard='val'):
 
         # Loop over iterations of the device
         for experiment_name in os.listdir(device_output_fold):
+            print(experiment_name)
             integer = int(re.findall(r'\d+', experiment_name)[-1])
             results_file_path = os.path.join(device_output_fold,
                                              experiment_name, 'results')
@@ -63,7 +64,6 @@ def get_model_mapes(output_fold, shard='val'):
                         df.loc[integer, technique] = mape
         df.sort_index(inplace=True)
         dfs[device] = df
-        print(df)
 
     return dfs
 

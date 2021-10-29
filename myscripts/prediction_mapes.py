@@ -21,6 +21,7 @@ def get_prediction_mapes(output_fold):
 
         # Loop over iterations of the device
         for experiment_name in os.listdir(device_output_fold):
+            print(experiment_name)
             _, integer, technique = experiment_name.split('_')
             integer = int(integer)
             results_file_path = os.path.join(device_output_fold,
@@ -34,7 +35,6 @@ def get_prediction_mapes(output_fold):
 
         df.sort_index(inplace=True)
         dfs[device] = df
-        print(df)
 
     return dfs
 

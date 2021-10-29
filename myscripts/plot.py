@@ -33,6 +33,10 @@ def plot(prediction, output_fold, shard, plot_title, fig_size, subplots_layout,
     else:
         dfs = model_mapes.get_model_mapes(output_fold, shard)
 
+    print("\n>>> Datasets:")
+    for key, df in dfs.items():
+        print(key, ":\n", df, "\n", sep="")
+
     # Initialize plot
     fig = plt.figure(figsize=fig_size)
     fig.suptitle(plot_title, y=0.92, size=14)
