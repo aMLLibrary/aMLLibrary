@@ -24,7 +24,7 @@ def plot(output_fold, shard, plot_title, fig_size, subplots_layout, max_mape,
         os.chdir(os.pardir)
 
     # Get MAPE dataframes
-    dfs = generic_get_mapes.get_mapes(output_fold)
+    dfs = generic_get_mapes.get_mapes(output_fold, shard)
 
     # Initialize plot
     fig = plt.figure(figsize=fig_size)
@@ -33,8 +33,7 @@ def plot(output_fold, shard, plot_title, fig_size, subplots_layout, max_mape,
     for idx, device in enumerate(dfs):
         df = dfs[device]
         ax = fig.add_subplot(*subplots_layout, idx+1)
-        maxx = round(df.max().max(), 3)
-        ax.set_title(f"{device} (max MAPE = {maxx})")
+        ax.set_title(device)
         # Loop over regression techniques
         for tech in df.columns:
             if tech == 'XGBOOST':
