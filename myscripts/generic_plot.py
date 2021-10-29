@@ -14,12 +14,13 @@ _shard = 'val'
 _plot_title = 'IDK'
 _fig_size = (10,15)
 _subplots_layout = (3,1)
+_plots_colors = 'rainbow'
 _max_mape = 1.0
 _plot_filename = 'idk.png'
 
 
-def plot(output_fold, shard, plot_title, fig_size, subplots_layout, max_mape,
-         plot_filename):
+def plot(output_fold, shard, plot_title, fig_size, subplots_layout,
+         plots_colors, max_mape, plot_filename):
     # Allows running this script from both this folder and from root folder
     if os.getcwd() == os.path.dirname(__file__):
         os.chdir(os.pardir)
@@ -36,7 +37,15 @@ def plot(output_fold, shard, plot_title, fig_size, subplots_layout, max_mape,
         df = dfs[device]
         techniques = tuple(df.keys())
         num_techniques = len(techniques)
-        colormap = plt.cm.get_cmap(name='rainbow', lut=num_techniques)
+
+        # Initialize colormap
+        if isinstance(plots_colors, str):
+            colormap = plt.cm.get_cmap(name=plots_colors, lut=num_techniques)
+        elif isinstance(plots_colors, list) or isinstance(plots_colors, tuple):
+            colormap = lambda x: plots_colors[x]
+        else:
+            raise ValueError("Error with colormap")
+
         ax = fig.add_subplot(*subplots_layout, idx+1)
         ax.set_title(device)
         bests = df.apply(min, axis=1)
@@ -89,4 +98,4 @@ def plot(output_fold, shard, plot_title, fig_size, subplots_layout, max_mape,
 
 if __name__ == '__main__':
     plot(_output_fold, _shard, _plot_title, _fig_size, _subplots_layout,
-         _max_mape, _plot_filename)
+         _plots_colors, _max_mape, _plot_filename)
