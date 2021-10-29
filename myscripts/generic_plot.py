@@ -8,16 +8,17 @@ import pandas as pd
 import generic_get_mapes
 
 # User parameters
-output_fold_ = '../outputs/output_coliva/next'
-plot_title_ = 'Hyperopt + SFS'
-fig_size_ = (10,15)
-subplots_layout_ = (3,1)
-max_mape_ = 1.0
-plot_file_name_ = 'next_aml.png'
+_output_fold = '../outputs/output_coliva/next'
+_shard = 'val'
+_plot_title = 'Hyperopt + SFS'
+_fig_size = (10,15)
+_subplots_layout = (3,1)
+_max_mape = 1.0
+_plot_filename = 'next_aml.png'
 
 
-def plot(output_fold, plot_title, fig_size, subplots_layout, max_mape,
-         plot_file_name):
+def plot(output_fold, shard, plot_title, fig_size, subplots_layout, max_mape,
+         plot_filename):
     # Allows running this script from both this folder and from root folder
     if os.getcwd() == os.path.dirname(__file__):
         os.chdir(os.pardir)
@@ -50,10 +51,10 @@ def plot(output_fold, plot_title, fig_size, subplots_layout, max_mape,
         ax.grid(axis='y', which='minor', alpha=0.25)
         ax.legend()
     # Save figure to file
-    fig.savefig(plot_file_name, bbox_inches='tight')
-    print("\nSaved to", plot_file_name)
+    fig.savefig(plot_filename, bbox_inches='tight')
+    print("\nSaved to", plot_filename)
 
 
 if __name__ == '__main__':
-    plot(output_fold_, plot_title_, fig_size_, subplots_layout_, max_mape_,
-         plot_file_name_)
+    plot(_output_fold, _shard, _plot_title, _fig_size, _subplots_layout,
+         _max_mape, _plot_filename)
