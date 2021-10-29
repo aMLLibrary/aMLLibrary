@@ -81,10 +81,10 @@ def plot(output_fold, shard, plot_title, fig_size, subplots_layout,
                                   color=colormap(idx)))
             labels.append(tech)
         if out_of_range:
-            oor_handle = Line2D([0],[0], marker='^', lw=0, color='silver')
+            oor_handle = Line2D([0],[0],marker='^', ms=8, lw=0, color='silver')
             handles.append(oor_handle)
             labels.append(f"> {max_mape}")
-        best_handle = (Line2D([0],[0], marker='o', ms=7, lw=0, color='silver'),
+        best_handle = (Line2D([0],[0], marker='o', ms=8, lw=0, color='silver'),
                        Line2D([0],[0], marker='x', mew=2, ms=12, lw=0,
                               color='silver'))
         handles.append(best_handle)
