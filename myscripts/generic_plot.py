@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
 import os
@@ -8,13 +9,13 @@ import pandas as pd
 import generic_get_mapes
 
 # User parameters
-_output_fold = '../outputs/output_coliva/next'
+_output_fold = '../zz_old/coliva/outputs/all'
 _shard = 'val'
-_plot_title = 'Hyperopt + SFS'
+_plot_title = 'IDK'
 _fig_size = (10,15)
 _subplots_layout = (3,1)
 _max_mape = 1.0
-_plot_filename = 'next_aml.png'
+_plot_filename = 'idk.png'
 
 
 def plot(output_fold, shard, plot_title, fig_size, subplots_layout, max_mape,
@@ -29,17 +30,31 @@ def plot(output_fold, shard, plot_title, fig_size, subplots_layout, max_mape,
     # Initialize plot
     fig = plt.figure(figsize=fig_size)
     fig.suptitle(plot_title, y=0.92, size=14)
+
     # Loop over devices
     for idx, device in enumerate(dfs):
         df = dfs[device]
+        techniques = tuple(df.keys())
+        num_techniques = len(techniques)
+        colormap = plt.cm.get_cmap(name='rainbow', lut=num_techniques)
         ax = fig.add_subplot(*subplots_layout, idx+1)
         ax.set_title(device)
+        bests = df.apply(min, axis=1)
+        out_of_range = False
         # Loop over regression techniques
         for tech in df.columns:
-            if tech == 'XGBOOST':
-                ax.scatter(df.index, df[tech], label=tech, marker='x')
-            else:
-                ax.scatter(df.index, df[tech], label=tech)
+            for idx, mape in df[tech].iteritems():
+                color = colormap(techniques.index(tech))
+                if mape > max_mape:
+                    out_of_range = True
+                    ax.scatter(idx, max_mape-0.02, color=color, label=tech,
+                               marker='^')
+                else:
+                    ax.scatter(idx, mape, color=color, label=tech, marker='o',
+                               s=20)
+                    if mape == bests[idx]:
+                        ax.scatter(idx, mape, color=color, label=tech,
+                                   marker='x', s=60)
         # Set axes utilities
         ax.set_xticks(df.index)
         ax.set_ylim((0.0, max_mape))
@@ -48,7 +63,25 @@ def plot(output_fold, shard, plot_title, fig_size, subplots_layout, max_mape,
         ax.set_ylabel("MAPE")
         ax.grid(axis='y', which='major', alpha=1.0)
         ax.grid(axis='y', which='minor', alpha=0.25)
-        ax.legend()
+
+        # Create and set legend
+        handles = []
+        labels = []
+        for idx, tech in enumerate(techniques):
+            handles.append(Line2D([0],[0], marker='o', lw=0,
+                                  color=colormap(idx)))
+            labels.append(tech)
+        if out_of_range:
+            oor_handle = Line2D([0],[0], marker='^', lw=0, color='silver')
+            handles.append(oor_handle)
+            labels.append(f"> {max_mape}")
+        best_handle = (Line2D([0],[0], marker='o', ms=7, lw=0, color='silver'),
+                       Line2D([0],[0], marker='x', mew=2, ms=12, lw=0,
+                              color='silver'))
+        handles.append(best_handle)
+        labels.append("best")
+        ax.legend(handles=handles, labels=labels)
+
     # Save figure to file
     fig.savefig(plot_filename, bbox_inches='tight')
     print("\nSaved to", plot_filename)
