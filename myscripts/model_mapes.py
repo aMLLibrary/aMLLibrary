@@ -7,7 +7,7 @@ import re
 _output_fold = '../../zz_old/coliva/outputs/all'
 _shard = 'val'
 
-def get_mapes(output_fold, shard='val'):
+def get_model_mapes(output_fold, shard='val'):
     # Initialize dictionary that maps keywords to relevant parsing quantities
     NAME = 'name'
     IDX = 'idx'
@@ -69,4 +69,4 @@ def get_mapes(output_fold, shard='val'):
 
 
 if __name__ == '__main__':
-    get_mapes(_output_fold, _shard)
+    get_model_mapes(_output_fold, _shard)

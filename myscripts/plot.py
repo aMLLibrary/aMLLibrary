@@ -6,10 +6,12 @@ import numpy as np
 import os
 import pandas as pd
 
-import generic_get_mapes
+import model_mapes
+import prediction_mapes
 
 # User parameters
-_output_fold = '../zz_old/coliva/outputs/all'
+_prediction = True
+_output_fold = '../zz_old/coliva/outputs/extrapolation_vgg19'
 _shard = 'val'
 _plot_title = 'IDK'
 _fig_size = (10,15)
@@ -19,14 +21,17 @@ _max_mape = 1.0
 _plot_filename = 'idk.png'
 
 
-def plot(output_fold, shard, plot_title, fig_size, subplots_layout,
+def plot(prediction, output_fold, shard, plot_title, fig_size, subplots_layout,
          plots_colors, max_mape, plot_filename):
     # Allows running this script from both this folder and from root folder
     if os.getcwd() == os.path.dirname(__file__):
         os.chdir(os.pardir)
 
     # Get MAPE dataframes
-    dfs = generic_get_mapes.get_mapes(output_fold, shard)
+    if prediction:
+        dfs = prediction_mapes.get_prediction_mapes(output_fold)
+    else:
+        dfs = model_mapes.get_model_mapes(output_fold, shard)
 
     # Initialize plot
     fig = plt.figure(figsize=fig_size)
@@ -97,5 +102,5 @@ def plot(output_fold, shard, plot_title, fig_size, subplots_layout,
 
 
 if __name__ == '__main__':
-    plot(_output_fold, _shard, _plot_title, _fig_size, _subplots_layout,
-         _plots_colors, _max_mape, _plot_filename)
+    plot(_prediction, _output_fold, _shard, _plot_title, _fig_size,
+         _subplots_layout, _plots_colors, _max_mape, _plot_filename)
