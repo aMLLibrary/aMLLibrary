@@ -10,8 +10,8 @@ import model_mapes
 import prediction_mapes
 
 # User parameters
-_prediction = True
-_output_fold = '../zz_old/coliva/outputs/extrapolation_vgg19'
+_prediction = False
+_output_fold = '../zz_old/coliva/outputs/next_sfs'
 _shard = 'val'
 _plot_title = 'IDK'
 _fig_size = (10,15)
