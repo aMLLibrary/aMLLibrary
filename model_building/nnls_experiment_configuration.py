@@ -80,6 +80,8 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
+        for idx, col_name in enumerate(self.get_x_columns()):
+            self._logger.debug("The coefficient for %s is %f", col_name, self._regressor.coef_[idx])
 
     def compute_estimations(self, rows):
         """
@@ -92,6 +94,22 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         return self._regressor.predict(xdata)
+
+    def print_model(self):
+        """
+        Print the representation of the generated model
+        """
+        ret_string = ""
+        coefficients = self._regressor.coef_
+        assert len(self._regressor.aml_features) == len(coefficients)
+        for column, coefficient in zip(self._regressor.aml_features, coefficients):
+            if ret_string != "":
+                ret_string = ret_string + " + "
+            coeff = str(round(coefficient, 3))
+            ret_string = ret_string + "(" + str(coeff) + "*" + column + ")"
+        coeff = str(round(self._regressor.intercept_, 3))
+        ret_string = ret_string + " + (" + coeff + ")"
+        return ret_string
 
     def initialize_regressor(self):
         """
