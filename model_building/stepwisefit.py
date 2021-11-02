@@ -118,7 +118,9 @@ class Stepwise(BaseEstimator):
                 current_data = X.loc[:, current_columns]
                 # Perform regression and hypothesis test
                 try:
-                    b_new, b_int_new, r_new = self._regress(current_data, y)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        b_new, b_int_new, r_new = self._regress(current_data, y)
                     z_new = np.abs(b_new[-1] / (b_int_new[-1, 1] - b_new[-1]))
                     if z_new > 1:  # which means you accept to add the feature
                         added = True
@@ -149,7 +151,9 @@ class Stepwise(BaseEstimator):
                     del new_features[idx]
                     cur_dat = X.loc[:, new_features]
                     try:
-                        b_new, b_int_new, r_new = self._regress(cur_dat, y)
+                        with warnings.catch_warnings():
+                            warnings.simplefilter("ignore")
+                            b_new, b_int_new, r_new = self._regress(cur_dat, y)
                         dropped = True
                     except:  # in case of ill-conditioned matrices or other numerical issues
                         dropped = False
