@@ -38,7 +38,7 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         Performs the actual building of the linear model
 
     compute_estimations()
-        Compute the estimated values for a give set of data
+        Compute the predictions for data points indicated in rows estimated by the regressor
 
     print_model()
         Print the representation of the generated model
@@ -113,6 +113,10 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         ----------
         rows: list of integers
             The set of rows to be considered
+
+        Returns
+        -------
+            The values predicted by the associated regressor
         """
         xdata, _ = self._regression_inputs.get_xy_data(rows)
         self._regressor.set_params(nthread=1)

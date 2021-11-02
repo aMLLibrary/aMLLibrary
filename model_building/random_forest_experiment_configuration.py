@@ -32,10 +32,6 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
 
     _train()
         Performs the actual building of the linear model
-
-    compute_estimations()
-        Compute the estimated values for a give set of data
-
     """
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
@@ -85,18 +81,6 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
         assert self._regression_inputs
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
-
-    def compute_estimations(self, rows):
-        """
-        Compute the predictions for data points indicated in rows estimated by the regressor
-
-        Parameters
-        ----------
-        rows: list of integers
-            The set of rows to be considered
-        """
-        xdata, _ = self._regression_inputs.get_xy_data(rows)
-        return self._regressor.predict(xdata)
 
     def initialize_regressor(self):
         """

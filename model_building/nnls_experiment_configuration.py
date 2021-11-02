@@ -32,9 +32,6 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
 
     _train()
         Performs the actual building of the linear model
-
-    compute_estimations()
-        Compute the estimated values for a give set of data
     """
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
@@ -82,18 +79,6 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         self._logger.debug("Model built")
         for idx, col_name in enumerate(self.get_x_columns()):
             self._logger.debug("The coefficient for %s is %f", col_name, self._regressor.coef_[idx])
-
-    def compute_estimations(self, rows):
-        """
-        Compute the predictions for data points indicated in rows estimated by the regressor
-
-        Parameters
-        ----------
-        rows: list of integers
-            The set of rows to be considered
-        """
-        xdata, _ = self._regression_inputs.get_xy_data(rows)
-        return self._regressor.predict(xdata)
 
     def print_model(self):
         """

@@ -364,7 +364,6 @@ class ExperimentConfiguration(abc.ABC):
             The prefix which has to be added at the beginning of the signature.
         """
 
-    @abc.abstractmethod
     def compute_estimations(self, rows):
         """
         Compute the predictions for data points indicated in rows estimated by the regressor
@@ -375,7 +374,13 @@ class ExperimentConfiguration(abc.ABC):
         ----------
         rows: list of integers
             The set of rows to be considered
+
+        Returns
+        -------
+            The values predicted by the associated regressor
         """
+        xdata, _ = self._regression_inputs.get_xy_data(rows)
+        return self._regressor.predict(xdata)
 
     def get_signature(self):
         """

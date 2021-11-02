@@ -32,9 +32,6 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
     _train()
         Performs the actual building of the linear model
 
-    compute_estimations()
-        Compute the estimated values for a give set of data
-
     print_model()
         Print the representation of the generated model
     """
@@ -95,18 +92,6 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
         }
         signature.extend(f"{name}_{value}" for name, value in hp_flags.items())
         return signature
-
-    def compute_estimations(self, rows):
-        """
-        Compute the predictions for data points indicated in rows estimated by the regressor
-
-        Parameters
-        ----------
-        rows: list of integers
-            The set of rows to be considered
-        """
-        xdata, _ = self._regression_inputs.get_xy_data(rows)
-        return self._regressor.predict(xdata)
 
     def print_model(self):
         """

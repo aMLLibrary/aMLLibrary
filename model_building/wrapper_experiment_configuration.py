@@ -243,6 +243,10 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         ----------
         rows: list of integers
             The set of rows to be considered
+
+        Returns
+        -------
+            The values predicted by the associated regressor
         """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
         features = self.get_regressor().aml_features
@@ -432,6 +436,10 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         ----------
         rows: list of integers
             The set of rows to be considered
+
+        Returns
+        -------
+            The values predicted by the associated regressor
         """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
         ret = self.get_regressor().predict(xdata)
@@ -680,5 +688,9 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         ----------
         rows: list of integers
             The set of rows to be considered
+
+        Returns
+        -------
+            The values predicted by the associated regressor
         """
         return SFSExperimentConfiguration.compute_estimations(self, rows)

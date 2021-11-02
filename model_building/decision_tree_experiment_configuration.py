@@ -32,9 +32,6 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
 
     _train()
         Performs the actual building of the model
-
-    compute_estimations()
-        Compute the estimated values for a give set of data
     """
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
@@ -84,22 +81,6 @@ class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         self._regressor.fit(xdata, ydata)
         self._logger.debug("Model built")
-
-    def compute_estimations(self, rows):
-        """
-        Compute the estimations and the MAPE for runs in rows
-
-        Parameters
-        ----------
-        rows: list of integer
-            The list of the input data to be considered
-
-        Returns
-        -------
-            The values predicted by the associated regressor
-        """
-        xdata, _ = self._regression_inputs.get_xy_data(rows)
-        return self._regressor.predict(xdata)
 
     def initialize_regressor(self):
         """
