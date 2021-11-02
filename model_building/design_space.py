@@ -201,7 +201,7 @@ class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
             return_list.extend(generator.generate_experiment_configurations(new_prefix, regression_inputs))
 
         assert return_list
-        self._logger.info("<--")
+        self._logger.debug("<--")
         return return_list
 
     def __deepcopy__(self, memo):
@@ -313,7 +313,7 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
 
         assert self._experiment_configurations
 
-        self._logger.info("<--")
+        self._logger.debug("<--")
 
         return self._experiment_configurations
 
@@ -391,10 +391,10 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
             new_prefix.append(key)
             self._logger.debug("-->Generating experiments for run %s", str(key))
             return_list.extend(generator.generate_experiment_configurations(new_prefix, regression_inputs))
-            self._logger.info("<--")
+            self._logger.debug("<--")
 
         assert return_list
-        self._logger.info("<--")
+        self._logger.debug("<--")
         return return_list
 
     def __deepcopy__(self, memo):
@@ -596,7 +596,7 @@ class XGBoostFeatureSelectionExpConfsGenerator(ExpConfsGenerator):
         local_regression_inputs = copy.copy(regression_inputs)
         local_regression_inputs = xgboost_feature_selection.process(local_regression_inputs)
         ret_list = self._wrapped_generator.generate_experiment_configurations(prefix, local_regression_inputs)
-        self._logger.info("<--")
+        self._logger.debug("<--")
         return ret_list
 
     def __deepcopy__(self, memo):
@@ -661,7 +661,7 @@ class AllExpConfsGenerator(SelectionValidationExpConfsGenerator):
             local_regression_inputs.inputs_split["hp_selection"] = local_regression_inputs.inputs_split["training"].copy()
 
         ret_list = self._wrapped_generator.generate_experiment_configurations(local_prefix, local_regression_inputs)
-        self._logger.info("<--")
+        self._logger.debug("<--")
         return ret_list
 
     def __deepcopy__(self, memo):
@@ -726,7 +726,7 @@ class ExtrapolationExpConfsGenerator(SelectionValidationExpConfsGenerator):
         # Do nothing: validation set has already been built by the pre-processing step
 
         ret_list = self._wrapped_generator.generate_experiment_configurations(local_prefix, local_regression_inputs)
-        self._logger.info("<--")
+        self._logger.debug("<--")
         return ret_list
 
     def __deepcopy__(self, memo):
@@ -792,7 +792,7 @@ class HoldOutExpConfsGenerator(SelectionValidationExpConfsGenerator):
                                                                      destination_set)
         local_regression_inputs = splitter.process(local_regression_inputs)
         ret_list = self._wrapped_generator.generate_experiment_configurations(local_prefix, local_regression_inputs)
-        self._logger.info("<--")
+        self._logger.debug("<--")
         return ret_list
 
     def __deepcopy__(self, memo):
@@ -897,9 +897,9 @@ class KFoldExpConfsGenerator(SelectionValidationExpConfsGenerator):
             second_set = "validation" if self._is_validation else "hp_selection"
             fold_regression_inputs.inputs_split[second_set] = list(fold_testing_idx)
             return_list.extend(self._kfold_generators[fold].generate_experiment_configurations(fold_prefix, fold_regression_inputs))
-            self._logger.info("<--")
+            self._logger.debug("<--")
 
-        self._logger.info("<--")
+        self._logger.debug("<--")
         return return_list
 
     def __deepcopy__(self, memo):
@@ -955,7 +955,7 @@ class NormalizationExpConfsGenerator(ExpConfsGenerator):
         local_regression_inputs = copy.copy(regression_inputs)
         local_regression_inputs = normalizer.process(local_regression_inputs)
         ret_list = self._wrapped_generator.generate_experiment_configurations(prefix, local_regression_inputs)
-        self._logger.info("<--")
+        self._logger.debug("<--")
         return ret_list
 
     def __deepcopy__(self, memo):
@@ -1082,7 +1082,7 @@ class SFSExpConfsGenerator(ExpConfsGenerator):
         ret_list = []
         for wrapped_point in internal_list:
             ret_list.append(wec.SFSExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
-        self._logger.info("<--")
+        self._logger.debug("<--")
         return ret_list
 
     def __deepcopy__(self, memo):
@@ -1143,7 +1143,7 @@ class HyperoptExpConfsGenerator(ExpConfsGenerator):
         ret_list = []
         for wrapped_point in internal_list:
             ret_list.append(wec.HyperoptExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
-        self._logger.info("<--")
+        self._logger.debug("<--")
         return ret_list
 
     def __deepcopy__(self, memo):
@@ -1202,7 +1202,7 @@ class HyperoptSFSExpConfsGenerator(ExpConfsGenerator):
         ret_list = []
         for wrapped_point in internal_list:
             ret_list.append(wec.HyperoptSFSExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
-        self._logger.info("<--")
+        self._logger.debug("<--")
         return ret_list
 
     def __deepcopy__(self, memo):
