@@ -62,14 +62,17 @@ class Product(data_preparation.data_preparation.DataPreparation):
 
         outputs = inputs
 
-        max_degree = self._campaign_configuration["DataPreparation"]['product_max_degree']
-        if str(max_degree) == "inf":
+        max_degree = self._campaign_configuration['DataPreparation']['product_max_degree']
+        if str(max_degree) == 'inf':
             max_degree = len(inputs.x_columns)
 
         features = sorted(set(inputs.x_columns))
 
         for degree in range(2, max_degree + 1):
-            combinations = itertools.combinations_with_replacement(features, degree)
+            if 'product_interactions_only' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_interactions_only'] == True:
+                combinations = itertools.combinations(features, degree)
+            else:
+                combinations = itertools.combinations_with_replacement(features, degree)
             for combination in combinations:
                 if data_preparation.inversion.Inversion.check_reciprocal(combination):
                     continue
