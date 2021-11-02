@@ -32,6 +32,12 @@ class RandomForestExperimentConfiguration(ec.ExperimentConfiguration):
 
     _train()
         Performs the actual building of the linear model
+
+    initialize_regressor()
+        Initialize the regressor object for the experiments
+
+    get_default_parameters()
+        Get a dictionary with all technique parameters with default values
     """
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """

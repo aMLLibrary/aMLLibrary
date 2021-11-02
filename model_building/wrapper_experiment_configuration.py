@@ -65,7 +65,7 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
     get_x_columns()
         Return the columns used in the regression
 
-    set_x_columns(self, x_cols)
+    set_x_columns()
         Set the columns to be used in the regression
     """
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
@@ -521,6 +521,9 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
 
     _train()
         Build the model with the experiment configuration represented by this object
+
+    compute_estimations()
+        Compute the predictions for data points indicated in rows estimated by the regressor
     """
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         """

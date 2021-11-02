@@ -141,9 +141,6 @@ class ExperimentConfiguration(abc.ABC):
     stop_file_logger()
         Stop to log also to output file
 
-    set_training_data()
-        Set the training data overwritting current ones
-
     get_regressor()
         Return the regressor associated with this experiment configuration
 
@@ -167,6 +164,9 @@ class ExperimentConfiguration(abc.ABC):
 
     print_model()
         Print the representation of the generated model
+
+    set_training_data()
+        Set the training data overwriting current ones
     """
 
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
