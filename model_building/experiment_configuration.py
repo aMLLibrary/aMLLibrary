@@ -499,11 +499,11 @@ class ExperimentConfiguration(abc.ABC):
 
     def print_model(self):
         """
-        Print the representation of the generated model, as an empty string if not overridden by the subclass
+        Print the representation of the generated model, or just the model name if if not overridden by the subclass
 
         This is not a pure virtual method since not all the subclasses implement it
         """
-        return ""
+        return "(" + enum_to_configuration_label[self.technique] + ")"
 
     def set_training_data(self, new_training_data):
         """
