@@ -102,11 +102,12 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         """
         Print the representation of the generated model
         """
-        ret_string = ""
+        initial_string = "LRRidge coefficients:\n"
+        ret_string = initial_string
         coefficients = self._regressor.coef_
         assert len(self._regressor.aml_features) == len(coefficients)
         for column, coefficient in zip(self._regressor.aml_features, coefficients):
-            if ret_string != "":
+            if ret_string != initial_string:
                 ret_string = ret_string + " + "
             coeff = str(round(coefficient, 3))
             ret_string = ret_string + "(" + str(coeff) + "*" + column + ")"

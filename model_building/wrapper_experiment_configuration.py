@@ -256,7 +256,7 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         """
         Print the representation of the generated model
         """
-        return "".join(("Selected features: ", str(self.get_regressor().aml_features), "\n",
+        return "".join(("Features selected with SFS: ", str(self.get_regressor().aml_features), "\n",
                         self._wrapped_experiment_configuration.print_model()))
 
 
@@ -446,7 +446,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         for key in hypers:
             if isinstance(hypers[key], float):
                 hypers[key] = round(hypers[key], 3)
-        return "".join(("Optimal hyperparameter(s) found with hyperopt: ", str(hypers), "\n",
+        return "".join(("Optimal hyperparameter(s) found with Hyperopt: ", str(hypers), "\n",
                         self._wrapped_experiment_configuration.print_model()))
 
     def _parse_prior(self, param_name, prior_ini):
@@ -582,8 +582,8 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         for key in hypers:
             if isinstance(hypers[key], float):
                 hypers[key] = round(hypers[key], 3)
-        return "".join(("Optimal hyperparameter(s) found with hyperopt: ", str(hypers),
-                        "\nSelected features: ", str(self.get_x_columns()), "\n",
+        return "".join(("Optimal hyperparameter(s) found with Hyperopt: ", str(hypers),
+                        "\nFeatures selected with SFS: ", str(self.get_x_columns()), "\n",
                         self._wrapped_experiment_configuration.print_model()))
 
     def _train(self):

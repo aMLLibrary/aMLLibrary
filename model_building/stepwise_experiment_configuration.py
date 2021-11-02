@@ -112,11 +112,12 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
         """
         Print the representation of the generated model
         """
-        ret_string = ""
+        initial_string = "Stepwise coefficients:\n"
+        ret_string = initial_string
         coefficients = self._regressor.coef_
         assert len(self._regressor.k_feature_names_) == len(coefficients)
         for column, coefficient in zip(self._regressor.k_feature_names_, coefficients):
-            if ret_string != "":
+            if ret_string != initial_string:
                 ret_string = ret_string + " + "
             coeff = str(round(coefficient, 3))
             ret_string = ret_string + "(" + str(coeff) + "*" + column + ")"
