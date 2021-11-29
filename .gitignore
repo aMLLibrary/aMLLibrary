@@ -1,8 +1,25 @@
-*swp
+# Python cache files
 *__pycache__
-log
-output
-output_*
+
+# Folders of datasets
+inputs/*/*
+
+# Library output files
+output*
+!outputs/
+
+# Folders to ignore
+log/
+etc/
+local/
+old/
+temp/
+tmp/
+
+# Miscellaneous
+*swp
 /.idea/
 .mypy_cache/
-*orig
+*.pdf
+*.png
+*.ini
