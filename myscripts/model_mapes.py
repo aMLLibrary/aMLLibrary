@@ -41,7 +41,7 @@ def get_model_mapes(output_fold, shard='val'):
             print(experiment_name)
             integer = int(re.findall(r'\d+', experiment_name)[-1])
             results_file_path = os.path.join(device_output_fold,
-                                             experiment_name, 'results')
+                                             experiment_name, 'results.txt')
             # Read results from file
             if not os.path.exists(results_file_path):
                 continue

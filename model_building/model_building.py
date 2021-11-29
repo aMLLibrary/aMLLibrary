@@ -147,7 +147,7 @@ class ModelBuilding:
         best_confs, best_technique = results.get_bests()
         best_regressors = {}
 
-        file_handler = logging.FileHandler(os.path.join(campaign_configuration['General']['output'], 'results'), 'a+')
+        file_handler = logging.FileHandler(os.path.join(campaign_configuration['General']['output'], 'results.txt'), 'a+')
         self._logger.addHandler(file_handler)
         self._logger.info("-->Building the final regressors")
         self._logger.removeHandler(file_handler)
