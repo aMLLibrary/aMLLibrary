@@ -1,9 +1,6 @@
-% a-MLLibrary
-
+# a-MLLibrary
 Library for the generation of regression models.
 
-
-# Usage
 The main script of the library is `run.py`:
 
 ```
