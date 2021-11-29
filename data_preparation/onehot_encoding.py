@@ -14,14 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import pandas
+import pandas as pd
 
 import data_preparation.data_preparation
 
 
 class OnehotEncoding(data_preparation.data_preparation.DataPreparation):
     """
-    Step which transforms a categorical feature in some onehout encoded features
+    Step which transforms a categorical feature in some onehot encoded features
+
+    All the categorical columns are transformed
+
 
     Methods
     -------
@@ -34,7 +37,7 @@ class OnehotEncoding(data_preparation.data_preparation.DataPreparation):
 
     def get_name(self):
         """
-        Return "ColumnSelection"
+        Return "OnehotEncoding"
 
         Returns
         string
@@ -43,6 +46,14 @@ class OnehotEncoding(data_preparation.data_preparation.DataPreparation):
         return "OnehotEncoding"
 
     def process(self, inputs):
+        """
+        Main method of the class which performs the actual one hot encoding
+
+        Parameters
+        ----------
+        inputs: RegressionInputs
+            The data to be analyzed
+        """
         data = inputs
 
         categorical_feature_mask = data.data.dtypes == object  # filter categorical columns using mask and turn it into a list
@@ -55,7 +66,7 @@ class OnehotEncoding(data_preparation.data_preparation.DataPreparation):
 
         for categorical_col in categorical_cols:
             original_columns = data.data.columns
-            data.data = pandas.get_dummies(data.data, columns=[categorical_col], prefix=[categorical_col + "_class"], dtype=bool)
+            data.data = pd.get_dummies(data.data, columns=[categorical_col], prefix=[categorical_col + "_class"], dtype=bool)
             new_columns = list(set(data.data.columns) - set(original_columns))
             old_column_index = data.x_columns.index(categorical_col)
             data.x_columns[old_column_index:old_column_index + 1] = new_columns
@@ -64,6 +75,21 @@ class OnehotEncoding(data_preparation.data_preparation.DataPreparation):
 
     @staticmethod
     def check_same_class(combination):
+        """
+        Static method to avoid generation of zero column as product of mutual exclusive categories.
+
+        Check if a set of columns there are at least two columns which have been built as one hot encoding of two different categories of the same original column. Since the values of these two columns can never be 1 at the same time, the column computed as product of all the features of combination will always 0
+
+        Parameters
+        ----------
+        combination: list of str
+            The list of columns to be checked
+
+        Return
+        ------
+        true if the product would result in 0 column, false otherwise
+        """
+
         classes = set()
         for element in combination:
             if "_class_" in element:

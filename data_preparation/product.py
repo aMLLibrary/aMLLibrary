@@ -17,13 +17,16 @@ limitations under the License.
 import itertools
 
 import numpy as np
+import pandas as pd
 
 import data_preparation.data_preparation
 
 
 class Product(data_preparation.data_preparation.DataPreparation):
     """
-    Step which load data from csv
+    Step which generates new columns as product of existing columns
+
+    The created columns are the combination of up to campaign_configuration["DataPreparation"]['product_max_degree']
 
     Methods
     -------
@@ -48,17 +51,28 @@ class Product(data_preparation.data_preparation.DataPreparation):
         return "Product"
 
     def process(self, inputs):
+        """
+        Main method of the class which performs the actual product
+
+        Parameters
+        ----------
+        inputs: RegressionInputs
+            The data to be analyzed
+        """
 
         outputs = inputs
 
-        max_degree = self._campaign_configuration["DataPreparation"]['product_max_degree']
-        if str(max_degree) == "inf":
+        max_degree = self._campaign_configuration['DataPreparation']['product_max_degree']
+        if str(max_degree) == 'inf':
             max_degree = len(inputs.x_columns)
 
         features = sorted(set(inputs.x_columns))
 
         for degree in range(2, max_degree + 1):
-            combinations = itertools.combinations(features, degree)
+            if 'product_interactions_only' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_interactions_only'] == True:
+                combinations = itertools.combinations(features, degree)
+            else:
+                combinations = itertools.combinations_with_replacement(features, degree)
             for combination in combinations:
                 if data_preparation.inversion.Inversion.check_reciprocal(combination):
                     continue
@@ -68,11 +82,20 @@ class Product(data_preparation.data_preparation.DataPreparation):
                 base = self._compute_column_name(combination[:-1])
                 new_column = np.array(outputs.data[base]) * np.array(outputs.data[combination[-1]])
                 new_feature_name = self._compute_column_name(combination)
-                outputs.data[new_feature_name] = new_column
+                # Skip product if the combined name already exists
+                if new_feature_name in outputs.data.columns:
+                    self._logger.warning("%s column already exists, skipping product of features %s", new_feature_name, combination)
+                    continue
+                new_column_df = pd.DataFrame(new_column, columns=[new_feature_name])
+                outputs.data = pd.concat([outputs.data, new_column_df], axis=1)
                 outputs.x_columns.append(new_feature_name)
 
         return outputs
 
     @staticmethod
     def _compute_column_name(combination):
-        return "_".join(combination)
+        """
+        Static method used to compute the name of the new columns
+        """
+
+        return "__".join(combination)

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import numpy
+import numpy as np
 
 import custom_logger
 import data_preparation.column_selection
@@ -27,10 +27,11 @@ import regression_inputs
 
 class Regressor:
     """
-    Regressor: it includes preprocesing step plus the actual regressor
+    The main type of object returned by the library. It includes preprocesing step plus the actual regressor
 
     Attributes
-    _campaign_configuration: dict of dict
+    ----------
+    _campaign_configuration: dict of str : dict of str : str
         The set of options specified during the generation of this regressor
 
     _regressor
@@ -53,7 +54,7 @@ class Regressor:
     get_regressor()
         Return the regressor associated with this experiment configuration
     """
-    def __init__(self, campaign_configuration, regressor, x_columns, scalers):
+    def __init__(self, campaign_configuration, regressor, x_cols, scalers):
         """
         Parameters
         regressor
@@ -62,11 +63,36 @@ class Regressor:
         assert regressor
         self._campaign_configuration = campaign_configuration
         self._regressor = regressor
-        self._x_columns = x_columns
+        self._x_columns = x_cols
         self._scalers = scalers
         self._logger = custom_logger.getLogger(__name__)
 
+    def __getstate__(self):
+        """
+        Auxilixiary function used by pickle. Overridden to avoid problems with logger lock
+        """
+        temp_d = self.__dict__.copy()
+        if '_logger' in temp_d:
+            temp_d['_logger'] = temp_d['_logger'].name
+        return temp_d
+
+    def __setstate__(self, temp_d):
+        """
+        Auxilixiary function used by pickle. Overridden to avoid problems with logger lock
+        """
+        if '_logger' in temp_d:
+            temp_d['_logger'] = custom_logger.getLogger(temp_d['_logger'])
+        self.__dict__.update(temp_d)
+
     def predict(self, inputs):
+        """
+        Perform the prediction on a set of input data
+
+        Parameters
+        ----------
+        inputs: pandas.DataFrame
+            The input on which prediction has to be applied
+        """
         data = inputs
         inputs_split = {}
         column_names = inputs.columns.values.tolist()
@@ -117,7 +143,7 @@ class Regressor:
                     continue
                 self._logger.debug("---Applying scaler to %s", column)
                 data_to_be_normalized = raw_data[column].to_numpy()
-                data_to_be_normalized = numpy.reshape(data_to_be_normalized, (-1, 1))
+                data_to_be_normalized = np.reshape(data_to_be_normalized, (-1, 1))
                 normalized_data = self._scalers[column].transform(data_to_be_normalized)
                 raw_data[column] = normalized_data
 

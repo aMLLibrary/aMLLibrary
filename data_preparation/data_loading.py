@@ -17,7 +17,7 @@ limitations under the License.
 import os
 import sys
 
-import pandas
+import pandas as pd
 
 import data_preparation.data_preparation
 import regression_inputs
@@ -26,6 +26,8 @@ import regression_inputs
 class DataLoading(data_preparation.data_preparation.DataPreparation):
     """
     Step which load data from csv
+
+    This step is the first to be executed in the whole flow
 
     Methods
     -------
@@ -47,25 +49,34 @@ class DataLoading(data_preparation.data_preparation.DataPreparation):
         return "DataLoading"
 
     def process(self, inputs):
-        """Get the csv file, drops the irrelevant columns and change it to data frame as output"""
+        """
+        Main method of the class which performs the actual load and return a RegressionInputs
+
+        In the created RegressionInputs, training set is put equal to the whole input dataset
+
+        Parameters
+        ----------
+        inputs: RegressionInputs
+            The data to be analyzed
+        """
         input_path = self._campaign_configuration['DataPreparation']['input_path']
         self._logger.info("Input reading: %s", input_path)
         if not os.path.exists(input_path):
-            # The absolute path of the current script
-            abs_script = os.path.abspath(sys.argv[0])
+            # # The absolute path of the current script
+            # abs_script = os.path.abspath(sys.argv[0])
 
-            # The root directory of the script
-            abs_root = os.path.dirname(abs_script)
+            # # The root directory of the script
+            # abs_root = os.path.dirname(abs_script)
 
-            new_input_path = os.path.join(abs_root, "inputs", input_path)
-            if os.path.exists(new_input_path):
-                self._logger.warning("%s not found. Trying %s", input_path, new_input_path)
-                input_path = new_input_path
-            else:
+            # new_input_path = os.path.join(abs_root, "inputs", input_path)
+            # if os.path.exists(new_input_path):
+            #     self._logger.warning("%s not found. Trying %s", input_path, new_input_path)
+            #     input_path = new_input_path
+            # else:
                 self._logger.error("%s not found", input_path)
                 sys.exit(-1)
 
-        data_frame = pandas.read_csv(input_path)
+        data_frame = pd.read_csv(input_path)
 
         self._campaign_configuration['Features'] = {}
         self._campaign_configuration['Features']['Original_feature_names'] = []

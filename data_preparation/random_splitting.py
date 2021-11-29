@@ -18,6 +18,7 @@ import random
 
 import data_preparation.data_preparation
 
+
 class RandomSplitting(data_preparation.data_preparation.DataPreparation):
     """
     Step which split data into training and validation
@@ -36,7 +37,7 @@ class RandomSplitting(data_preparation.data_preparation.DataPreparation):
         campaign_configuration: dict of dict:
             The set of options specified by the user though command line and campaign configuration files
 
-        seed
+        seed: integer
             The seed to be used to initialize the internal random generator
 
         starting_set: str
@@ -61,6 +62,14 @@ class RandomSplitting(data_preparation.data_preparation.DataPreparation):
         return "RandomSplitting"
 
     def process(self, inputs):
+        """
+        Main method of the class which performs the split
+
+        Parameters
+        ----------
+        inputs: RegressionInputs
+            The data to be split
+        """
         data = inputs
 
         assert data.inputs_split["training"]

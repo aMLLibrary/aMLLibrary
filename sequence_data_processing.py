@@ -3,6 +3,7 @@ Main module of the library
 
 Copyright 2019 Marjan Hosseini
 Copyright 2019 Marco Lattuada
+Copyright 2021 Bruno Guindani
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,7 +30,7 @@ import shutil
 import sys
 import time
 
-import numpy
+from sklearn.metrics import mean_absolute_percentage_error
 
 import custom_logger
 import data_preparation.column_selection
@@ -48,11 +49,16 @@ import model_building.model_building
 
 class SequenceDataProcessing:
     """
-    main class which performs the whole design space exploration and builds the regressors
+    Main class which performs the whole design space exploration and builds the regressors
+
+    Its main method is process which performs three main steps:
+    1. generate the set of points (i.e., combination of training data, technique, hyper-parameters) to be evaluated
+    2. build the regressor corresponding to each point
+    3. evaluate the results of all the regressors to identify the best one
 
     Attributes
     ----------
-    _data_preprocessing_list: List[DataPreparation]
+    _data_preprocessing_list: list of DataPreparation
         The list of steps to be executed for data preparation
 
     _model_building: ModelBuilding
@@ -62,7 +68,7 @@ class SequenceDataProcessing:
         The random generator used in the whole application both to generate random numbers and to initialize other random generators
     """
 
-    def __init__(self, configuration_file, debug=False, seed=0, output="output", j=1, generate_plots=False, self_check=True, details=False):
+    def __init__(self, input_configuration, debug=False, seed=0, output="output", j=1, generate_plots=False, self_check=True, details=False):
         """
         Constructor of the class
 
@@ -72,8 +78,8 @@ class SequenceDataProcessing:
 
         Parameters
         ----------
-        configuration_file: str
-            The configuration file describing the experimental campaign to be performed
+        input_configuration: str or dict
+            The configuration file describing the experimental campaign to be performed, or a dictionary with the same structure
 
         debug: bool
             True if debug messages should be printed
@@ -96,6 +102,7 @@ class SequenceDataProcessing:
         details: bool
             True if the results of the single experiments should be added
         """
+        self._done_file_flag = os.path.join(output, 'done')
 
         self._data_preprocessing_list = []
 
@@ -109,31 +116,40 @@ class SequenceDataProcessing:
             logging.basicConfig(level=logging.INFO)
         self._logger = custom_logger.getLogger(__name__)
 
-        # Check if the configuration file exists
-        if not os.path.exists(configuration_file):
-            self._logger.error("%s does not exist", configuration_file)
-            sys.exit(-1)
-
-        self.conf = cp.ConfigParser()
-        self.conf.optionxform = str
-        self.conf.read(configuration_file)
-        self.conf['General']['configuration_file'] = configuration_file
-        self.conf['General']['output'] = output
-        self.conf['General']['seed'] = str(seed)
-        self.conf['General']['j'] = str(j)
-        self.conf['General']['debug'] = str(debug)
-        self.conf['General']['generate_plots'] = str(generate_plots)
-        self.conf['General']['details'] = str(details)
-        self._campaign_configuration = {}
-        self.load_campaign_configuration(configuration_file)
+        # Read campaign configuration
+        if isinstance(input_configuration, str):
+            # Read configuration from the file indicated by the argument
+            self.input_configuration_file = input_configuration
+            if not os.path.exists(input_configuration):
+                self._logger.error("%s does not exist", input_configuration)
+                sys.exit(-1)
+            general_args = {'configuration_file': input_configuration, 'output': output,
+                            'seed': str(seed), 'j': str(j), 'debug': str(debug),
+                            'generate_plots': str(generate_plots), 'details': str(details)
+                           }
+            self.load_campaign_configuration(input_configuration, general_args)
+        elif isinstance(input_configuration, dict):
+            # Read configuration from the argument dict
+            self.input_configuration_file = None
+            self._campaign_configuration = input_configuration
+            general_args = {'output': output, 'seed': seed, 'j': j, 'debug': debug,
+                            'generate_plots': generate_plots, 'details': details
+                           }
+            self._campaign_configuration['General'].update(general_args)
+        else:
+            self._logger.error("input_configuration must be a path string to a configuration file or a dictionary")
 
         # Check if output path already exist
-        if os.path.exists(output):
-            self._logger.error("%s already exists", output)
+        if os.path.exists(output) and os.path.exists(self._done_file_flag):
+            self._logger.error("%s already exists. Terminating the program...", output)
             sys.exit(1)
-        os.mkdir(self._campaign_configuration['General']['output'])
-        shutil.copyfile(configuration_file, os.path.join(output, 'configuration_file.ini'))
-        self.conf.write(open(os.path.join(output, "enriched_configuration_file.ini"), 'w'))
+        if not os.path.exists(output):
+            os.mkdir(self._campaign_configuration['General']['output'])
+        if isinstance(input_configuration, str):
+            shutil.copyfile(input_configuration, os.path.join(output, 'configuration.ini'))
+        confpars = cp.ConfigParser()
+        confpars.read_dict(self._campaign_configuration)
+        confpars.write(open(os.path.join(output, 'configuration_enriched.ini'), 'w'))
 
         # Check that validation method has been specified
         if 'validation' not in self._campaign_configuration['General']:
@@ -208,21 +224,29 @@ class SequenceDataProcessing:
 
         self._model_building = model_building.model_building.ModelBuilding(self.random_generator.random())
 
-    def load_campaign_configuration(self, configuration_file):
+    def load_campaign_configuration(self, configuration_file, general_args={}):
         """
-        Load the campaign configuration from config file named _campaign_configuration.ini and put all the information into a dictionary
+        Load the campaign configuration from configuration_file to the member dictionary, self._campaign_configuration
 
         Parameters
         ----------
-        configuration_file : str
-            The name of the file containing the configuration
+        configuration_file: str
+            The configuration file describing the experimental campaign to be performed
+        general_args: dict of str: str
+            Arguments to add to the "General" section of the campaign configuration
         """
 
-        self._campaign_configuration = {}
+        confpars = cp.ConfigParser()
+        confpars.optionxform = str
+        confpars.read(configuration_file)
 
-        for section in self.conf.sections():
+        for key, val in general_args.items():
+            confpars['General'][key] = val
+
+        self._campaign_configuration = {}
+        for section in confpars.sections():
             self._campaign_configuration[section] = {}
-            for item in self.conf.items(section):
+            for item in confpars.items(section):
                 try:
                     self._campaign_configuration[section][item[0]] = ast.literal_eval(item[1])
                 except (ValueError, SyntaxError):
@@ -240,7 +264,7 @@ class SequenceDataProcessing:
         Only a single regressor is returned: the best model of the best technique.
 
         These are the main steps:
-        - data are preprocessed and dumped to preprocessed.csv
+        - data are preprocessed and dumped to data_preprocessed.csv
         - design space exploration of the required models (i.e., the models specified in the configuration file) is performed
         - eventually, best model is used to predict all the data
         - best model is returned
@@ -272,12 +296,15 @@ class SequenceDataProcessing:
             self._logger.debug("Current data frame is:\n%s", str(data_processing))
             self._logger.info("<--")
 
-        data_processing.data.to_csv(os.path.join(self.conf['General']['output'], "preprocessed.csv"))
+        shutil.copyfile(self._campaign_configuration['DataPreparation']['input_path'], os.path.join(self._campaign_configuration['General']['output'], 'data.csv'))
+        data_processing.data.to_csv(os.path.join(self._campaign_configuration['General']['output'], 'data_preprocessed.csv'))
 
-        regressor = self._model_building.process(self._campaign_configuration, data_processing, int(self.conf['General']['j']))
+        regressor = self._model_building.process(self._campaign_configuration, data_processing, int(self._campaign_configuration['General']['j']))
 
         end = time.time()
         execution_time = str(end - start)
+        file_handler = logging.FileHandler(os.path.join(self._campaign_configuration['General']['output'], 'results'), 'a+')
+        self._logger.addHandler(file_handler)
         self._logger.info("<--Execution Time : %s", execution_time)
 
         if self._self_check:
@@ -290,14 +317,17 @@ class SequenceDataProcessing:
             check_data = check_data.drop(columns=[self._campaign_configuration['General']['y']])
             for technique in self._campaign_configuration['General']['techniques']:
                 pickle_file_name = os.path.join(self._campaign_configuration['General']['output'], technique + ".pickle")
-                pickle_file = open(pickle_file_name, "rb")
-                regressor = pickle.load(pickle_file)
-                pickle_file.close()
+                with open(pickle_file_name, "rb") as pickle_file:
+                    regressor = pickle.load(pickle_file)
+
                 predicted_y = regressor.predict(check_data)
-                difference = real_y - predicted_y
-                mape = numpy.mean(numpy.abs(numpy.divide(difference, real_y)))
+                mape = mean_absolute_percentage_error(real_y, predicted_y)
                 self._logger.info("---MAPE of %s: %s", technique, str(mape))
 
             self._logger.info("<--Performed self check")
+
+        # Create success flag file
+        with open(self._done_file_flag, 'wb') as f:
+            pass
 
         return regressor

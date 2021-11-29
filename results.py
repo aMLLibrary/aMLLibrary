@@ -1,5 +1,6 @@
 """
 Copyright 2019 Marco Lattuada
+Copyright 2021 Bruno Guindani
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,12 +30,14 @@ import model_building.experiment_configuration as ec
 
 
 def evaluate_wrapper(experiment_configuration):
-    experiment_configuration.evaluate()
+    if experiment_configuration.trained:
+        experiment_configuration.evaluate()
     return experiment_configuration
 
 
 def plot_wrapper(experiment_configuration):
-    experiment_configuration.generate_plots()
+    if experiment_configuration.trained:
+        experiment_configuration.generate_plots()
     return experiment_configuration
 
 
@@ -77,6 +80,7 @@ class Results:
             The list of the run experiment configurations
         """
         self._campaign_configuration = campaign_configuration
+        self.techniques = campaign_configuration['General']['techniques']
         self._exp_confs = exp_confs
         self.raw_results: Dict[str, Dict] = {}
         self._logger = custom_logger.getLogger(__name__)
@@ -90,23 +94,23 @@ class Results:
         Collect the data of all the performed experiments
         """
         exp_conf: ec.ExperimentConfiguration
-        # Disabled multiprocess run because of huge memory usage
-        processes_number = 1  # self._campaign_configuration['General']['j']
+        processes_number = self._campaign_configuration['General']['j']
         if processes_number == 1:
             self._logger.info("-->Evaluate experiments (sequentially)")
             for exp_conf in tqdm.tqdm(self._exp_confs, dynamic_ncols=True):
+                if not exp_conf.trained:
+                    continue
                 exp_conf.evaluate()
                 if bool(self._campaign_configuration['General']['generate_plots']):
                     exp_conf.generate_plots()
             self._logger.info("<--")
         else:
             self._logger.info("-->Evaluate experiments (in parallel)")
-            pool = multiprocessing.Pool(processes_number)
-            self._exp_confs = list(tqdm.tqdm(pool.imap(evaluate_wrapper, self._exp_confs), total=len(self._exp_confs)))
-            if bool(self._campaign_configuration['General']['generate_plots']):
-                pool = multiprocessing.Pool(processes_number)
-                self._exp_confs = list(tqdm.tqdm(pool.imap(plot_wrapper, self._exp_confs), total=len(self._exp_confs)))
-            self._logger.info("<--")
+            with multiprocessing.Pool(processes_number) as pool:
+                self._exp_confs = list(tqdm.tqdm(pool.imap(evaluate_wrapper, self._exp_confs), total=len(self._exp_confs)))
+                if bool(self._campaign_configuration['General']['generate_plots']):
+                    self._exp_confs = list(tqdm.tqdm(pool.imap(plot_wrapper, self._exp_confs), total=len(self._exp_confs)))
+                self._logger.info("<--")
 
         self.raw_results = {}
         for exp_conf in self._exp_confs:
@@ -114,10 +118,14 @@ class Results:
 
     def get_bests(self):
         """
-        Identify for each considered technique, the configuration with the best validation MAPE
+        Identify for each considered technique, the configuration with the best validation MAPE, also recover all other metrics, and print the results
 
         Returns
         -------
+        an ExperimentConfiguration instance
+            the best-performing experiment configuration in terms of MAPE
+        a Technique(Enum) instance
+            Enum object indicating the technique of the best-performing experiment configuration (see experiment_configuration.py)
         """
         set_names = ["training", "hp_selection", "validation"]
         run_tec_conf_set = recursivedict()
@@ -129,6 +137,8 @@ class Results:
 
             # Hyperparameter search
             for conf in self._exp_confs:
+                if not conf.trained:
+                    continue
                 run = int(conf.get_signature()[0].replace("run_", ""))
                 technique = conf.technique
                 run_tec_conf_set[run][technique][str(conf.get_signature()[4:])] = conf.mapes
@@ -138,18 +148,31 @@ class Results:
 
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
+                unused_techniques = self.techniques
                 self._logger.info("-->Printing results for run %s", str(run))
                 overall_run_best = None
                 # Print data of single techniques
                 for technique in run_tec_best_conf[run]:
                     temp = run_tec_best_conf[run][technique]
+                    if ec.enum_to_configuration_label[technique] in unused_techniques:
+                        unused_techniques.remove(ec.enum_to_configuration_label[technique])
                     self._logger.info("---Best result for %s - Configuration is %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", technique, temp.get_signature()[4:], temp.mapes["training"], temp.mapes["hp_selection"], temp.mapes["validation"])
 
                     # Compute which is the best technique
                     if not overall_run_best or temp.mapes["hp_selection"] < overall_run_best.mapes["hp_selection"]:
                         overall_run_best = temp
-                best_model_description = overall_run_best.print_model()
-                self._logger.info("<--Overall best result is %s %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", overall_run_best.get_signature()[3:], "(" + best_model_description + ")" if best_model_description else "", overall_run_best.mapes["training"], overall_run_best.mapes["hp_selection"], overall_run_best.mapes["validation"])
+                if not overall_run_best:
+                    self._logger.error("No valid model was found")
+                    exit(1)
+                if unused_techniques:
+                    self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
+                self._logger.info("<--Overall best result is %s", overall_run_best.get_signature()[3:])
+                self._logger.info("Metrics for best result:")
+                self._logger.info("-->")
+                self._logger.info("MAPE: (Training %f - HP Selection %f) - Validation %f", overall_run_best.mapes["training"], overall_run_best.mapes["hp_selection"], overall_run_best.mapes["validation"])
+                self._logger.info("RMSE: (Training %f - HP Selection %f) - Validation %f", overall_run_best.rmses["training"], overall_run_best.rmses["hp_selection"], overall_run_best.rmses["validation"])
+                self._logger.info("R^2 : (Training %f - HP Selection %f) - Validation %f", overall_run_best.r2s  ["training"], overall_run_best.r2s  ["hp_selection"], overall_run_best.r2s  ["validation"])
+                self._logger.info("<--")
 
         elif (validation, hp_selection) in {("KFold", "All"), ("KFold", "HoldOut")}:
             folds = float(self._campaign_configuration['General']['folds'])
@@ -158,6 +181,8 @@ class Results:
 
             # Hyperparameter search inside each fold
             for conf in self._exp_confs:
+                if not conf.trained:
+                    continue
                 run = int(conf.get_signature()[0].replace("run_", ""))
                 fold = int(conf.get_signature()[1].replace("f", ""))
                 technique = conf.technique
@@ -170,7 +195,7 @@ class Results:
                 if technique not in run_fold_tec_best_conf[run][fold] or conf.mapes["hp_selection"] < run_fold_tec_best_conf[run][fold][technique].mapes["hp_selection"]:
                     run_fold_tec_best_conf[run][fold][technique] = conf
 
-            # Aggregate different folds (only the value of the mapes)
+            # Aggregate different folds (only the value of the metrics)
             run_tec_set = recursivedict()
             for run in run_fold_tec_best_conf:
                 for fold in run_fold_tec_best_conf[run]:
@@ -180,19 +205,35 @@ class Results:
                                 run_tec_set[run][tec][set_name] = 0
                         for set_name in set_names:
                             run_tec_set[run][tec][set_name] = run_fold_tec_best_conf[run][fold][tec].mapes[set_name]
+                            run_tec_set[run][tec]['rmses'][set_name] = run_fold_tec_best_conf[run][fold][tec].rmses[set_name]
+                            run_tec_set[run][tec]['r2s'][set_name] = run_fold_tec_best_conf[run][fold][tec].r2s[set_name]
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
+                unused_techniques = self.techniques
                 self._logger.info("Printing results for run %s", str(run))
                 overall_run_best = ()
                 # Print data of single techniques
                 for technique in run_tec_set[run]:
+                    if ec.enum_to_configuration_label[technique] in unused_techniques:
+                        unused_techniques.remove(ec.enum_to_configuration_label[technique])
                     self._logger.info("---Best result for %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", technique, run_tec_set[run][technique]["training"], run_tec_set[run][technique]["hp_selection"], run_tec_set[run][technique]["validation"])
 
                     # Compute which is the best technique
                     if not overall_run_best or run_tec_set[run][technique]["hp_selection"] < overall_run_best[1]["hp_selection"]:
-                        overall_run_best = (technique, run_tec_set[run][technique])
+                        overall_run_best = (technique, run_tec_set[run][technique], run_tec_set[run][technique]['rmses'], run_tec_set[run][technique]['r2s'])
 
-                self._logger.info("---Overall best result is %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", overall_run_best[0], overall_run_best[1]["training"], overall_run_best[1]["hp_selection"], overall_run_best[1]["validation"])
+                if not overall_run_best:
+                    self._logger.error("No valid model was found")
+                    exit(1)
+                if unused_techniques:
+                    self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
+                self._logger.info("<--Overall best result is %s", overall_run_best[0])
+                self._logger.info("Metrics for best result:")
+                self._logger.info("-->")
+                self._logger.info("MAPE: (Training %f - HP Selection %f) - Validation %f", overall_run_best[1]["training"], overall_run_best[1]["hp_selection"], overall_run_best[1]["validation"])
+                self._logger.info("RMSE: (Training %f - HP Selection %f) - Validation %f", overall_run_best[2]["training"], overall_run_best[2]["hp_selection"], overall_run_best[2]["validation"])
+                self._logger.info("R^2 : (Training %f - HP Selection %f) - Validation %f", overall_run_best[3]["training"], overall_run_best[3]["hp_selection"], overall_run_best[3]["validation"])
+                self._logger.info("<--")
 
             # Overall best will contain as first argument the technique with the best (across runs) average (across folds) mape on validation; now we consider on all the runs and on all the folds the configuraiton of this technique with best validation mape
 
@@ -203,6 +244,8 @@ class Results:
 
             # Hyperparameter search aggregating over folders
             for conf in self._exp_confs:
+                if not conf.trained:
+                    continue
                 run = int(conf.get_signature()[0].replace("run_", ""))
                 fold = int(conf.get_signature()[2].replace("f", ""))
                 technique = conf.technique
@@ -210,8 +253,12 @@ class Results:
                 if "hp_selection" not in run_tec_conf_set[run][technique][configuration]:
                     for set_name in set_names:
                         run_tec_conf_set[run][technique][configuration][set_name] = 0
+                        run_tec_conf_set[run][technique][configuration]["rmses"][set_name] = 0
+                        run_tec_conf_set[run][technique][configuration]["r2s"][set_name] = 0
                 for set_name in set_names:
-                    run_tec_conf_set[run][technique][configuration][set_name] = run_tec_conf_set[run][technique][configuration][set_name] + conf.mapes[set_name] / folds
+                    run_tec_conf_set[run][technique][configuration][set_name] += conf.mapes[set_name] / folds
+                    run_tec_conf_set[run][technique][configuration]["rmses"][set_name] += conf.rmses[set_name] / folds
+                    run_tec_conf_set[run][technique][configuration]["r2s"][set_name] += conf.r2s[set_name] / folds
 
             # Select the best configuration for each technique across different folders
             run_tec_best_conf = recursivedict()
@@ -223,26 +270,42 @@ class Results:
 
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
+                unused_techniques = self.techniques
                 self._logger.info("Printing results for run %s", run)
                 overall_run_best = ()  # (technique, configuration, mapes)
                 # Print data of single techniques
                 for technique in run_tec_best_conf[run]:
                     temp = run_tec_best_conf[run][technique]
+                    if ec.enum_to_configuration_label[technique] in unused_techniques:
+                        unused_techniques.remove(ec.enum_to_configuration_label[technique])
                     self._logger.info("---Best result for %s - Configuration is %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", technique, temp[0], temp[1]["training"], temp[1]["hp_selection"], temp[1]["validation"])
 
                     # Compute which is the best technique
                     if not overall_run_best or temp[1]["hp_selection"] < overall_run_best[2]["hp_selection"]:
                         overall_run_best = (technique, temp[0], temp[1])
 
-                self._logger.info("---Overall best result is %s %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", overall_run_best[0], overall_run_best[1], overall_run_best[2]["training"], overall_run_best[2]["hp_selection"], overall_run_best[2]["validation"])
+                if not overall_run_best:
+                    self._logger.error("No valid model was found")
+                    exit(1)
+                if unused_techniques:
+                    self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
+                self._logger.info("<--Overall best result is %s %s", overall_run_best[0], overall_run_best[1])
+                self._logger.info("Metrics for best result:")
+                self._logger.info("-->")
+                self._logger.info("MAPE: (Training %f - HP Selection %f) - Validation %f", overall_run_best[2]["training"], overall_run_best[2]["hp_selection"], overall_run_best[2]["validation"])
+                self._logger.info("RMSE: (Training %f - HP Selection %f) - Validation %f", overall_run_best[2]["rmses"]["training"], overall_run_best[2]["rmses"]["hp_selection"], overall_run_best[2]["rmses"]["validation"])
+                self._logger.info("R^2 : (Training %f - HP Selection %f) - Validation %f", overall_run_best[2]["r2s"]["training"], overall_run_best[2]["r2s"]["hp_selection"], overall_run_best[2]["r2s"]["validation"])
+                self._logger.info("<--")
 
         elif (validation, hp_selection) in {("KFold", "KFold")}:
             folds = float(self._campaign_configuration['General']['folds'])
-            # For each run, for each external fold, for each technique, the aggregated mape
+            # For each run, for each external fold, for each technique, the aggregated metrics
             run_efold_tec_conf_set = recursivedict()
 
             # Hyperparameter search aggregating over internal folders
             for conf in self._exp_confs:
+                if not conf.trained:
+                    continue
                 run = int(conf.get_signature()[0].replace("run_", ""))
                 ext_fold = int(conf.get_signature()[2].replace("f", ""))
                 technique = conf.technique
@@ -250,13 +313,21 @@ class Results:
                 if "hp_selection" not in run_tec_conf_set[run][technique][configuration]:
                     for set_name in set_names:
                         run_tec_conf_set[run][technique][configuration][set_name] = 0
+                        run_tec_conf_set[run][technique][configuration]["rmses"][set_name] = 0
+                        run_tec_conf_set[run][technique][configuration]["r2s"][set_name] = 0
                 for set_name in set_names:
-                    run_tec_conf_set[run][technique][configuration][set_name] = run_tec_conf_set[run][technique][configuration][set_name] + (conf.mapes[set_name] / (folds * folds))
+                    run_tec_conf_set[run][technique][configuration][set_name] += (conf.mapes[set_name] / (folds * folds))
+                    run_tec_conf_set[run][technique][configuration]["rmses"][set_name] += (conf.rmses[set_name] / (folds * folds))
+                    run_tec_conf_set[run][technique][configuration]["r2s"][set_name] += (conf.r2s[set_name] / (folds * folds))
                 if configuration not in run_efold_tec_conf_set[run][ext_fold][technique]:
                     for set_name in set_names:
                         run_efold_tec_conf_set[run][ext_fold][technique][configuration][set_name] = 0
+                        run_efold_tec_conf_set[run][ext_fold][technique][configuration]["rmses"][set_name] = 0
+                        run_efold_tec_conf_set[run][ext_fold][technique][configuration]["r2s"][set_name] = 0
                 for set_name in set_names:
-                    run_efold_tec_conf_set[run][ext_fold][technique][configuration][set_name] = run_efold_tec_conf_set[run][ext_fold][technique][configuration][set_name] + (conf.mapes[set_name] / (folds * folds))
+                    run_efold_tec_conf_set[run][ext_fold][technique][configuration][set_name] += (conf.mapes[set_name] / (folds * folds))
+                    run_efold_tec_conf_set[run][ext_fold][technique][configuration]["rmses"][set_name] += (conf.rmses[set_name] / (folds * folds))
+                    run_efold_tec_conf_set[run][ext_fold][technique][configuration]["r2s"][set_name] += (conf.r2s[set_name] / (folds * folds))
 
             # Select the best configuration for each technique in each external fold across different internal folders
             run_efold_tec_best_conf = recursivedict()
@@ -275,22 +346,41 @@ class Results:
                         if "hp_selection" not in run_tec_set[run][tec]:
                             for set_name in set_names:
                                 run_tec_set[run][tec][set_name] = 0
+                                run_tec_set[run][tec]["rmses"][set_name] = 0
+                                run_tec_set[run][tec]["r2s"][set_name] = 0
                         for set_name in set_names:
-                            run_tec_set[run][tec][set_name] = run_tec_set[run][tec][set_name] + run_efold_tec_best_conf[run][efold][tec][1][set_name]
+                            run_tec_set[run][tec][set_name] += run_efold_tec_best_conf[run][efold][tec][1][set_name]
+                            run_tec_set[run][tec]["rmses"][set_name] += run_efold_tec_best_conf[run][efold][tec][1]["rmses"][set_name]
+                            run_tec_set[run][tec]["r2s"][set_name] += run_efold_tec_best_conf[run][efold][tec][1]["r2s"][set_name]
 
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
+                unused_techniques = self.techniques
                 self._logger.info("Printing results for run %s", run)
                 overall_run_best = ()
                 # Print data of single techniques
                 for technique in run_tec_set[run]:
+                    print(">>", technique)
+                    if ec.enum_to_configuration_label[technique] in unused_techniques:
+                        unused_techniques.remove(ec.enum_to_configuration_label[technique])
                     self._logger.info("---Best result for %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", technique, run_tec_set[run][technique]["training"], run_tec_set[run][technique]["hp_selection"], run_tec_set[run][technique]["validation"])
 
                     # Compute which is the best technique
                     if not overall_run_best or run_tec_set[run][technique]["hp_selection"] < overall_run_best[1]["hp_selection"]:
                         overall_run_best = (technique, run_tec_set[run][technique])
 
-                self._logger.info("---Overall best result is %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", overall_run_best[0], overall_run_best[1]["training"], overall_run_best[1]["hp_selection"], overall_run_best[1]["validation"])
+                if not overall_run_best:
+                    self._logger.error("No valid model was found")
+                    exit(1)
+                if unused_techniques:
+                    self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
+                self._logger.info("<--Overall best result is %s", overall_run_best[0])
+                self._logger.info("Metrics for best result:")
+                self._logger.info("-->")
+                self._logger.info("MAPE: (Training %f - HP Selection %f) - Validation %f", overall_run_best[1]["training"], overall_run_best[1]["hp_selection"], overall_run_best[1]["validation"])
+                self._logger.info("RMSE: (Training %f - HP Selection %f) - Validation %f", overall_run_best[1]["rmses"]["training"], overall_run_best[1]["rmses"]["hp_selection"], overall_run_best[1]["rmses"]["validation"])
+                self._logger.info("R^2 : (Training %f - HP Selection %f) - Validation %f", overall_run_best[1]["r2s"]["training"], overall_run_best[1]["r2s"]["hp_selection"], overall_run_best[1]["r2s"]["validation"])
+                self._logger.info("<--")
 
         else:
             self._logger.error("Unexpected combination: %s", str((validation, hp_selection)))
@@ -298,6 +388,8 @@ class Results:
         best_confs = {}
         best_technique = None
         for conf in self._exp_confs:
+            if not conf.trained:
+                continue
             technique = conf.technique
             if technique not in best_confs or conf.mapes["validation"] < best_confs[technique].mapes["validation"]:
                 best_confs[technique] = conf

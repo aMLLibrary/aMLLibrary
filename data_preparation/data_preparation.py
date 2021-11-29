@@ -22,7 +22,7 @@ import custom_logger
 
 class DataPreparation:
     """
-    This is the main class defining the pipeline of machine learning task
+    This is the parent abstract class of all the pre-processing steps
 
     Attributes
     ----------
@@ -40,7 +40,7 @@ class DataPreparation:
 
     def __init__(self, campaign_configuration):
         """
-        campaign_configuration: dict of dict:
+        campaign_configuration: dict of str: dict of str: str
             The set of options specified by the user though command line and campaign configuration files
         """
         assert campaign_configuration
@@ -50,7 +50,7 @@ class DataPreparation:
     @abc.abstractmethod
     def get_name(self):
         """
-        Return the name of the current task
+        Return the name of the current step
         """
 
     @abc.abstractmethod

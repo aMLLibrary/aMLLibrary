@@ -43,6 +43,14 @@ class DataCheck(data_preparation.data_preparation.DataPreparation):
         return "DataCheck"
 
     def process(self, inputs):
+        """
+        Main method of the class which performs the actual check
+
+        Parameters
+        ----------
+        inputs: RegressionInputs
+            The data to be analyzed
+        """
         for column in inputs.x_columns:
             self._logger.debug("Checking column %s", column)
             if np.any(np.isnan(inputs.data[column])):
