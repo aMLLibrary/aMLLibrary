@@ -494,7 +494,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
                 prior = scope.int(prior)
             return prior
         except:
-            self._logger.debug("%s was not recognized as a prior string. It will be asssumed it is a point-wise value", prior_ini)
+            self._logger.debug("%s was not recognized as a prior string. It will be assumed it is a point-wise value", prior_ini)
             return prior_ini
 
 
