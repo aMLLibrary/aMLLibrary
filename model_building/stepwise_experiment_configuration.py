@@ -113,10 +113,9 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
         for i in idxs:
             column = self._regressor.k_feature_names_[i]
             coefficient = coefficients[i]
-            if ret_string != initial_string:
-                ret_string = ret_string + " + "
+            ret_string += " + " if ret_string != initial_string else "   "
             coeff = str(round(coefficient, 3))
-            ret_string = ret_string + "(" + str(coeff) + "*" + column + ")"
+            ret_string = ret_string + "(" + str(coeff) + " * " + column + ")\n"
         coeff = str(round(self._regressor.intercept_, 3))
         ret_string = ret_string + " + (" + coeff + ")"
         return ret_string
