@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import numpy as np
 import sklearn.linear_model as lm
 
 import model_building.experiment_configuration as ec
@@ -97,7 +98,11 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         ret_string = initial_string
         coefficients = self._regressor.coef_
         assert len(self._regressor.aml_features) == len(coefficients)
-        for column, coefficient in zip(self._regressor.aml_features, coefficients):
+        # Show coefficients in order of decresing absolute value
+        idxs = np.argsort(np.abs(coefficients))[::-1]
+        for i in idxs:
+            column = self._regressor.aml_features[i]
+            coefficient = coefficients[i]
             if ret_string != initial_string:
                 ret_string = ret_string + " + "
             coeff = str(round(coefficient, 3))
