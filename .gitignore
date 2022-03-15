@@ -1,5 +1,5 @@
 # Python cache files
-*__pycache__
+__pycache__/
 
 # Folders of datasets
 inputs/*/*
@@ -22,4 +22,3 @@ tmp/
 .mypy_cache/
 *.pdf
 *.png
-*.ini

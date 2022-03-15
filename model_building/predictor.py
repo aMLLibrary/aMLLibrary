@@ -75,6 +75,10 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         mape_to_file: bool
             True if computed MAPE should be written to a text file (file name is mape.txt)
         """
+        # Read configuration from the file indicated by the argument
+        if not os.path.exists(config_file):
+            self._logger.error("%s does not exist", config_file)
+            sys.exit(-1)
         # Check if output path already exist
         if os.path.exists(self._output_folder):
             self._logger.error("%s already exists. Terminating the program...", self._output_folder)

@@ -63,7 +63,10 @@ class Regressor:
         assert regressor
         self._campaign_configuration = campaign_configuration
         self._regressor = regressor
-        self._x_columns = x_cols
+        if hasattr(self._regressor, 'aml_features'):
+            self._x_columns = self._regressor.aml_features
+        else:
+            self._x_columns = x_cols
         self._scalers = scalers
         self._logger = custom_logger.getLogger(__name__)
 
