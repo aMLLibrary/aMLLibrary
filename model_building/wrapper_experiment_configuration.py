@@ -18,6 +18,7 @@ limitations under the License.
 from typing import List
 
 import logging
+import mlxtend
 import mlxtend.feature_selection
 import numpy as np
 import pandas as pd
