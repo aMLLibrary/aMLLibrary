@@ -203,6 +203,9 @@ class ModelBuilding:
         self._logger.addHandler(file_handler)
         self._logger.info("<--Built the final regressors")
         best_config = best_confs[best_technique]
+        if 'rename_columns' in campaign_configuration['DataPreparation']:
+            renamed_columns = [str(k) + " -> " + str(v) for k,v in campaign_configuration['DataPreparation']['rename_columns'].items()]
+            self._logger.info("Using renamed columns: {" + ", ".join(renamed_columns) + "}")
         self._logger.info("Best model:")
         self._logger.info("-->")
         self._logger.info(best_config.print_model())
