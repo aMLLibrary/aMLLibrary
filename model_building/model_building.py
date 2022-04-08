@@ -200,6 +200,11 @@ class ModelBuilding:
             with open(pickle_file_name, "wb") as pickle_file:
                 pickle.dump(best_regressors[technique], pickle_file, protocol=4)
 
+        # Save best regressor to file
+        best_pickle_file_name = os.path.join(campaign_configuration['General']['output'], "best.pickle")
+        with open(best_pickle_file_name, "wb") as pickle_file:
+            pickle.dump(best_regressors[best_technique], pickle_file, protocol=4)
+
         self._logger.addHandler(file_handler)
         self._logger.info("<--Built the final regressors")
         best_config = best_confs[best_technique]
