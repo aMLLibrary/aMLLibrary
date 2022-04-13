@@ -39,6 +39,7 @@ import data_preparation.data_loading
 import data_preparation.ernest
 import data_preparation.extrapolation
 import data_preparation.inversion
+import data_preparation.logarithm
 import data_preparation.onehot_encoding
 import data_preparation.product
 import data_preparation.rename_columns
@@ -210,6 +211,10 @@ class SequenceDataProcessing:
         # Adding inverted features if required
         if 'inverse' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['inverse']:
             self._data_preprocessing_list.append(data_preparation.inversion.Inversion(self._campaign_configuration))
+
+        # Adding logarithm computation if required
+        if 'log' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['log']:
+            self._data_preprocessing_list.append(data_preparation.logarithm.Logarithm(self._campaign_configuration))
 
         # Adding product features if required
         if 'product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree']:
