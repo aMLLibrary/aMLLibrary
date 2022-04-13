@@ -20,6 +20,7 @@ import custom_logger
 import data_preparation.column_selection
 import data_preparation.ernest
 import data_preparation.inversion
+import data_preparation.logarithm
 import data_preparation.product
 import data_preparation.rename_columns
 import regression_inputs
@@ -122,6 +123,12 @@ class Regressor:
             inversion_step = data_preparation.inversion.Inversion(self._campaign_configuration)
             data = inversion_step.process(data)
             self._logger.debug("Performed inversion")
+
+        # Compute logarithm
+        if 'log' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['log']:
+            logarithm_step = data_preparation.logarithm.Logarithm(self._campaign_configuration)
+            data = logarithm_step.process(data)
+            self._logger.debug("Computed logarithm")
 
         # Compute product
         if 'product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree']:
