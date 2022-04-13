@@ -67,6 +67,7 @@ class Logarithm(data_preparation.data_preparation.DataPreparation):
 
         for column in to_be_logd_list:
             if inputs.data[column].dtype == bool:
+                self._logger.debug("Skipping logarithm of boolean-valued column: %s", column)
                 continue
             if inputs.data[column].dtype == object:
                 self._logger.error("Trying to take logarithm of a string column: %s", column)
