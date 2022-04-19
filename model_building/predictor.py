@@ -69,24 +69,33 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
 
         Parameters
         ----------
-        config_file: str
-            The configuration file describing the experimental campaign to be performed
+        config_file: str or dict
+            The configuration file describing the experimental campaign to be performed,
+            or a dictionary with the same structure
 
         mape_to_file: bool
             True if computed MAPE should be written to a text file (file name is mape.txt)
         """
-        # Read configuration from the file indicated by the argument
-        if not os.path.exists(config_file):
-            self._logger.error("%s does not exist", config_file)
-            sys.exit(-1)
+
         # Check if output path already exist
         if os.path.exists(self._output_folder):
             self._logger.error("%s already exists. Terminating the program...", self._output_folder)
             sys.exit(1)
         os.mkdir(self._output_folder)
 
-        # Read config file
-        self.load_campaign_configuration(config_file)
+        if isinstance(config_file,str):
+            # Read configuration from the file indicated by the argument
+            if not os.path.exists(config_file):
+                self._logger.error("%s does not exist", config_file)
+                sys.exit(-1)
+            # Read config file
+            self.load_campaign_configuration(config_file)
+        elif isinstance(config_file,dict):
+            # Read configuration from the dictionary indicated by the argument
+            self._campaign_configuration = config_file
+        else:
+            print('Unrecognized type for configuration file: '+str(type(config_file)))
+            sys.exit(1)
 
         # Read data
         self._logger.info("-->Executing data load")
