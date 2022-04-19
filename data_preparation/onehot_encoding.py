@@ -60,6 +60,10 @@ class OnehotEncoding(data_preparation.data_preparation.DataPreparation):
 
         categorical_cols = data.data.columns[categorical_feature_mask].tolist()
 
+        # Add columns to be forced as categorical
+        if 'categorical_columns' in self._campaign_configuration['DataPreparation']:
+            categorical_cols.extend(self._campaign_configuration['DataPreparation']['categorical_columns'])
+
         categorical_cols = list(set(data.x_columns) & set(categorical_cols))
 
         self._logger.debug("Categorical columns %s", str(categorical_cols))

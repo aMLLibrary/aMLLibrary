@@ -6,7 +6,7 @@ inputs/*/*
 
 # Library output files
 output*
-!outputs/
+outputs/
 
 # Folders to ignore
 log/

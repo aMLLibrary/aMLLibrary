@@ -200,9 +200,17 @@ class ModelBuilding:
             with open(pickle_file_name, "wb") as pickle_file:
                 pickle.dump(best_regressors[technique], pickle_file, protocol=4)
 
+        # Save best regressor to file
+        best_pickle_file_name = os.path.join(campaign_configuration['General']['output'], "best.pickle")
+        with open(best_pickle_file_name, "wb") as pickle_file:
+            pickle.dump(best_regressors[best_technique], pickle_file, protocol=4)
+
         self._logger.addHandler(file_handler)
         self._logger.info("<--Built the final regressors")
         best_config = best_confs[best_technique]
+        if 'rename_columns' in campaign_configuration['DataPreparation']:
+            renamed_columns = [str(k) + " -> " + str(v) for k,v in campaign_configuration['DataPreparation']['rename_columns'].items()]
+            self._logger.info("Using renamed columns: {" + ", ".join(renamed_columns) + "}")
         self._logger.info("Best model:")
         self._logger.info("-->")
         self._logger.info(best_config.print_model())

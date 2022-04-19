@@ -61,4 +61,11 @@ class RenameColumns(data_preparation.data_preparation.DataPreparation):
                 if column in rename_columns:
                     del extrapolation_columns[column]
                     extrapolation_columns[rename_columns[column]] = value
+        if 'interpolation_columns' in self._campaign_configuration['General']:
+            interpolation_columns = self._campaign_configuration['General']['interpolation_columns']
+            interpolation_columns_copy = interpolation_columns.copy()
+            for column, value in interpolation_columns_copy.items():
+                if column in rename_columns:
+                    del interpolation_columns[column]
+                    interpolation_columns[rename_columns[column]] = value
         return data
