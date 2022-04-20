@@ -23,7 +23,8 @@ class Interpolation(data_preparation.data_preparation.DataPreparation):
     """
     Step which prepares data for interpolation by computing the correct validation set
 
-    This step looks for interpolation_columns field in campaign configuration and split data into training and validation using the specified interpolation step
+    This step looks for interpolation_columns field in campaign configuration and split data into training and validation using the specified interpolation value,
+    which can be interpreted either as a list of values for the test set or an interpolation step
 
     Methods
     -------
@@ -56,9 +57,16 @@ class Interpolation(data_preparation.data_preparation.DataPreparation):
         data = inputs
         validation_data = []
         interpolation_columns = self._campaign_configuration['General']['interpolation_columns']
-        for variable, step in interpolation_columns.items():
-            values = np.unique(data.data[variable])
-            validation_values = values[::step]
+        for variable, value in interpolation_columns.items():
+            if isinstance(value, list):
+                # Interpolation test set will be composed of dataset entries with values in the provided list
+                validation_values = value
+            elif isinstance(value, (int, float)):
+                # Value is interpreted as an interpolation step: test set will be composed of dataset entries with one every "step" values
+                unique_vals = np.unique(data.data[variable])
+                validation_values = unique_vals[::value]
+            else:
+                raise ValueError("Interpolation value" + str(value) + "must be a list or a number")
             for index, row in data.data.iterrows():
                 if row[variable] in validation_values:
                     validation_data.append(index)
