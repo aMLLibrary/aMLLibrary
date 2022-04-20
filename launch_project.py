@@ -54,7 +54,6 @@ def main():
     root_config_rel_fold = args.CONFIG_FOLDER
     config_split = os.path.normpath(root_config_rel_fold).split(os.sep)
     config_split[0] = args.output
-    print(config_split)
     root_output_rel_fold = os.path.join(*config_split)
     dry_run = not args.execute
     if dry_run:
