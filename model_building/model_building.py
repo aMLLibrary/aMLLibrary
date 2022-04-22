@@ -145,6 +145,7 @@ class ModelBuilding:
                 self._logger.debug("%s: MAPE on %s set is %f", signature, experiment_configuration, mape)
 
         best_confs, best_technique = results.get_bests()
+        results.dismiss_handler()
         best_regressors = {}
 
         file_handler = logging.FileHandler(os.path.join(campaign_configuration['General']['output'], 'results.txt'), 'a+')

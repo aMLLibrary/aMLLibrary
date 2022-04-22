@@ -346,4 +346,10 @@ class SequenceDataProcessing:
         with open(self._done_file_flag, 'wb') as f:
             pass
 
+        
+        #Close logging
+        self._logger.removeHandler(file_handler)
+        file_handler.close()
+        
+        
         return regressor

@@ -19,6 +19,7 @@ import argparse
 import os
 import subprocess
 import sys
+import time
 
 import sequence_data_processing
 from model_building.predictor import Predictor
@@ -48,6 +49,8 @@ def main():
     for configuration in tests:
         test_name = configuration.pop('Name')
         output_path = args.output + '/' + test_name
+        print("\n\n\nStarting "+test_name)
+        time.sleep(3)
 
         if test_name == 'faas_predict':
             # Build object
@@ -60,6 +63,7 @@ def main():
             sequence_data_processor = sequence_data_processing.SequenceDataProcessing(configuration, debug=args.debug, output=output_path)
             sequence_data_processor.process()
             #TODO: scrivi output dei test (aka se sono andati bene o no, dove son falliti ecc)
+            #TODO: risolvi il ResourceWarning di enriched_configuration.ini (vedi output di una run)
 
 
 def generate_tests():
@@ -86,10 +90,10 @@ def generate_tests():
             'Name': 'faas_test',
             'General':{
                 'run_num': 1,
-                'techniques': ['LRRidge'],
+                'techniques': ['LRRidge', 'DecisionTree'],
                 'hp_selection': 'KFold',
                 'validation': 'HoldOut',
-                'folds': 5,
+                'folds': 4,
                 'hold_out_ratio': 0.2,
                 'y': 'ave_response_time'
             },
@@ -101,6 +105,13 @@ def generate_tests():
             },
             'LRRidge':{
                 'alpha': [0.02, 0.1, 1.0]
+            },
+            'DecisionTree':{
+                'criterion': ['mse'],
+                'max_depth': [3],
+                'max_features': ['auto'],
+                'min_samples_split': [0.01],
+                'min_samples_leaf': [0.01]
             }
         },
         {
@@ -111,46 +122,146 @@ def generate_tests():
             'DataPreparation':{
                 'input_path': 'inputs/faas_predict.csv'
             }
+        },
+        {
+            'Name': 'faas_test_sfs',
+            'General':{
+                'run_num': 1,
+                'techniques': ['LRRidge'],
+                'hp_selection': 'KFold',
+                'validation': 'HoldOut',
+                'folds': 4,
+                'hold_out_ratio': 0.2,
+                'y': 'ave_response_time'
+            },
+            'DataPreparation':{
+                'input_path': 'inputs/faas_test.csv',
+                'inverse': ['Lambda']
+            },
+            'FeatureSelection':{
+                'method': 'SFS',
+                'max_features': 3,
+                'folds': 3
+            },
+            'LRRidge':{
+                'alpha': [0.02, 0.1, 1]
+            }
+        },
+        {
+            'Name': 'faas_test_hyperopt',
+            'General':{
+                'run_num': 1,
+                'techniques': ['LRRidge'],
+                'hp_selection': 'KFold',
+                'validation': 'HoldOut',
+                'folds': 4,
+                'hold_out_ratio': 0.2,
+                'y': 'ave_response_time',
+                'hyperparameter_tuning': 'Hyperopt',
+                'hyperopt_max_evals': 10,
+                'hyperopt_save_interval': 5
+            },
+            'DataPreparation':{
+                'input_path': 'inputs/faas_test.csv',
+                'inverse': ['Lambda']
+            },
+            'LRRidge':{
+                'alpha': ['loguniform(0.01,1)']
+            }
+        },
+        {
+            'Name': 'faas_test_hyperopt_sfs',
+            'General':{
+                'run_num': 1,
+                'techniques': ['LRRidge'],
+                'hp_selection': 'KFold',
+                'validation': 'HoldOut',
+                'folds': 4,
+                'hold_out_ratio': 0.2,
+                'y': 'ave_response_time',
+                'hyperparameter_tuning': 'Hyperopt',
+                'hyperopt_max_evals': 10,
+                'hyperopt_save_interval': 5
+            },
+            'DataPreparation':{
+                'input_path': 'inputs/faas_test.csv',
+                'inverse': ['Lambda']
+            },
+            'FeatureSelection':{
+                'method': 'SFS',
+                'max_features': 3,
+                'folds': 3
+            },
+            'LRRidge':{
+                'alpha': ['loguniform(0.01,1)']
+            }
+        },
+        {
+            'Name': 'faas_test_xgboost_fs',
+            'General':{
+                'run_num': 2,
+                'techniques': ['LRRidge'],
+                'hp_selection': 'KFold',
+                'validation': 'HoldOut',
+                'folds': 4,
+                'hold_out_ratio': 0.2,
+                'y': 'ave_response_time'
+            },
+            'DataPreparation':{
+                'input_path': 'inputs/faas_test.csv',
+                'inverse': ['Lambda']
+            },
+            'FeatureSelection':{
+                'method': 'XGBoost',
+                'max_features': 2,
+                'XGBoost_tolerance': 0.4
+            },
+            'LRRidge':{
+                'alpha': [0.1, 0.2]
+            }
         }
-
     ]
     return tests
 
 """
-def main():
-    ###
-    Script used to perform regression test of the library
-
-    This script is used to self check the library.
-    It runs all the examples of example_configurations and checks if there is any error during their execution. Quality of the results is not analyzed nor compared with any reference
-    ###
-
-    parser = argparse.ArgumentParser(description="Performs regression tests")
-    parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
-    parser.add_argument('-j', help="The number of processes to be used", default=1)
-    args = parser.parse_args()
-
-    # The absolute path of the current script
-    abs_script = os.path.abspath(sys.argv[0])
-
-    # The root directory of the script
-    abs_root = os.path.dirname(abs_script)
-
-    for file in os.listdir(os.path.join(abs_root, "example_configurations")):
-        if not file.endswith(".ini"):
-            continue
-        extra_options = ""
-        if args.debug:
-            extra_options = extra_options + " -d"
-        extra_options = extra_options + " -j" + str(args.j)
-        command = "python3 " + os.path.join(abs_root, "run.py") + " -l -t -c " + os.path.join(abs_root, "example_configurations", file) + " -o test_output/output_" + file + extra_options
-        print("Running " + command)
-        ret_program = subprocess.run(command, shell=True)#, executable="/bin/bash")
-        if ret_program.returncode:
-            input(ret_program)
-            print("Error in running " + file)
-            sys.exit(1)
-"""
+        {
+            'Name': 'faas_test',
+            'General':{
+                'run_num': 1,
+                'techniques': ['LRRidge', 'DecisionTree'],
+                'hp_selection': 'KFold',
+                'validation': 'HoldOut',
+                'folds': 4,
+                'hold_out_ratio': 0.2,
+                'y': 'ave_response_time'
+            },
+            'DataPreparation':{
+                'input_path': 'inputs/faas_test.csv',
+                'inverse': ['Lambda'],
+                'product_max_degree': 2,
+                'product_interactions_only': True
+            },
+            'LRRidge':{
+                'alpha': [0.02, 0.1, 1.0]
+            },
+            'DecisionTree':{
+                'criterion': ['mse'],
+                'max_depth': [3],
+                'max_features': ['auto'],
+                'min_samples_split': [0.01],
+                'min_samples_leaf': [0.01]
+            }
+        },
+        {
+            'Name': 'faas_predict',
+            'General':{
+                'y': 'ave_response_time'
+            },
+            'DataPreparation':{
+                'input_path': 'inputs/faas_predict.csv'
+            }
+        },
+        """
 
 if __name__ == '__main__':
     main()

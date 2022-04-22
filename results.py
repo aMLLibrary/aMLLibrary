@@ -86,8 +86,12 @@ class Results:
         self._logger = custom_logger.getLogger(__name__)
 
         # Logger writes to stdout and file
-        file_handler = logging.FileHandler(os.path.join(self._campaign_configuration['General']['output'], 'results.txt'), 'a+')
-        self._logger.addHandler(file_handler)
+        self.file_handler = logging.FileHandler(os.path.join(self._campaign_configuration['General']['output'], 'results.txt'), 'a+')
+        self._logger.addHandler(self.file_handler)
+
+    def dismiss_handler(self):
+        self._logger.removeHandler(self.file_handler)
+        self.file_handler.close()
 
     def collect_data(self):
         """
