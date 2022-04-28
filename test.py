@@ -45,25 +45,36 @@ def main():
         print(args.output+" already exists. Terminating the program...")
         sys.exit(1)
 
-
+    #Perform tests
+    outcomes = []
     for configuration in tests:
         test_name = configuration.pop('Name')
         output_path = args.output + '/' + test_name
         print("\n\n\nStarting "+test_name)
-        time.sleep(3)
 
-        if test_name == 'faas_predict':
-            # Build object
-            predictor_obj = Predictor(regressor_file=args.output+'/faas_test/LRRidge.pickle', output_folder=output_path, debug=args.debug)
+        try:
+            if test_name == 'faas_predict':
+                # Build object
+                predictor_obj = Predictor(regressor_file=args.output+'/faas_test/LRRidge.pickle', output_folder=output_path, debug=args.debug)
 
-            # Perform prediction reading from a config file
-            predictor_obj.predict(config_file=configuration, mape_to_file=True)
-
+                # Perform prediction reading from a config file
+                predictor_obj.predict(config_file=configuration, mape_to_file=True)
+            else:
+                sequence_data_processor = sequence_data_processing.SequenceDataProcessing(configuration, debug=args.debug, output=output_path)
+                sequence_data_processor.process()
+        except Exception as e:
+            print("Exception",e,"raised", sep=' ')
+            outcomes.append(str(test_name)+" failed with exception "+str(e))
         else:
-            sequence_data_processor = sequence_data_processing.SequenceDataProcessing(configuration, debug=args.debug, output=output_path)
-            sequence_data_processor.process()
-            #TODO: scrivi output dei test (aka se sono andati bene o no, dove son falliti ecc)
-            #TODO: risolvi il ResourceWarning di enriched_configuration.ini (vedi output di una run)
+            outcomes.append(str(test_name)+" successfully run")
+
+    #Print results
+    print('\n\n\n\n\n\n\n\n\n\n\n\n*************Test Results*************')
+    i = 0
+    for outcome in outcomes:
+        i += 1
+        print(str(i)+')',outcome, sep=' ')
+
 
 
 def generate_tests():
@@ -222,46 +233,6 @@ def generate_tests():
         }
     ]
     return tests
-
-"""
-        {
-            'Name': 'faas_test',
-            'General':{
-                'run_num': 1,
-                'techniques': ['LRRidge', 'DecisionTree'],
-                'hp_selection': 'KFold',
-                'validation': 'HoldOut',
-                'folds': 4,
-                'hold_out_ratio': 0.2,
-                'y': 'ave_response_time'
-            },
-            'DataPreparation':{
-                'input_path': 'inputs/faas_test.csv',
-                'inverse': ['Lambda'],
-                'product_max_degree': 2,
-                'product_interactions_only': True
-            },
-            'LRRidge':{
-                'alpha': [0.02, 0.1, 1.0]
-            },
-            'DecisionTree':{
-                'criterion': ['mse'],
-                'max_depth': [3],
-                'max_features': ['auto'],
-                'min_samples_split': [0.01],
-                'min_samples_leaf': [0.01]
-            }
-        },
-        {
-            'Name': 'faas_predict',
-            'General':{
-                'y': 'ave_response_time'
-            },
-            'DataPreparation':{
-                'input_path': 'inputs/faas_predict.csv'
-            }
-        },
-        """
 
 if __name__ == '__main__':
     main()

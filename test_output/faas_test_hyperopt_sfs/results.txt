@@ -1,0 +1,32 @@
+Evaluate experiments (sequentially)
+<--
+Printing results for run 0
+Best result for Technique.LR_RIDGE - Configuration is ['alpha_loguniform(0.01,1)'] - (Training MAPE is 0.000399 - HP Selection MAPE is 0.000501) - Validation MAPE is 0.000349
+Overall best result is Technique.LR_RIDGE ['alpha_loguniform(0.01,1)']
+Metrics for best result:
+-->
+MAPE: (Training 0.000399 - HP Selection 0.000501) - Validation 0.000349
+RMSE: (Training 0.000590 - HP Selection 0.000857) - Validation 0.000609
+R^2 : (Training 1.000000 - HP Selection 0.999999) - Validation 1.000000
+<--
+Building the final regressors
+Validation metrics on full dataset for Technique.LR_RIDGE:
+-->
+MAPE: 0.000266
+RMSE: 0.000522
+R^2 : 1.000000
+<--
+Built the final regressors
+Best model:
+-->
+Optimal hyperparameter(s) found with Hyperopt: {'alpha': 0.01}
+Features selected with SFS: ['warm_service_time', 'inverse_Lambda', 'Lambda']
+LRRidge coefficients:
+   (1.0 * warm_service_time)
+ + (0.004 * Lambda)
+ + (0.001 * inverse_Lambda)
+ + (-0.003)
+<--
+Execution Time : 2.738384246826172
+Performing self check
+Performed self check

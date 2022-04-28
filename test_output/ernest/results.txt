@@ -1,0 +1,32 @@
+      Evaluate experiments (sequentially)
+<--
+   Printing results for run 0
+         Best result for Technique.LR_RIDGE - Configuration is ['alpha_0.1'] - (Training MAPE is 0.059489 - HP Selection MAPE is 0.059489) - Validation MAPE is 0.059489
+   Overall best result is ['LRRidge', 'alpha_0.1']
+   Metrics for best result:
+-->
+      MAPE: (Training 0.059489 - HP Selection 0.059489) - Validation 0.059489
+      RMSE: (Training 0.354035 - HP Selection 0.354035) - Validation 0.354035
+      R^2 : (Training 0.957410 - HP Selection 0.957410) - Validation 0.957410
+<--
+   Building the final regressors
+      Validation metrics on full dataset for Technique.LR_RIDGE:
+-->
+         MAPE: 0.059489
+         RMSE: 0.354035
+         R^2 : 0.957410
+<--
+   Built the final regressors
+   Using renamed columns: {x1 -> cores, x2 -> datasize}
+   Best model:
+-->
+      LRRidge coefficients:
+   (4.274 * log_cores)
+ + (3.116 * square_datasize_over_cores)
+ + (-1.951 * squared_datasize_over_cores)
+ + (1.545 * datasize_over_cores)
+ + (-2.118)
+<--
+Execution Time : 0.04130721092224121
+Performing self check
+Performed self check
