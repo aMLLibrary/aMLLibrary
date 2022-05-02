@@ -37,29 +37,45 @@ def main():
     parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="test_output")
     args = parser.parse_args()
 
-    tests = generate_tests() #TODO: documenta variabile tests (nel senso, controlla se/come documentarla)
+    done_file_flag = os.path.join(args.output, 'done')
 
     try:
         os.mkdir(args.output)
     except FileExistsError:
-        print(args.output+" already exists. Terminating the program...")
-        sys.exit(1)
+        if os.path.exists(done_file_flag):
+            print(args.output+" already exists. Terminating the program...")
+            sys.exit(1)
+        
+
+    tests = generate_tests() #TODO: documenta variabile tests (nel senso, controlla se/come documentarla)
 
     #Perform tests
     outcomes = []
     for configuration in tests:
         test_name = configuration.pop('Name')
         output_path = args.output + '/' + test_name
-        print("\n\n\nStarting "+test_name)
 
         try:
             if test_name == 'faas_predict':
+                #Check if the test was already performed in a previous incomplete run
+                if os.path.exists(output_path):
+                    print(test_name,"already performed",sep=" ",end="\n\n\n")
+                    continue
+                print("Starting",test_name,sep=" ",end="\n\n\n")
+
                 # Build object
                 predictor_obj = Predictor(regressor_file=args.output+'/faas_test/LRRidge.pickle', output_folder=output_path, debug=args.debug)
 
                 # Perform prediction reading from a config file
                 predictor_obj.predict(config_file=configuration, mape_to_file=True)
             else:
+                #Check if the test was already performed in a previous incomplete run
+                test_done_file_flag = os.path.join(output_path, 'done')
+                if os.path.exists(test_done_file_flag):
+                    print(test_name,"already performed",sep=" ",end="\n\n\n")
+                    continue
+
+                print("Starting",test_name,sep=" ",end="\n\n\n")
                 sequence_data_processor = sequence_data_processing.SequenceDataProcessing(configuration, debug=args.debug, output=output_path)
                 sequence_data_processor.process()
         except Exception as e:
@@ -74,6 +90,10 @@ def main():
     for outcome in outcomes:
         i += 1
         print(str(i)+')',outcome, sep=' ')
+
+    # Create success flag file
+    with open(done_file_flag, 'wb') as f:
+        pass
 
 
 

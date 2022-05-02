@@ -1,0 +1,29 @@
+   Evaluate experiments (sequentially)
+<--
+Printing results for run 0
+   Best result for Technique.LR_RIDGE - Configuration is ['alpha_0.02'] - (Training MAPE is 0.000516 - HP Selection MAPE is 0.000547) - Validation MAPE is 0.000411
+Overall best result is Technique.LR_RIDGE ['alpha_0.02']
+Metrics for best result:
+-->
+MAPE: (Training 0.000516 - HP Selection 0.000547) - Validation 0.000411
+RMSE: (Training 0.000943 - HP Selection 0.000939) - Validation 0.000749
+R^2 : (Training 0.999999 - HP Selection 0.999999) - Validation 1.000000
+<--
+Building the final regressors
+Validation metrics on full dataset for Technique.LR_RIDGE:
+-->
+   MAPE: 0.000454
+   RMSE: 0.000997
+   R^2 : 0.999999
+<--
+Built the final regressors
+Best model:
+-->
+Features selected with SFS: ['warm_service_time']
+LRRidge coefficients:
+   (1.0 * warm_service_time)
+ + (0.001)
+<--
+Execution Time : 0.7436330318450928
+Performing self check
+Performed self check
