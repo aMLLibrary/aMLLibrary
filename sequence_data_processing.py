@@ -44,6 +44,7 @@ import data_preparation.logarithm
 import data_preparation.onehot_encoding
 import data_preparation.product
 import data_preparation.rename_columns
+import data_preparation.row_selection
 import data_preparation.xgboost_feature_selection
 
 import model_building.model_building
@@ -204,8 +205,12 @@ class SequenceDataProcessing:
         if 'rename_columns' in self._campaign_configuration['DataPreparation']:
             self._data_preprocessing_list.append(data_preparation.rename_columns.RenameColumns(self._campaign_configuration))
 
+        # Adding row selection if required
+        if 'skip_rows' in self._campaign_configuration['DataPreparation']:
+            self._data_preprocessing_list.append(data_preparation.row_selection.RowSelection(self._campaign_configuration))
+
         # Adding column selection if required
-        if 'use_columns' in self._campaign_configuration['DataPreparation'] or "skip_columns" in self._campaign_configuration['DataPreparation']:
+        if 'use_columns' in self._campaign_configuration['DataPreparation'] or 'skip_columns' in self._campaign_configuration['DataPreparation']:
             self._data_preprocessing_list.append(data_preparation.column_selection.ColumnSelection(self._campaign_configuration))
 
         # Transform categorical features in onehot encoding

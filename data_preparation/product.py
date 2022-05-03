@@ -1,5 +1,6 @@
 """
 Copyright 2019 Marco Lattuada
+Copyright 2022 Bruno Guindani
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -98,7 +99,7 @@ class Product(data_preparation.data_preparation.DataPreparation):
                 if new_feature_name in outputs.data.columns:
                     self._logger.warning("%s column already exists, skipping product of features %s", new_feature_name, combination)
                     continue
-                new_column_df = pd.DataFrame(new_column, columns=[new_feature_name])
+                new_column_df = pd.DataFrame(new_column, index=outputs.data.index, columns=[new_feature_name])
                 outputs.data = pd.concat([outputs.data, new_column_df], axis=1)
                 outputs.x_columns.append(new_feature_name)
 
