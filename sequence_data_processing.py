@@ -228,7 +228,8 @@ class SequenceDataProcessing:
             self._data_preprocessing_list.append(data_preparation.logarithm.Logarithm(self._campaign_configuration))
 
         # Adding product features if required
-        if 'product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree']:
+        if (('product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree'])
+            or 'selected_products' in self._campaign_configuration['DataPreparation']):
             self._data_preprocessing_list.append(data_preparation.product.Product(self._campaign_configuration))
 
         # Create ernest features if required
