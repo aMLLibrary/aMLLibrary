@@ -33,7 +33,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
     """
     Class that uses Pickle objects to make predictions on new datasets
     """
-    def __init__(self, regressor_file, output_folder, debug):
+    def __init__(self, regressor_file=None, output_folder="output", debug=False):
         """
         Constructor of the class
 
@@ -59,11 +59,20 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         # Initialize flags
         self._output_folder = output_folder
 
-        # Read regressor
+        # Read regressor if given
+        if regressor_file:
+            self.load_regressor(regressor_file)
+
+
+    def load_regressor(self, regressor_file):
+        """
+        Loads the given regressor as a class member
+        """
         with open(regressor_file, "rb") as f:
             self._regressor = pickle.load(f)
 
-    def predict(self, config_file, mape_to_file):
+
+    def predict(self, config_file, mape_to_file, regressor_file=None):
         """
         Performs prediction and computes MAPE
 
@@ -74,7 +83,13 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
 
         mape_to_file: bool
             True if computed MAPE should be written to a text file (file name is mape.txt)
+
+        regressor_file: str
+            Pickle binary file that stores the model to be used for prediction
         """
+        if regressor_file:
+            self.load_regressor(regressor_file)
+
         # Read configuration from the file indicated by the argument
         if not os.path.exists(config_file):
             self._logger.error("%s does not exist", config_file)
@@ -128,7 +143,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         self._logger.info("<--Performed prediction")
 
 
-    def predict_from_df(self, xx):
+    def predict_from_df(self, xx, regressor_file=None):
         """
         Performs prediction on a dataframe
 
@@ -137,11 +152,17 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         xx: pandas.DataFrame
             The covariate matrix to be used for prediction
 
+        regressor_file: str
+            Pickle binary file that stores the model to be used for prediction
+
         Returns
         -------
         yy_pred
             The predicted values for the dependent variable
         """
+        if regressor_file:
+            self.load_regressor(regressor_file)
+
         self._logger.info("-->Performing prediction on dataframe")
         yy_pred = self._regressor.predict(xx)
         self._logger.info("Predicted values are: %s", str(yy_pred))
