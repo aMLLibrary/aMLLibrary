@@ -60,12 +60,17 @@ class DataLoading(data_preparation.data_preparation.DataPreparation):
             The data to be analyzed
         """
         input_path = self._campaign_configuration['DataPreparation']['input_path']
-        self._logger.info("Input reading: %s", input_path)
-        if not os.path.exists(input_path):
-            self._logger.error("%s not found", input_path)
-            sys.exit(-1)
-
-        data_frame = pd.read_csv(input_path)
+        if isinstance(input_path, str):
+            self._logger.info("Input reading: %s", input_path)
+            if not os.path.exists(input_path):
+                self._logger.error("%s not found", input_path)
+                sys.exit(-1)
+            data_frame = pd.read_csv(input_path)
+        elif isinstance(input_path, pd.DataFrame):
+            data_frame = input_path.copy()
+        else:
+            self._logger.error("input_path must be a path string to a dataset or a pandas.DataFrame")
+            sys.exit(1)
 
         self._campaign_configuration['Features'] = {}
         self._campaign_configuration['Features']['Original_feature_names'] = []
