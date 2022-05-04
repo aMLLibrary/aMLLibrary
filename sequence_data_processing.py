@@ -38,10 +38,13 @@ import data_preparation.data_check
 import data_preparation.data_loading
 import data_preparation.ernest
 import data_preparation.extrapolation
+import data_preparation.interpolation
 import data_preparation.inversion
+import data_preparation.logarithm
 import data_preparation.onehot_encoding
 import data_preparation.product
 import data_preparation.rename_columns
+import data_preparation.row_selection
 import data_preparation.xgboost_feature_selection
 
 import model_building.model_building
@@ -168,6 +171,12 @@ class SequenceDataProcessing:
                 self._logger.error("extrapolation_columns not set")
                 sys.exit(1)
 
+        # Check that if Interpolation is selected, interpolation_columns is specified
+        if self._campaign_configuration['General']['validation'] == "Interpolation":
+            if "interpolation_columns" not in self._campaign_configuration['General']:
+                self._logger.error("interpolation_columns not set")
+                sys.exit(1)
+
         # Check that if XGBoost is used for feature selection tolerance is specified
         if 'FeatureSelection' in self._campaign_configuration and self._campaign_configuration['FeatureSelection']['method'] == "XGBoost":
             if "XGBoost_tolerance" not in self._campaign_configuration['FeatureSelection']:
@@ -196,8 +205,12 @@ class SequenceDataProcessing:
         if 'rename_columns' in self._campaign_configuration['DataPreparation']:
             self._data_preprocessing_list.append(data_preparation.rename_columns.RenameColumns(self._campaign_configuration))
 
+        # Adding row selection if required
+        if 'skip_rows' in self._campaign_configuration['DataPreparation']:
+            self._data_preprocessing_list.append(data_preparation.row_selection.RowSelection(self._campaign_configuration))
+
         # Adding column selection if required
-        if 'use_columns' in self._campaign_configuration['DataPreparation'] or "skip_columns" in self._campaign_configuration['DataPreparation']:
+        if 'use_columns' in self._campaign_configuration['DataPreparation'] or 'skip_columns' in self._campaign_configuration['DataPreparation']:
             self._data_preprocessing_list.append(data_preparation.column_selection.ColumnSelection(self._campaign_configuration))
 
         # Transform categorical features in onehot encoding
@@ -207,12 +220,21 @@ class SequenceDataProcessing:
         if self._campaign_configuration['General']['validation'] == "Extrapolation":
             self._data_preprocessing_list.append(data_preparation.extrapolation.Extrapolation(self._campaign_configuration))
 
+        # Split according to interpolation values if required
+        if self._campaign_configuration['General']['validation'] == "Interpolation":
+            self._data_preprocessing_list.append(data_preparation.interpolation.Interpolation(self._campaign_configuration))
+
         # Adding inverted features if required
         if 'inverse' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['inverse']:
             self._data_preprocessing_list.append(data_preparation.inversion.Inversion(self._campaign_configuration))
 
+        # Adding logarithm computation if required
+        if 'log' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['log']:
+            self._data_preprocessing_list.append(data_preparation.logarithm.Logarithm(self._campaign_configuration))
+
         # Adding product features if required
-        if 'product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree']:
+        if (('product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree'])
+            or 'selected_products' in self._campaign_configuration['DataPreparation']):
             self._data_preprocessing_list.append(data_preparation.product.Product(self._campaign_configuration))
 
         # Create ernest features if required
