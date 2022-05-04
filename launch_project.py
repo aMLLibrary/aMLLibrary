@@ -71,9 +71,15 @@ def main():
         device_config_fold = os.path.join(root_config_rel_fold, device_name)
         device_output_fold = os.path.join(root_output_rel_fold, device_name)
 
-        # Skip non-folders
+        # If device_config_fold is not a folder, interpret it as a config file and run it
         if not os.path.isdir(device_config_fold):
-            print("Skipping non-folder", device_config_fold)
+            if not device_config_fold.endswith('.ini'):
+                print("Skipping non .ini file", device_config_fold)
+                continue
+            cmd_run = ' '.join(['python3', 'run.py'] + extra_options +
+                               ['-c', device_config_fold,
+                                '-o', device_output_fold.rstrip('.ini')])
+            use_command(cmd_run, dry_run)
             continue
 
         # Create output subfolder for device
@@ -86,7 +92,7 @@ def main():
                 print("Skipping non .ini file", config_name)
                 continue
             exper_config_path = os.path.join(device_config_fold, config_name)
-            config_name_no_ext = config_name[:-4]
+            config_name_no_ext = config_name.rstrip('.ini')
             exper_output_path = os.path.join(device_output_fold, config_name_no_ext)
             cmd_run = ' '.join(['python3', 'run.py'] + extra_options +
                                ['-c', exper_config_path,
