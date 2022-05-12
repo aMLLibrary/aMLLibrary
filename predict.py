@@ -64,6 +64,9 @@ def main():
                           columns='Lambda,warm_service_time,cold_service_time,expiration_time'.split(',')
                           )
         yy = predictor_obj.predict_from_df(xx)
+
+        # Or, you can run the same command with a new given regressor, overriding the old one if any
+        yy = predictor_obj.predict_from_df(xx, args.regressor)
     print("End of predict.py")
 
 

@@ -131,9 +131,10 @@ class Regressor:
             self._logger.debug("Computed logarithm")
 
         # Compute product
-        if 'product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree']:
-            inversion_step = data_preparation.product.Product(self._campaign_configuration)
-            data = inversion_step.process(data)
+        if (('product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree'])
+            or 'selected_products' in self._campaign_configuration['DataPreparation']):
+            product_step = data_preparation.product.Product(self._campaign_configuration)
+            data = product_step.process(data)
             self._logger.debug("Performed product")
 
         # Create ernest features if required

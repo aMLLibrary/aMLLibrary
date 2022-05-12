@@ -21,6 +21,7 @@ import logging
 import pickle
 import os
 from enum import Enum
+import warnings
 
 import numpy as np
 import matplotlib
@@ -230,7 +231,9 @@ class ExperimentConfiguration(abc.ABC):
                 pass
         self._start_file_logger()
         self.initialize_regressor()
-        self._train()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self._train()
         self.trained = True
         if self._regressor and not hasattr(self._regressor, 'aml_features'):
             self._regressor.aml_features = self.get_x_columns()

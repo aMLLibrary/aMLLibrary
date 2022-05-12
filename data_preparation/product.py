@@ -1,5 +1,6 @@
 """
 Copyright 2019 Marco Lattuada
+Copyright 2022 Bruno Guindani
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -62,14 +63,21 @@ class Product(data_preparation.data_preparation.DataPreparation):
 
         outputs = inputs
 
-        max_degree = self._campaign_configuration['DataPreparation']['product_max_degree']
-        if str(max_degree) == 'inf':
-            max_degree = len(inputs.x_columns)
+        if 'selected_products' in self._campaign_configuration['DataPreparation']:
+            degrees = [None]
+        else:
+            max_degree = self._campaign_configuration['DataPreparation']['product_max_degree']
+            if str(max_degree) == 'inf':
+                max_degree = len(inputs.x_columns)
+            degrees = range(2, max_degree + 1)
 
         features = sorted(set(inputs.x_columns))
 
-        for degree in range(2, max_degree + 1):
-            if 'product_interactions_only' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_interactions_only'] == True:
+        for degree in degrees:
+            if 'selected_products' in self._campaign_configuration['DataPreparation']:
+                prod_list = self._campaign_configuration['DataPreparation']['selected_products']
+                combinations = [tuple(prod.split()) for prod in prod_list]
+            elif 'product_interactions_only' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_interactions_only'] == True:
                 combinations = itertools.combinations(features, degree)
             else:
                 combinations = itertools.combinations_with_replacement(features, degree)
@@ -80,13 +88,18 @@ class Product(data_preparation.data_preparation.DataPreparation):
                     continue
                 # Compute the string for combination[:-2]
                 base = self._compute_column_name(combination[:-1])
-                new_column = np.array(outputs.data[base]) * np.array(outputs.data[combination[-1]])
+                if base in outputs.data:
+                    # Re-use column of partial product if already computed
+                    new_column = np.array(outputs.data[base]) * np.array(outputs.data[combination[-1]])
+                else:
+                    # Compute combination from scratch
+                    new_column = outputs.data[list(combination)].product(axis=1)
                 new_feature_name = self._compute_column_name(combination)
                 # Skip product if the combined name already exists
                 if new_feature_name in outputs.data.columns:
                     self._logger.warning("%s column already exists, skipping product of features %s", new_feature_name, combination)
                     continue
-                new_column_df = pd.DataFrame(new_column, columns=[new_feature_name])
+                new_column_df = pd.DataFrame(new_column, index=outputs.data.index, columns=[new_feature_name])
                 outputs.data = pd.concat([outputs.data, new_column_df], axis=1)
                 outputs.x_columns.append(new_feature_name)
 

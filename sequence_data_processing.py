@@ -23,6 +23,7 @@ import ast
 import configparser as cp
 import logging
 import os
+import pandas as pd
 import pickle
 import pprint
 import random
@@ -44,6 +45,7 @@ import data_preparation.logarithm
 import data_preparation.onehot_encoding
 import data_preparation.product
 import data_preparation.rename_columns
+import data_preparation.row_selection
 import data_preparation.xgboost_feature_selection
 
 import model_building.model_building
@@ -140,6 +142,7 @@ class SequenceDataProcessing:
             self._campaign_configuration['General'].update(general_args)
         else:
             self._logger.error("input_configuration must be a path string to a configuration file or a dictionary")
+            sys.exit(1)
 
         # Check if output path already exist
         if os.path.exists(output) and os.path.exists(self._done_file_flag):
@@ -206,8 +209,12 @@ class SequenceDataProcessing:
         if 'rename_columns' in self._campaign_configuration['DataPreparation']:
             self._data_preprocessing_list.append(data_preparation.rename_columns.RenameColumns(self._campaign_configuration))
 
+        # Adding row selection if required
+        if 'skip_rows' in self._campaign_configuration['DataPreparation']:
+            self._data_preprocessing_list.append(data_preparation.row_selection.RowSelection(self._campaign_configuration))
+
         # Adding column selection if required
-        if 'use_columns' in self._campaign_configuration['DataPreparation'] or "skip_columns" in self._campaign_configuration['DataPreparation']:
+        if 'use_columns' in self._campaign_configuration['DataPreparation'] or 'skip_columns' in self._campaign_configuration['DataPreparation']:
             self._data_preprocessing_list.append(data_preparation.column_selection.ColumnSelection(self._campaign_configuration))
 
         # Transform categorical features in onehot encoding
@@ -230,7 +237,8 @@ class SequenceDataProcessing:
             self._data_preprocessing_list.append(data_preparation.logarithm.Logarithm(self._campaign_configuration))
 
         # Adding product features if required
-        if 'product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree']:
+        if (('product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree'])
+            or 'selected_products' in self._campaign_configuration['DataPreparation']):
             self._data_preprocessing_list.append(data_preparation.product.Product(self._campaign_configuration))
 
         # Create ernest features if required
@@ -314,7 +322,15 @@ class SequenceDataProcessing:
             self._logger.debug("Current data frame is:\n%s", str(data_processing))
             self._logger.info("<--")
 
-        shutil.copyfile(self._campaign_configuration['DataPreparation']['input_path'], os.path.join(self._campaign_configuration['General']['output'], 'data.csv'))
+        data = self._campaign_configuration['DataPreparation']['input_path']
+        if isinstance(data, str):
+            shutil.copyfile(data, os.path.join(self._campaign_configuration['General']['output'], 'data.csv'))
+        elif isinstance(data, pd.DataFrame):
+            data.to_csv(os.path.join(self._campaign_configuration['General']['output'], 'data.csv'))
+        else:
+            self._logger.error("input_path must be a path string to a dataset or a pandas.DataFrame")
+            sys.exit(1)
+
         data_processing.data.to_csv(os.path.join(self._campaign_configuration['General']['output'], 'data_preprocessed.csv'))
 
         regressor = self._model_building.process(self._campaign_configuration, data_processing, int(self._campaign_configuration['General']['j']))
