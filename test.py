@@ -56,26 +56,21 @@ def main():
         output_path = args.output + '/' + test_name
 
         try:
-            if test_name == 'faas_predict':
-                #Check if the test was already performed in a previous incomplete run
-                if os.path.exists(output_path):
-                    print(test_name,"already performed",sep=" ",end="\n\n\n")
-                    continue
-                print("Starting",test_name,sep=" ",end="\n\n\n")
+            #Check if the test was already performed in a previous incomplete run
+            test_done_file_flag = os.path.join(output_path, 'done')
+            if os.path.exists(test_done_file_flag):
+                print(test_name,"already performed",sep=" ",end="\n\n\n")
+                outcomes.append(str(test_name)+" already performed")
+                continue
+            print("Starting",test_name,sep=" ")
 
+            if test_name == 'faas_predict':
                 # Build object
                 predictor_obj = Predictor(regressor_file=args.output+'/faas_test/LRRidge.pickle', output_folder=output_path, debug=args.debug)
 
                 # Perform prediction reading from a config file
                 predictor_obj.predict(config_file=configuration, mape_to_file=True)
             else:
-                #Check if the test was already performed in a previous incomplete run
-                test_done_file_flag = os.path.join(output_path, 'done')
-                if os.path.exists(test_done_file_flag):
-                    print(test_name,"already performed",sep=" ",end="\n\n\n")
-                    continue
-
-                print("Starting",test_name,sep=" ",end="\n\n\n")
                 sequence_data_processor = sequence_data_processing.SequenceDataProcessing(configuration, debug=args.debug, output=output_path)
                 sequence_data_processor.process()
         except Exception as e:
@@ -83,6 +78,7 @@ def main():
             outcomes.append(str(test_name)+" failed with exception "+str(e))
         else:
             outcomes.append(str(test_name)+" successfully run")
+        print('\n\n\n')
 
     #Print results
     print('\n\n\n\n\n\n\n\n\n\n\n\n*************Test Results*************')

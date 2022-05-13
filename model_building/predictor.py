@@ -58,6 +58,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
 
         # Initialize flags
         self._output_folder = output_folder
+        self._done_file_flag = os.path.join(output_folder, 'done')
 
         # Read regressor if given
         if regressor_file:
@@ -90,11 +91,13 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         """
 
         # Check if output path already exist
-        if os.path.exists(self._output_folder):
+        if os.path.exists(self._output_folder) and os.path.exists(self._done_file_flag):
             self._logger.error("%s already exists. Terminating the program...", self._output_folder)
             sys.exit(1)
-        os.mkdir(self._output_folder)
-
+        if not os.path.exists(self._output_folder):
+            os.mkdir(self._output_folder)
+        
+        #Check configuration input type
         if isinstance(config_file,str):
             # Read configuration from the file indicated by the argument
             if not os.path.exists(config_file):
@@ -147,6 +150,10 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
           self._logger.info("Saved MAPE to %s", str(mape_file))
 
         self._logger.info("<--Performed prediction")
+
+        # Create success flag file
+        with open(self._done_file_flag, 'wb') as f:
+            pass
 
 
     def predict_from_df(self, xx, regressor_file=None):

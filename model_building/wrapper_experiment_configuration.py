@@ -379,7 +379,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
             # Do not perform periodic saves to Pickle files
             best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=self._hyperopt_max_evals, verbose=False)
         else:
-            
+            """
             # Save Trials object every _hyperopt_save_interval iterations for fault tolerance
             curr_evals = 0
             trials = Trials()
@@ -398,10 +398,10 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
             # Clear trials file after finished
             os.remove(trials_pickle_path)
             
-            """
+            
             New version
             MA unclosed file warning, probabimente a causa di riga 560 di hyperopt/hyperopt/fmin.py
-            
+            """
             # Save Trials object every _hyperopt_save_interval iterations for fault tolerance
             curr_evals = 0
             trials_pickle_path = os.path.join(self._experiment_directory, 'trials.pickle')
@@ -422,7 +422,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
                 best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=curr_evals, trials_save_file=trials_pickle_path, verbose=False)
             # Clear trials file after finished
             os.remove(trials_pickle_path)
-            """
+            
         # Restore output from fmin
         logging.getLogger('hyperopt.tpe').propagate = True
         # Recover 'lost' params entries whose values was set, and were thus not returned by fmin()
