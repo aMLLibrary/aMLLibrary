@@ -1,3 +1,0 @@
-[submodule "hyperopt"]
-	path = hyperopt
-	url = https://github.com/hyperopt/hyperopt.git
