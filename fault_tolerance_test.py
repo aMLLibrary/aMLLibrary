@@ -21,9 +21,10 @@ import multiprocessing
 import subprocess
 import threading as th
 import sys
-import time
 
-from test import main as test
+import signal
+from time import monotonic as timer
+from subprocess import Popen, PIPE, TimeoutExpired
 
 
 def main():
@@ -32,16 +33,17 @@ def main():
 
     Checks that interrupting the tests performed by test.py is fault tolerant
     """
+    done_file_flag = os.path.join('fault_tolerance_output','done')
 
-    
-    for i in range(10):
-        test_runner = th.Timer(0.0,test)
-        test_runner.start()
-        time.sleep(1)
-        KeyboardInterrupt()
-        time.sleep(20)
-    
-
+    start = timer()
+    while not(os.path.exists(done_file_flag)):
+        with Popen('python3 fault_tolerance_slave.py', shell=True, stdout=PIPE, preexec_fn=os.setsid) as process:
+            try:
+                output = process.communicate(timeout=30)[0]
+            except TimeoutExpired:
+                os.killpg(process.pid, signal.SIGTERM) # send signal to the process group
+                output = process.communicate()[0]
+    print(timer()-start)
 
 
 
