@@ -75,3 +75,9 @@ Such strings refer to and are interpreted as Hyperopt prior objects, assuming th
 Note that logarithm-based distributions follow a different notation in `a-MLLibrary` configuration files than in the Hyperopt library, for the sake of clarity.
 For instance, the string `'loguniform(a,b)'` in a configuration file means a log-uniform distribution with support `[a,b]`, whereas an equivalent distribution in Hyperopt notation would be `'loguniform(e^a,e^b)'` instead.
 (`a-MLLibrary` performs this conversion of parameter notation automatically.)
+
+
+## Acknowledgments
+This library is currently maintained by the LIGATE project, which was partially funded by the European Commission under the Horizon 2020 Grant Agreement number 956137, as part of the European High-Performance Computing (EuroHPC) Joint Undertaking program.
+
+It was previously maintained by the ATMOSPHERE project, which was also funded by the European Union under the Horizon 2020 Cooperation Programme, with Grant Agreement number 777154.
