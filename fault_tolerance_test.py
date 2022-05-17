@@ -17,9 +17,7 @@ limitations under the License.
 
 import argparse
 import os
-import multiprocessing
 import subprocess
-import threading as th
 import sys
 
 import signal
@@ -36,13 +34,19 @@ def main():
     done_file_flag = os.path.join('fault_tolerance_output','done')
 
     start = timer()
+    i = 0
     while not(os.path.exists(done_file_flag)):
+        print("\n\nFault tolerance test: iteration",i+1, sep=' ',end='\n\n')
         with Popen('python3 fault_tolerance_slave.py', shell=True, stdout=PIPE, preexec_fn=os.setsid) as process:
             try:
                 output = process.communicate(timeout=30)[0]
-            except TimeoutExpired:
+            except subprocess.TimeoutExpired:
                 os.killpg(process.pid, signal.SIGTERM) # send signal to the process group
                 output = process.communicate()[0]
+            else:
+                print(output)
+                sys.exit(1)
+        i += 1
     print(timer()-start)
 
 

@@ -17,16 +17,10 @@ limitations under the License.
 
 import argparse
 import os
-import multiprocessing
-import subprocess
-import threading as th
 import sys
 
 import sequence_data_processing
 
-import signal
-from time import monotonic as timer
-from subprocess import Popen, PIPE, TimeoutExpired
 
 def generate_test():
     test = {
