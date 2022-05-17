@@ -34,7 +34,7 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Performs regression tests")
     parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
-    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="test_output")
+    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="output_test")
     args = parser.parse_args()
 
     done_file_flag = os.path.join(args.output, 'done')

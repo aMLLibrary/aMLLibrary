@@ -26,7 +26,7 @@ def generate_test():
     test = {
         'General':{
             'run_num': 1,
-            'techniques': ['LRRidge','DecisionTree'],
+            'techniques': ['DecisionTree','XGBoost'],#['LRRidge','DecisionTree','XGBoost'],
             'hp_selection': 'KFold',
             'validation': 'HoldOut',
             'folds': 4,
@@ -45,15 +45,22 @@ def generate_test():
             'max_features': 3,
             'folds': 3
         },
-        'LRRidge':{
-            'alpha': ['loguniform(0.01,1)']
-        },
+        #'LRRidge':{
+        #    'alpha': ['loguniform(0.01,1)']
+        #},
         'DecisionTree':{
             'criterion': ['mse'],
             'max_depth': [2,3,5],
             'max_features': ['auto'],
             'min_samples_split': [0.01,0.1,0.5],
             'min_samples_leaf': [0.01,0.1,0.5]
+        },
+        'XGBoost':{
+            'min_child_weight': [1],
+            'gamma': ['loguniform(0.1,10)'],
+            'n_estimators': [1000],
+            'learning_rate': ['loguniform(0.01,1)'],
+            'max_depth': [100]
         }
     }
     return test
@@ -67,7 +74,7 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Performs regression tests")
     parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
-    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="fault_tolerance_output")
+    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="output_fault_tolerance")
     args = parser.parse_args()
 
     done_file_flag = os.path.join(args.output, 'done')
