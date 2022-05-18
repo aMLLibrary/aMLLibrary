@@ -26,7 +26,7 @@ def generate_test():
     test = {
         'General':{
             'run_num': 1,
-            'techniques': ['LRRidge','DecisionTree'],#['LRRidge','DecisionTree','XGBoost'],
+            'techniques': ['LRRidge','DecisionTree','XGBoost'],
             'hp_selection': 'KFold',
             'validation': 'HoldOut',
             'folds': 4,
