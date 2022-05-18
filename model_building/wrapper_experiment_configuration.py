@@ -379,29 +379,6 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
             # Do not perform periodic saves to Pickle files
             best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=self._hyperopt_max_evals, verbose=False)
         else:
-            """
-            # Save Trials object every _hyperopt_save_interval iterations for fault tolerance
-            curr_evals = 0
-            trials = Trials()
-            trials_pickle_path = os.path.join(self._experiment_directory, 'trials.pickle')
-            while curr_evals < self._hyperopt_max_evals:
-                # First, check for an existing, partially filled trials file, if any, and restart from there
-                if os.path.isfile(trials_pickle_path):
-                    with open(trials_pickle_path, 'rb') as f:
-                        trials = pickle.load(f)
-                    curr_evals = len(trials.trials)
-                # Perform next _hyperopt_save_interval iterations and save Pickle file
-                curr_evals = min(self._hyperopt_max_evals, curr_evals+self._hyperopt_save_interval)
-                best_params = fmin(self._objective_function, params, algo=tpe.suggest, trials=trials, max_evals=curr_evals, verbose=False)
-                with open(trials_pickle_path, 'wb') as f:
-                    pickle.dump(trials, f)
-            # Clear trials file after finished
-            os.remove(trials_pickle_path)
-            
-            
-            New version
-            MA unclosed file warning, probabimente a causa di riga 560 di hyperopt/hyperopt/fmin.py
-            """
             # Save Trials object every _hyperopt_save_interval iterations for fault tolerance
             curr_evals = 0
             trials_pickle_path = os.path.join(self._experiment_directory, 'trials.pickle')

@@ -26,7 +26,7 @@ def generate_test():
     test = {
         'General':{
             'run_num': 1,
-            'techniques': ['DecisionTree','XGBoost'],#['LRRidge','DecisionTree','XGBoost'],
+            'techniques': ['LRRidge','DecisionTree'],#['LRRidge','DecisionTree','XGBoost'],
             'hp_selection': 'KFold',
             'validation': 'HoldOut',
             'folds': 4,
@@ -45,9 +45,9 @@ def generate_test():
             'max_features': 3,
             'folds': 3
         },
-        #'LRRidge':{
-        #    'alpha': ['loguniform(0.01,1)']
-        #},
+        'LRRidge':{
+            'alpha': ['loguniform(0.01,1)']
+        },
         'DecisionTree':{
             'criterion': ['mse'],
             'max_depth': [2,3,5],
