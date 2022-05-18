@@ -220,7 +220,6 @@ class ExperimentConfiguration(abc.ABC):
         This public method wraps the private method which performs the actual work. In doing this it controls the start/stop of logging on file
         """
         regressor_path = os.path.join(self._experiment_directory, 'regressor.pickle')
-        self._logger.info(regressor_path+" now training")
         # Fault tolerance mechanism for interrupted runs
         if os.path.exists(regressor_path):
             try:

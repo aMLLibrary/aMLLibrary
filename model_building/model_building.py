@@ -200,12 +200,6 @@ class ModelBuilding:
             best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)
             pickle_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + ".pickle")
             with open(pickle_file_name, "wb") as pickle_file:
-
-
-                #TODO: cancellami
-                self._logger.info("Dumping "+pickle_file_name)
-                
-
                 pickle.dump(best_regressors[technique], pickle_file, protocol=4)
 
         # Save best regressor to file
