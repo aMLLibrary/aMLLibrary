@@ -381,19 +381,11 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
             best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=self._hyperopt_max_evals, verbose=False)
         else:
             # Save Trials object every _hyperopt_save_interval iterations for fault tolerance
-            curr_evals = 0
             trials_pickle_path = os.path.join(self._experiment_directory, 'trials.pickle')
 
-            # First, check for an existing, partially filled trials file, if any, and restart from there
-            if os.path.isfile(trials_pickle_path):
-                with open(trials_pickle_path, 'rb') as f:
-                    trials = pickle.load(f)
-                curr_evals = len(trials.trials)
-
-            while curr_evals < self._hyperopt_max_evals:
-                # Perform next _hyperopt_save_interval iterations and save Pickle file
-                curr_evals = min(self._hyperopt_max_evals, curr_evals+self._hyperopt_save_interval)
-                best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=curr_evals, trials_save_file=trials_pickle_path, verbose=False)
+            #fmin retrieves the last saved .pickle file at each call (if any) and saves every self._hyperopt_save_interval iterations
+            best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=curr_evals, trials_save_file=trials_pickle_path, max_queue_len=self._hyperopt_save_interval, verbose=False)
+            
             # Clear trials file after finished
             os.remove(trials_pickle_path)
             
