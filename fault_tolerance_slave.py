@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Copyright 2019 Marco Lattuada
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,6 +24,9 @@ import sequence_data_processing
 
 
 def generate_test():
+"""
+Generates a dictionary with several models and configurations
+"""
     test = {
         'General':{
             'run_num': 1,
@@ -52,15 +56,15 @@ def generate_test():
             'criterion': ['mse'],
             'max_depth': [2,3,5],
             'max_features': ['auto'],
-            'min_samples_split': [0.01,0.1,0.5],
-            'min_samples_leaf': [0.01,0.1,0.5]
+            'min_samples_split': [0.01,0.5],
+            'min_samples_leaf': [0.01,0.5]
         },
         'XGBoost':{
             'min_child_weight': [1],
             'gamma': ['loguniform(0.1,10)'],
-            'n_estimators': [1000],
+            'n_estimators': [100],
             'learning_rate': ['loguniform(0.01,1)'],
-            'max_depth': [100]
+            'max_depth': [50]
         }
     }
     return test
@@ -70,7 +74,7 @@ def main():
     """
     Script used to stress test the fault tolerance of the library
 
-    Checks that interrupting the tests performed by test.py is fault tolerant
+    Actually runs several experiments while being interrupted by fault_tolerance_test.py
     """
     parser = argparse.ArgumentParser(description="Performs regression tests")
     parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")

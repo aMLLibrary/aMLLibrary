@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Copyright 2019 Marco Lattuada
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,76 +25,10 @@ import time
 import sequence_data_processing
 from model_building.predictor import Predictor
 
-def main():
-    """
-    Script used to perform regression test of the library
-
-    This script is used to self check the library.
-    #TODO: aggiorna la prossima riga
-    It runs all the examples of example_configurations and checks if there is any error during their execution. Quality of the results is not analyzed nor compared with any reference
-    """
-    parser = argparse.ArgumentParser(description="Performs regression tests")
-    parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
-    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="output_test")
-    args = parser.parse_args()
-
-    done_file_flag = os.path.join(args.output, 'done')
-
-    try:
-        os.mkdir(args.output)
-    except FileExistsError:
-        if os.path.exists(done_file_flag):
-            print(args.output+" already exists. Terminating the program...")
-            sys.exit(1)
-        
-
-    tests = generate_tests() #TODO: documenta variabile tests (nel senso, controlla se/come documentarla)
-
-    #Perform tests
-    outcomes = []
-    for configuration in tests:
-        test_name = configuration.pop('Name')
-        output_path = args.output + '/' + test_name
-
-        try:
-            #Check if the test was already performed in a previous incomplete run
-            test_done_file_flag = os.path.join(output_path, 'done')
-            if os.path.exists(test_done_file_flag):
-                print(test_name,"already performed",sep=" ",end="\n\n\n")
-                outcomes.append(str(test_name)+" already performed")
-                continue
-            print("Starting",test_name,sep=" ")
-
-            if test_name == 'faas_predict':
-                # Build object
-                predictor_obj = Predictor(regressor_file=args.output+'/faas_test/LRRidge.pickle', output_folder=output_path, debug=args.debug)
-
-                # Perform prediction reading from a config file
-                predictor_obj.predict(config_file=configuration, mape_to_file=True)
-            else:
-                sequence_data_processor = sequence_data_processing.SequenceDataProcessing(configuration, debug=args.debug, output=output_path)
-                sequence_data_processor.process()
-        except Exception as e:
-            print("Exception",e,"raised", sep=' ')
-            outcomes.append(str(test_name)+" failed with exception "+str(e))
-        else:
-            outcomes.append(str(test_name)+" successfully run")
-        print('\n\n\n')
-
-    #Print results
-    print('\n\n\n\n\n\n\n\n\n\n\n\n*************Test Results*************')
-    i = 0
-    for outcome in outcomes:
-        i += 1
-        print(str(i)+')',outcome, sep=' ')
-
-    # Create success flag file
-    with open(done_file_flag, 'wb') as f:
-        pass
-
-
-
 def generate_tests():
+    """
+    Generates a dictionary with several models and configurations
+    """
     tests = [
         {
             'Name': 'ernest',
@@ -135,7 +70,7 @@ def generate_tests():
             },
             'DecisionTree':{
                 'criterion': ['mse'],
-                'max_depth': [3],
+                'max_depth': [2,5],
                 'max_features': ['auto'],
                 'min_samples_split': [0.01],
                 'min_samples_leaf': [0.01]
@@ -249,6 +184,70 @@ def generate_tests():
         }
     ]
     return tests
+
+def main():
+    """
+    This script is used to self check the library.Quality of the results is not analyzed nor compared with any reference
+    
+    It generates several possible configurations and runs them
+    """
+    parser = argparse.ArgumentParser(description="Performs regression tests")
+    parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
+    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="output_test")
+    args = parser.parse_args()
+
+    done_file_flag = os.path.join(args.output, 'done')
+
+    try:
+        os.mkdir(args.output)
+    except FileExistsError:
+        if os.path.exists(done_file_flag):
+            print(args.output+" already exists. Terminating the program...")
+            sys.exit(1)
+        
+    tests = generate_tests()
+
+    #Perform tests
+    outcomes = []
+    for configuration in tests:
+        test_name = configuration.pop('Name')
+        output_path = args.output + '/' + test_name
+
+        try:
+            #Check if the test was already performed in a previous incomplete run
+            test_done_file_flag = os.path.join(output_path, 'done')
+            if os.path.exists(test_done_file_flag):
+                print(test_name,"already performed",sep=" ",end="\n\n\n")
+                outcomes.append(str(test_name)+" already performed")
+                continue
+            print("Starting",test_name,sep=" ")
+
+            if test_name == 'faas_predict':
+                # Build object
+                predictor_obj = Predictor(regressor_file=args.output+'/faas_test/LRRidge.pickle', output_folder=output_path, debug=args.debug)
+
+                # Perform prediction reading from a config file
+                predictor_obj.predict(config_file=configuration, mape_to_file=True)
+            else:
+                sequence_data_processor = sequence_data_processing.SequenceDataProcessing(configuration, debug=args.debug, output=output_path)
+                sequence_data_processor.process()
+        except Exception as e:
+            print("Exception",e,"raised", sep=' ')
+            outcomes.append(str(test_name)+" failed with exception "+str(e))
+        else:
+            outcomes.append(str(test_name)+" successfully run")
+        print('\n\n\n')
+
+    #Print results
+    print('\n\n\n\n\n\n\n\n\n\n\n\n*************Test Results*************')
+    i = 0
+    for outcome in outcomes:
+        i += 1
+        print(str(i)+')',outcome, sep=' ')
+
+    # Create success flag file
+    with open(done_file_flag, 'wb') as f:
+        pass
 
 if __name__ == '__main__':
     main()

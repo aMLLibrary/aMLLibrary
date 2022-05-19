@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Copyright 2019 Marco Lattuada
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,7 +30,7 @@ def main():
     """
     Script used to stress test the fault tolerance of the library
 
-    Checks that interrupting the tests performed by test.py is fault tolerant
+    Checks that interrupting the tests performed by fault_tolerance_slave.py is fault tolerant
     """
     done_file_flag = os.path.join('fault_tolerance_output','done')
 
@@ -39,7 +40,7 @@ def main():
         print("\n\nFault tolerance test: iteration",i+1, sep=' ',end='\n\n')
         with Popen('python3 fault_tolerance_slave.py', shell=True, stdout=PIPE, preexec_fn=os.setsid, universal_newlines=True) as process:
             try:
-                output = process.communicate(timeout=100)[0]
+                output = process.communicate(timeout=30)[0]
             except subprocess.TimeoutExpired:
                 os.killpg(process.pid, signal.SIGTERM) # send signal to the process group
                 output = process.communicate()[0]

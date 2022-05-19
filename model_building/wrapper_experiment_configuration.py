@@ -1,6 +1,7 @@
 """
 Copyright 2019 Marco Lattuada
 Copyright 2021 Bruno Guindani
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -388,10 +389,6 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
                 with open(trials_pickle_path, 'rb') as f:
                     trials = pickle.load(f)
                 curr_evals = len(trials.trials)
-            else:
-                # Perform first _hyperopt_save_interval iterations and save Pickle file
-                curr_evals = min(self._hyperopt_max_evals, curr_evals+self._hyperopt_save_interval)
-                best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=curr_evals, trials_save_file=trials_pickle_path, verbose=False)
 
             while curr_evals < self._hyperopt_max_evals:
                 # Perform next _hyperopt_save_interval iterations and save Pickle file
