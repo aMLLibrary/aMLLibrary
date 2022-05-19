@@ -23,9 +23,15 @@ import sys
 import sequence_data_processing
 
 
-def generate_test():
+def generate_fault_tolerance_test():
 """
-Generates a dictionary with several models and configurations
+Generates a dictionary with several models and configurations.
+
+Since the focus is on fault tolerance, a single test is performed, allowing fault_tolerance_test.py
+to interrupt it several times. Several modules are tested nonetheless, namely:
+-SFS;
+-hyperopt;
+-XGBoost.
 """
     test = {
         'General':{
@@ -54,7 +60,7 @@ Generates a dictionary with several models and configurations
         },
         'DecisionTree':{
             'criterion': ['mse'],
-            'max_depth': [2,3,5],
+            'max_depth': [2,5],
             'max_features': ['auto'],
             'min_samples_split': [0.01,0.5],
             'min_samples_leaf': [0.01,0.5]
@@ -90,7 +96,7 @@ def main():
             print(args.output+" already exists. Terminating the program...")
             sys.exit(1)
 
-    test = generate_test()
+    test = generate_fault_tolerance_test()
     
     try:
         sequence_data_processor = sequence_data_processing.SequenceDataProcessing(test, debug=args.debug, output=args.output)

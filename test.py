@@ -27,7 +27,16 @@ from model_building.predictor import Predictor
 
 def generate_tests():
     """
-    Generates a dictionary with several models and configurations
+    Generates a dictionary with several models and configurations.
+
+    The tests generated are:
+    -ernest: tests the ernest feature;
+    -faas_test: prepares output for faas_predict while testing DecisionTree, KFold and HoldOut;
+    -faas_predict: tests the prediction module;
+    -faas_test_sfs: tests SFS;
+    -faas_test_hyperopt: tests the hyperopt integration;
+    -faas_test_hyperopt_sfs: tests the integration between hyperopt and SFS;
+    -faas_test_xgboost_fs: tests feature selection with XGBoost.
     """
     tests = [
         {
