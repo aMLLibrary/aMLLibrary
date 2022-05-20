@@ -20,19 +20,31 @@ import argparse
 import os
 import sys
 
+# getting the name of the directory
+# where the this file is present.
+current = os.path.dirname(os.path.realpath(__file__))
+  
+# Getting the parent directory name
+# where the current directory is present.
+parent = os.path.dirname(current)
+  
+# adding the parent directory to 
+# the sys.path.
+sys.path.append(parent)
+
 import sequence_data_processing
 
 
 def generate_fault_tolerance_test():
-"""
-Generates a dictionary with several models and configurations.
+    """
+    Generates a dictionary with several models and configurations.
 
-Since the focus is on fault tolerance, a single test is performed, allowing fault_tolerance_test.py
-to interrupt it several times. Several modules are tested nonetheless, namely:
--SFS;
--hyperopt;
--XGBoost.
-"""
+    Since the focus is on fault tolerance, a single test is performed, allowing fault_tolerance_test.py
+    to interrupt it several times. Several modules are tested nonetheless, namely:
+    -SFS;
+    -hyperopt;
+    -XGBoost.
+    """
     test = {
         'General':{
             'run_num': 1,
@@ -47,7 +59,7 @@ to interrupt it several times. Several modules are tested nonetheless, namely:
             'hyperopt_save_interval': 5
         },
         'DataPreparation':{
-            'input_path': 'inputs/faas_test.csv',
+            'input_path': parent+'/inputs/faas_test.csv',
             'inverse': ['Lambda']
         },
         'FeatureSelection':{
@@ -84,7 +96,7 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Performs regression tests")
     parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
-    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="output_fault_tolerance")
+    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default=parent+"/output_fault_tolerance")
     args = parser.parse_args()
 
     done_file_flag = os.path.join(args.output, 'done')

@@ -15,12 +15,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
 import argparse
 import os
 import subprocess
 import sys
 import time
+
+# getting the name of the directory
+# where the this file is present.
+current = os.path.dirname(os.path.realpath(__file__))
+  
+# Getting the parent directory name
+# where the current directory is present.
+parent = os.path.dirname(current)
+  
+# adding the parent directory to 
+# the sys.path.
+sys.path.append(parent)
 
 import sequence_data_processing
 from model_building.predictor import Predictor
@@ -49,7 +60,7 @@ def generate_tests():
                 'y': 'y'
             },
             'DataPreparation':{
-                'input_path': 'inputs/simplest.csv',
+                'input_path': parent+'/inputs/simplest.csv',
                 'ernest': True,
                 'rename_columns': {"x1": "cores", "x2": "datasize"}
             },
@@ -69,7 +80,7 @@ def generate_tests():
                 'y': 'ave_response_time'
             },
             'DataPreparation':{
-                'input_path': 'inputs/faas_test.csv',
+                'input_path': parent+'/inputs/faas_test.csv',
                 'inverse': ['Lambda'],
                 'product_max_degree': 2,
                 'product_interactions_only': True
@@ -91,7 +102,7 @@ def generate_tests():
                 'y': 'ave_response_time'
             },
             'DataPreparation':{
-                'input_path': 'inputs/faas_predict.csv'
+                'input_path': parent+'/inputs/faas_predict.csv'
             }
         },
         {
@@ -106,7 +117,7 @@ def generate_tests():
                 'y': 'ave_response_time'
             },
             'DataPreparation':{
-                'input_path': 'inputs/faas_test.csv',
+                'input_path': parent+'/inputs/faas_test.csv',
                 'inverse': ['Lambda']
             },
             'FeatureSelection':{
@@ -133,7 +144,7 @@ def generate_tests():
                 'hyperopt_save_interval': 5
             },
             'DataPreparation':{
-                'input_path': 'inputs/faas_test.csv',
+                'input_path': parent+'/inputs/faas_test.csv',
                 'inverse': ['Lambda']
             },
             'LRRidge':{
@@ -155,7 +166,7 @@ def generate_tests():
                 'hyperopt_save_interval': 5
             },
             'DataPreparation':{
-                'input_path': 'inputs/faas_test.csv',
+                'input_path': parent+'/inputs/faas_test.csv',
                 'inverse': ['Lambda']
             },
             'FeatureSelection':{
@@ -179,7 +190,7 @@ def generate_tests():
                 'y': 'ave_response_time'
             },
             'DataPreparation':{
-                'input_path': 'inputs/faas_test.csv',
+                'input_path': parent+'/inputs/faas_test.csv',
                 'inverse': ['Lambda']
             },
             'FeatureSelection':{
@@ -202,7 +213,7 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Performs regression tests")
     parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
-    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="output_test")
+    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default=parent+"/output_test")
     args = parser.parse_args()
 
     done_file_flag = os.path.join(args.output, 'done')

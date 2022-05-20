@@ -40,7 +40,7 @@ def main():
         print("\n\nFault tolerance test: iteration",i+1, sep=' ',end='\n\n')
         with Popen('python3 fault_tolerance_slave.py', shell=True, stdout=PIPE, preexec_fn=os.setsid, universal_newlines=True) as process:
             try:
-                output = process.communicate(timeout=30)[0]
+                output = process.communicate(timeout=10)[0]
             except subprocess.TimeoutExpired:
                 os.killpg(process.pid, signal.SIGTERM) # send signal to the process group
                 output = process.communicate()[0]

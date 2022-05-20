@@ -384,7 +384,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
             trials_pickle_path = os.path.join(self._experiment_directory, 'trials.pickle')
 
             #fmin retrieves the last saved .pickle file at each call (if any) and saves every self._hyperopt_save_interval iterations
-            best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=curr_evals, trials_save_file=trials_pickle_path, max_queue_len=self._hyperopt_save_interval, verbose=False)
+            best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=self._hyperopt_max_evals, trials_save_file=trials_pickle_path, max_queue_len=self._hyperopt_save_interval, verbose=False)
             
             # Clear trials file after finished
             os.remove(trials_pickle_path)
