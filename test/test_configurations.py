@@ -181,17 +181,16 @@ def generate_tests():
         {
             'Name': 'faas_test_xgboost_fs',
             'General':{
-                'run_num': 2,
+                'run_num': 1,
                 'techniques': ['LRRidge'],
                 'hp_selection': 'KFold',
                 'validation': 'HoldOut',
-                'folds': 4,
+                'folds': 2,
                 'hold_out_ratio': 0.2,
                 'y': 'ave_response_time'
             },
             'DataPreparation':{
-                'input_path': parent+'/inputs/faas_test.csv',
-                'inverse': ['Lambda']
+                'input_path': parent+'/inputs/faas_test.csv'
             },
             'FeatureSelection':{
                 'method': 'XGBoost',
@@ -199,7 +198,7 @@ def generate_tests():
                 'XGBoost_tolerance': 0.4
             },
             'LRRidge':{
-                'alpha': [0.1, 0.2]
+                'alpha': [0.1,0.2]
             }
         }
     ]
@@ -213,7 +212,7 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Performs regression tests")
     parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
-    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default=parent+"/output_test")
+    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default=parent+"/output_test_configurations")
     args = parser.parse_args()
 
     done_file_flag = os.path.join(args.output, 'done')

@@ -32,15 +32,25 @@ def main():
 
     Checks that interrupting the tests performed by fault_tolerance_slave.py is fault tolerant
     """
-    done_file_flag = os.path.join('fault_tolerance_output','done')
+    # getting the name of the directory
+    # where the this file is present.
+    current = os.path.dirname(os.path.realpath(__file__))
+      
+    # Getting the parent directory name
+    # where the current directory is present.
+    parent = os.path.dirname(current)
+
+    done_file_flag = os.path.join(parent,os.path.join('output_fault_tolerance','done'))
+    command = 'python3 '+os.path.join(current,'fault_tolerance_slave.py')
 
     start = timer()
     i = 0
     while not(os.path.exists(done_file_flag)):
         print("\n\nFault tolerance test: iteration",i+1, sep=' ',end='\n\n')
-        with Popen('python3 fault_tolerance_slave.py', shell=True, stdout=PIPE, preexec_fn=os.setsid, universal_newlines=True) as process:
+        with Popen(command, shell=True, stdout=PIPE, preexec_fn=os.setsid, universal_newlines=True) as process:
             try:
-                output = process.communicate(timeout=10)[0]
+                #CAUTION: timeout should be longer than the maximum time needed to train a model
+                output = process.communicate(timeout=30)[0]
             except subprocess.TimeoutExpired:
                 os.killpg(process.pid, signal.SIGTERM) # send signal to the process group
                 output = process.communicate()[0]
@@ -48,7 +58,7 @@ def main():
                 print(output)
                 sys.exit(1)
         i += 1
-    print(timer()-start)
+    print("Fault tolerance test passed in",timer()-start, sep=' ')
 
 
 
