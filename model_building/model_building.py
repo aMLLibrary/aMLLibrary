@@ -178,7 +178,14 @@ class ModelBuilding:
                 normalizer = data_preparation.normalization.Normalization(campaign_configuration)
                 all_data = normalizer.process(all_data)
 
-            # Set training set
+            if 'save_training_regressors' in campaign_configuration['General'] and campaign_configuration['General']['save_training_regressors']:
+                # Build the regressor trained on the train set only
+                training_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), regression_inputs.scalers)
+                pickle_training_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + "_training.pickle")
+                with open(pickle_training_file_name, "wb") as pickle_file:
+                    pickle.dump(training_regressor, pickle_file, protocol=4)
+
+            # Set training set as the whole dataframe
             best_conf.set_training_data(all_data)
 
             # Train and evaluate by several metrics
@@ -194,7 +201,7 @@ class ModelBuilding:
             self._logger.info("<--")
             self._logger.removeHandler(file_handler)
 
-            # Build the regressor
+            # Build the regressor with all data
             best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)
             pickle_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + ".pickle")
             with open(pickle_file_name, "wb") as pickle_file:
