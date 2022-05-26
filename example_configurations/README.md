@@ -18,7 +18,7 @@ For usage examples of the listed options, please check the configuration files i
 ## List of options
 ### `General` section
 
-| Option | type | description | notes |
+| Option | Type | Description | Notes |
 | ------ | ---- | ----------- | ----- |
 | `run_num`  | integer | number of runs for the given experiment campaign | |
 | `techniques` | list of strings | list of regression techniques to be used | currently supported: `DecisionTree`, `LRRidge`, `NNLS`, `RandomForest`, `Stepwise`, `SVR`, `XGBoost` |
@@ -31,7 +31,7 @@ For usage examples of the listed options, please check the configuration files i
 
 Depending on which `hp_selection` and `validation` methods are chosen, you also need the following options:
 
-| Option | type | description | notes |
+| Option | Type | Description | Notes |
 | ------ | ---- | ----------- | ----- |
 | `extrapolation_columns` | dictionary {string: float} | column names and lower bound for extrapolation | used with `Extrapolation` |
 | `hold_out_ratio`  | float in (0,1) | fraction size of the hold-out set | used with `HoldOut` |
@@ -42,7 +42,7 @@ Depending on which `hp_selection` and `validation` methods are chosen, you also 
 ### `DataPreparation` section
 All options except `input_path` are not mandatory.
 
-| Option | type | description | notes |
+| Option | Type | Description | Notes |
 | ------ | ---- | ----------- | ----- |
 | `input_path`  | string | path to the dataset file | mandatory argument |
 | `normalization` | string | set to `True` to apply normalization on the dataset | |
@@ -61,7 +61,7 @@ All options except `input_path` are not mandatory.
 ### `FeatureSelection` section
 This section is mandatory, and should only be used if one wants to perform some form of feature selection.
 
-| Option | type | description | notes |
+| Option | Type | Description | Notes |
 | ------ | ---- | ----------- | ----- |
 | `method`  | string | feature selection method | can be `SFS` or `XGBoost` |
 | `max_features` | integer | maximum number of features to be selected | |
