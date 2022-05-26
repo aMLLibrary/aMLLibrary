@@ -35,8 +35,14 @@ Depending on which `hp_selection` and `validation` methods are chosen, you also 
 | ------ | ---- | ----------- | ----- |
 | `extrapolation_columns` | dictionary {string: float} | column names and lower bound for extrapolation | used with `Extrapolation` |
 | `hold_out_ratio`  | float in (0,1) | fraction size of the hold-out set | used with `HoldOut` |
-| `interpolation_columns` | dictionary {string: float} | column names and lower bound for interpolation | used with `Interpolation` |
+| `interpolation_columns` | dictionary {string: float} or {string: list} | column names and interpolation step, or column names and test-set values | used with `Interpolation` |
 | `folds` | integer | number of Cross-Validation folds | used with `KFold` |
+
+`Extrapolation` means that any data point (i.e. row) which have one or more features strictly above the indicated threshold(s) will be placed in the test set.
+
+The `Interpolation` dictionary can either contain a float or a list:
+* a *float* is interpreted as an interpolation step `h`. One every `h` values (sorted in increasing order) for the indicated column(s) will be destined to the test set. Any data point which has one or more feature values with the selected value(s) will be placed in the test set;
+* a *list* is interpreted as a list of values which will be destined to the test set. Any data which has one or more feature values with the indicated values will be placed in the test set.
 
 
 ### `DataPreparation` section
