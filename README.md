@@ -23,7 +23,7 @@ optional arguments:
   -l, --details         Print results of the single experiments
 ```
 Example of configuration files can be found under `example_configurations` directory.
-See also the [README.md](example_configurations/README.md) file there.
+See also the [`README.md`](example_configurations/README.md) file there.
 
 
 ## Tutorial
@@ -49,7 +49,7 @@ Then, you can apply the obtained regressor in the form of the `LRRidge.pickle` f
 ```shell
 python3 predict.py -c example_configurations/faas_predict.ini -r output_test/LRRidge.pickle -o output_test_predict
 ```
-Please refer to the `predict.py` file itself for more information.
+For more information, please refer to the [`predict.py`](predict.py) file itself and to the [README.md](example_configurations/README.md#prediction-files) for configuration files.
 
 
 ## Docker image
@@ -69,4 +69,4 @@ In this terminal, you may run the same commands as in a regular terminal, includ
 
 ## Hyperopt
 This library is integrated with the Hyperopt package for hyperparameter tuning via Bayesian Optimization.
-Please check out the [README.md file for configuration files](example_configurations/README.md) for more information.
+For more information, please refer to the [`README.md`](example_configurations/README.md#hyperopt) for configuration files.

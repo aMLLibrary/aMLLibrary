@@ -12,7 +12,7 @@ option3 = value3
 option4 = [valueA, valueB]  # List of values
 option5 = {keyA: valA, keyB: valB}  # Key-value dictionary
 ```
-For usage examples of the listed options, please check the configuration files in this folder.
+For usage examples of the listed options, please check the configuration files in [this folder](example_configurations).
 
 
 ## List of options
@@ -33,9 +33,9 @@ Depending on which `hp_selection` and `validation` methods are chosen, you also 
 
 | Option | Type | Description | Notes |
 | ------ | ---- | ----------- | ----- |
-| `extrapolation_columns` | dictionary {string: float} | column names and lower bound for extrapolation | used with `Extrapolation` |
+| `extrapolation_columns` | dictionary {string: float} | column names and lower bound for extrapolation (see below) | used with `Extrapolation` |
 | `hold_out_ratio`  | float in (0,1) | fraction size of the hold-out set | used with `HoldOut` |
-| `interpolation_columns` | dictionary {string: float} or {string: list} | column names and interpolation step, or column names and test-set values | used with `Interpolation` |
+| `interpolation_columns` | dictionary {string: float} or {string: list} | column names and interpolation step, or column names and test-set values (see below) | used with `Interpolation` |
 | `folds` | integer | number of Cross-Validation folds | used with `KFold` |
 
 `Extrapolation` means that any data point (i.e. row) which have one or more features strictly above the indicated threshold(s) will be placed in the test set.
@@ -96,3 +96,10 @@ Such strings refer to and are interpreted as Hyperopt prior objects, assuming th
 Note that logarithm-based distributions follow a different notation in `a-MLLibrary` configuration files than in the Hyperopt library, for the sake of clarity.
 For instance, the string `'loguniform(a,b)'` in a configuration file means a log-uniform distribution with support `[a,b]`, whereas an equivalent distribution in Hyperopt notation would be `'loguniform(e^a,e^b)'` instead.
 (`a-MLLibrary` performs this conversion of parameter notation automatically.)
+
+
+
+## Prediction files
+The prediction module (invoked with [`predict.py`](predict.py)) may also be used with a configuration file, which is not necessarily the same one used to produce the regression model which is being used.
+Such configuration files only require the `y` option in the `General` section and the `input_path` option in the `DataPreparation` section as described earlier.
+If you wish to invoke the prediction module in inline mode from a Python script, please check out the [`predict.py`](predict.py) file itself.
