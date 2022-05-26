@@ -5,10 +5,12 @@ The content of a configuration file looks something like this:
 ```
 [SectionName1]
 option1 = value1
-option2 = value2
+option2 = value2  # This is a comment, it will be ignored in the parsing of the file
 
 [SectionName2]
-option3 = value3  # This is a comment, it will be ignored in the parsing of the file
+option3 = value3
+option4 = [valueA, valueB]  # List of values
+option5 = {keyA: valA, keyB: valB}  # Key-value dictionary
 ```
 For usage examples of the listed options, please check the configuration files in this folder.
 
@@ -19,7 +21,7 @@ For usage examples of the listed options, please check the configuration files i
 | Option | type | description | notes |
 | ------ | ---- | ----------- | ----- |
 | `run_num`  | integer | number of runs for the given experiment campaign | |
-| `techniques` | list of strings | list of regression techniques to be used | |
+| `techniques` | list of strings | list of regression techniques to be used | currently supported: `DecisionTree`, `LRRidge`, `NNLS`, `RandomForest`, `Stepwise`, `SVR`, `XGBoost` |
 | `y` | string | name of the column which will be the regression target | |
 | `hyperparameter_tuning` | string | hyperparameter tuning method to be used | default: grid search, set to `Hyperopt` to use Bayesian Optimization instead |
 | `hyperopt_max_evals` | integer | maximum iterations for Bayesian Optimization | to be used with `Hyperopt` |
@@ -48,9 +50,9 @@ All options except `input_path` are not mandatory.
 | `log` | list of strings | list of column names to compute the natural logarithm of | `[*]` indicates all columns |
 | `ernest` | string | set to `True` to compute the features in the Ernest model (Venkataraman et al, 2016) | requires `datasize` and `cores` columns |
 | `product_max_degree` | integer or `inf` | maximum degree of feature products to be computed | `inf` means the number of columns |
-| `product_interactions_only` | set to `True` if power terms of a single feature should not be computed | used with `product_max_degree` |
+| `product_interactions_only` | string | set to `True` if power terms of a single feature should not be computed | used with `product_max_degree` |
 | `selected_products`  | list of strings | compute only the indicated products | |
-| `use_columns` | list of strings | only consider the listed columns and ignore the rest | |
+| `use_columns` | list of strings | consider only the listed columns and ignore the rest | |
 | `skip_columns` | list of strings | ignore the listed columns and consider all other ones | |
 | `skip_rows` | dictionary {string: float} | column names and lower bound for the values of rows that will be ignored | |
 | `rename_columns` | dictionary {string: string} | old and new names for the columns to be renamed | |
@@ -79,7 +81,7 @@ Values are always lists of integers/floats/strings, based on the type of hyperpa
 One can also use strings that represent hyperpriors to be used in a Bayesian Optimization hyperparameter tuning procedure (see next section).
 
 
-#### Hyperopt
+### Hyperopt
 This library is integrated with the Hyperopt package for hyperparameter tuning via Bayesian Optimization.
 As mentioned [earlier](#general-section), this search mode is activated by inserting the `hyperparameter_tuning = Hyperopt` flag in the `General` section, as well as appropriate `hyperopt_max_evals` and `hyperopt_save_interval` values.
 When using Hyperopt, strings representing prior distributions, such as `'loguniform(0.01,1)'`, may be assigned to hyperparameters instead of the usual lists of values used in grid search mode.
@@ -88,7 +90,3 @@ Such strings refer to and are interpreted as Hyperopt prior objects, assuming th
 Note that logarithm-based distributions follow a different notation in `a-MLLibrary` configuration files than in the Hyperopt library, for the sake of clarity.
 For instance, the string `'loguniform(a,b)'` in a configuration file means a log-uniform distribution with support `[a,b]`, whereas an equivalent distribution in Hyperopt notation would be `'loguniform(e^a,e^b)'` instead.
 (`a-MLLibrary` performs this conversion of parameter notation automatically.)
-
-
-
-TODO examples
