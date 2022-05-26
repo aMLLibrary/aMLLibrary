@@ -12,7 +12,7 @@ option3 = value3
 option4 = [valueA, valueB]  # List of values
 option5 = {keyA: valA, keyB: valB}  # Key-value dictionary
 ```
-For usage examples of the listed options, please check the configuration files in [this folder](example_configurations).
+For usage examples of the listed options, please check the configuration files in the [current folder](example_configurations).
 
 
 ## List of options
