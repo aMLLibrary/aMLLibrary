@@ -40,7 +40,7 @@ Results will be summarized in the `results.txt` file, as well as printed to scre
 
 ### Predicting module
 This library also has a predicting module, in which you can use an output regressor in the form of a Pickle file to make predictions about new, previously-unseen data.
-It is run via the `predict.py` file.
+It is run via the [`predict.py`](predict.py) file.
 First of all, run the library to create a regression model similarly to what was indicated in the first part of the tutorial section:
 ```shell
 python3 run.py -c example_configurations/faas_test.ini -o output_test
@@ -64,7 +64,7 @@ To run a container and mount a volume which includes the root folder of this rep
 sudo docker run --name aml --rm -v $(pwd):/a-MLlibrary -it brunoguindani/a-mllibrary
 ```
 which defaults to a `bash` terminal unless a specific command is appended to the line.
-In this terminal, you may run the same commands as in a regular terminal, including the ones from the Tutorial section.
+In this terminal, you may run the same commands as in a regular terminal, including the ones from the [Tutorial](#tutorial) section.
 
 
 ## Hyperopt
