@@ -10,7 +10,7 @@ option2 = value2
 [SectionName2]
 option3 = value3  # This is a comment, it will be ignored in the parsing of the file
 ```
-For examples, please check the configuration files in this folder.
+For usage examples of the listed options, please check the configuration files in this folder.
 
 
 ## List of options
@@ -43,21 +43,52 @@ All options except `input_path` are not mandatory.
 | Option | type | description | notes |
 | ------ | ---- | ----------- | ----- |
 | `input_path`  | string | path to the dataset file | mandatory argument |
+| `normalization` | string | set to `True` to apply normalization on the dataset | |
 | `inverse` | list of strings | list of column names to compute the inverse of | `[*]` indicates all columns |
 | `log` | list of strings | list of column names to compute the natural logarithm of | `[*]` indicates all columns |
+| `ernest` | string | set to `True` to compute the features in the Ernest model (Venkataraman et al, 2016) | requires `datasize` and `cores` columns |
 | `product_max_degree` | integer or `inf` | maximum degree of feature products to be computed | `inf` means the number of columns |
 | `product_interactions_only` | set to `True` if power terms of a single feature should not be computed | used with `product_max_degree` |
-| `selected_products`  | list of strings | TODO | |
+| `selected_products`  | list of strings | compute only the indicated products | |
 | `use_columns` | list of strings | only consider the listed columns and ignore the rest | |
 | `skip_columns` | list of strings | ignore the listed columns and consider all other ones | |
 | `skip_rows` | dictionary {string: float} | column names and lower bound for the values of rows that will be ignored | |
-| `ernest` | string | set to `True` if... TODO | |
-| `normalization` | string | set to `True` if... TODO | |
 | `rename_columns` | dictionary {string: string} | old and new names for the columns to be renamed | |
 
+
+### `FeatureSelection` section
+This section is mandatory, and should only be used if one wants to perform some form of feature selection.
+
+| Option | type | description | notes |
+| ------ | ---- | ----------- | ----- |
+| `method`  | string | feature selection method | can be `SFS` or `XGBoost` |
+| `max_features` | integer | maximum number of features to be selected | |
+| `folds` | integer | number of Cross-Validation folds to be used | used with `SFS` |
+| `XGBoost_tolerance` | float in (0, 1) | maximum cumulative feature weight to be kept | used with `XGBoost` |
+
+
+### Regression models sections
+Each regression model used (i.e. indicated in [`techniques`](#general-section)) has its own section which specifies the values for the model hyperparameters.
+For instance:
 ```
-[FeatureSelection]
-method = "SFS"
-max_features = 1
-folds = 5
+[LRRidge]
+alpha = [0.02, 0.1, 1.0]
 ```
+For specific examples for each model, please check out the configuration files in this folder.
+Values are always lists of integers/floats/strings, based on the type of hyperparameter.
+One can also use strings that represent hyperpriors to be used in a Bayesian Optimization hyperparameter tuning procedure (see next section).
+
+
+#### Hyperopt
+This library is integrated with the Hyperopt package for hyperparameter tuning via Bayesian Optimization.
+As mentioned [earlier](#general-section), this search mode is activated by inserting the `hyperparameter_tuning = Hyperopt` flag in the `General` section, as well as appropriate `hyperopt_max_evals` and `hyperopt_save_interval` values.
+When using Hyperopt, strings representing prior distributions, such as `'loguniform(0.01,1)'`, may be assigned to hyperparameters instead of the usual lists of values used in grid search mode.
+Such strings refer to and are interpreted as Hyperopt prior objects, assuming they are appropriately formatted; please head to https://github.com/hyperopt/hyperopt/wiki/FMin#21-parameter-expressions for more information.
+
+Note that logarithm-based distributions follow a different notation in `a-MLLibrary` configuration files than in the Hyperopt library, for the sake of clarity.
+For instance, the string `'loguniform(a,b)'` in a configuration file means a log-uniform distribution with support `[a,b]`, whereas an equivalent distribution in Hyperopt notation would be `'loguniform(e^a,e^b)'` instead.
+(`a-MLLibrary` performs this conversion of parameter notation automatically.)
+
+
+
+TODO examples
