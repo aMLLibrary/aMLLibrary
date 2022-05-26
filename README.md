@@ -23,6 +23,7 @@ optional arguments:
   -l, --details         Print results of the single experiments
 ```
 Example of configuration files can be found under `example_configurations` directory.
+See also the [README.md](example_configurations/README.md) file there.
 
 
 ## Tutorial
