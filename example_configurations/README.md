@@ -13,16 +13,14 @@ option3 = value3  # This is a comment, it will be ignored in the parsing of the 
 
 ## List of options
 ### `General` section
-Option | type | description
+| Option | type | description |
+| ------ | ---- | ----------- |
+| `General` |
+| `run_num`  | integer | number of runs for the given experiment campaign |
+| `techniques` | list of strings | TODO |
 -------------------------------------
-`General`
--------------------------------------
-`run_num`  | integer | number of runs for the given experiment campaign
-`techniques` | list of strings | TODO
--------------------------------------
-`DataPreparation`
--------------------------------------
-`input_path` | string | TODO
+| `DataPreparation` |
+| `input_path` | string | TODO |
 -------------------------------------
 
 ```
