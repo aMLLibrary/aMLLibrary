@@ -54,7 +54,7 @@ All options except `input_path` are not mandatory.
 | `normalization` | string | set to `True` to apply normalization on the dataset | |
 | `inverse` | list of strings | list of column names to compute the inverse of | `[*]` indicates all columns |
 | `log` | list of strings | list of column names to compute the natural logarithm of | `[*]` indicates all columns |
-| `ernest` | string | set to `True` to compute the features in the Ernest model (Venkataraman et al, 2016) | requires `datasize` and `cores` columns |
+| `ernest` | string | set to `True` to compute the features in the Ernest model ([Venkataraman et al, 2016](https://dl.acm.org/doi/10.5555/2930611.2930635)) | requires `datasize` and `cores` columns |
 | `product_max_degree` | integer or `inf` | maximum degree of feature products to be computed | `inf` means the number of columns |
 | `product_interactions_only` | string | set to `True` if power terms of a single feature should not be computed | used with `product_max_degree` |
 | `selected_products`  | list of strings | compute only the indicated products | |
@@ -91,7 +91,7 @@ One can also use strings that represent hyperpriors to be used in a Bayesian Opt
 This library is integrated with the Hyperopt package for hyperparameter tuning via Bayesian Optimization.
 As mentioned [earlier](#general-section), this search mode is activated by inserting the `hyperparameter_tuning = Hyperopt` flag in the `General` section, as well as appropriate `hyperopt_max_evals` and `hyperopt_save_interval` values.
 When using Hyperopt, strings representing prior distributions, such as `'loguniform(0.01,1)'`, may be assigned to hyperparameters instead of the usual lists of values used in grid search mode.
-Such strings refer to and are interpreted as Hyperopt prior objects, assuming they are appropriately formatted; please head to https://github.com/hyperopt/hyperopt/wiki/FMin#21-parameter-expressions for more information.
+Such strings refer to and are interpreted as Hyperopt prior objects, assuming they are appropriately formatted; please head to [the Hyperopt wiki](https://github.com/hyperopt/hyperopt/wiki/FMin#21-parameter-expressions) for more information.
 
 Note that logarithm-based distributions follow a different notation in `a-MLLibrary` configuration files than in the Hyperopt library, for the sake of clarity.
 For instance, the string `'loguniform(a,b)'` in a configuration file means a log-uniform distribution with support `[a,b]`, whereas an equivalent distribution in Hyperopt notation would be `'loguniform(e^a,e^b)'` instead.
