@@ -23,9 +23,10 @@ For usage examples of the listed options, please check the configuration files i
 | `run_num`  | integer | number of runs for the given experiment campaign | |
 | `techniques` | list of strings | list of regression techniques to be used | currently supported: `DecisionTree`, `LRRidge`, `NNLS`, `RandomForest`, `Stepwise`, `SVR`, `XGBoost` |
 | `y` | string | name of the column which will be the regression target | |
-| `hyperparameter_tuning` | string | hyperparameter tuning method to be used | default: grid search, set to `Hyperopt` to use Bayesian Optimization instead |
+| `hyperparameter_tuning` | string | hyperparameter tuning method to be used | default: grid search, set to `Hyperopt` to use Bayesian Optimization instead (see [below](#hyperopt)) |
 | `hyperopt_max_evals` | integer | maximum iterations for Bayesian Optimization | used with `Hyperopt` |
 | `hyperopt_save_interval` | integer | number of iterations after which progress of Bayesian Optimization is saved to a checkpoint file (0 to deactivate) | used with `Hyperopt` |
+| `save_training_regressors` | bool | set to `True` to also save regressors from the training phase, before the full dataset is used |
 | `hp_selection` | string | hyperparameter selection technique | can be `HoldOut`, `KFold`, `All` |
 | `validation` | string | model validation technique | can be `Extrapolation`, `HoldOut`, `Interpolation`, `KFold`, `All` |
 
