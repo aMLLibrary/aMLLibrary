@@ -213,15 +213,20 @@ class ExperimentConfiguration(abc.ABC):
             if not os.path.exists(self._experiment_directory):
                 os.makedirs(self._experiment_directory)
 
-    def train(self):
+    def train(self, force=False):
         """
         Build the model with the experiment configuration represented by this object
 
         This public method wraps the private method which performs the actual work. In doing this it controls the start/stop of logging on file
+
+        Parameters
+        ----------
+        force: bool
+            Force training even if Pickle regressor file is present
         """
         regressor_path = os.path.join(self._experiment_directory, 'regressor.pickle')
         # Fault tolerance mechanism for interrupted runs
-        if os.path.exists(regressor_path):
+        if not force and os.path.exists(regressor_path):
             try:
                 with open(regressor_path, 'rb') as f:
                     self.set_regressor(pickle.load(f))

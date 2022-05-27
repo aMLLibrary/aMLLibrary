@@ -189,7 +189,7 @@ class ModelBuilding:
             best_conf.set_training_data(all_data)
 
             # Train and evaluate by several metrics
-            best_conf.train()
+            best_conf.train(force=True)
             best_conf.evaluate()
 
             self._logger.addHandler(file_handler)
