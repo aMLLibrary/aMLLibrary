@@ -1,5 +1,5 @@
 # Documentation for configuration files
-A configuration file is a text file containing all needed information to run `a-MLLibrary`.
+A configuration file is a text file containing all needed information to run `aMLLibrary`.
 All files in this folder conventionally use the `.ini` extension, but in principle they can be of any type of plain text file.
 The content of a configuration file looks something like this:
 ```
@@ -94,9 +94,9 @@ As mentioned [earlier](#general-section), this search mode is activated by inser
 When using Hyperopt, strings representing prior distributions, such as `'loguniform(0.01,1)'`, may be assigned to hyperparameters instead of the usual lists of values used in grid search mode.
 Such strings refer to and are interpreted as Hyperopt prior objects, assuming they are appropriately formatted; please head to the [Hyperopt wiki](https://github.com/hyperopt/hyperopt/wiki/FMin#21-parameter-expressions) for more information.
 
-Note that logarithm-based distributions follow a different notation in `a-MLLibrary` configuration files than in the Hyperopt library, for the sake of clarity.
+Note that logarithm-based distributions follow a different notation in `aMLLibrary` configuration files than in the Hyperopt library, for the sake of clarity.
 For instance, the string `'loguniform(a,b)'` in a configuration file means a log-uniform distribution with support `[a,b]`, whereas an equivalent distribution in Hyperopt notation would be `'loguniform(e^a,e^b)'` instead.
-(`a-MLLibrary` performs this conversion of parameter notation automatically.)
+(`aMLLibrary` performs this conversion of parameter notation automatically.)
 
 
 

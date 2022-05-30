@@ -1,4 +1,4 @@
-# a-MLLibrary
+# aMLLibrary
 Library for the generation of regression models.
 
 The main script of the library is `run.py`:
@@ -57,11 +57,11 @@ This section shows how to create and use the Docker container image for this lib
 It is not strictly needed, but it ensures an environment in which dependencies have the correct version, and in which it is guaranteed that the library works correctly.
 This Docker image can be built from the `Dockerfile` at the root folder of this repository by issuing the command line instruction
 ```shell
-sudo docker build -t brunoguindani/a-mllibrary .
+sudo docker build -t brunoguindani/amllibrary .
 ```
 To run a container and mount a volume which includes the root folder of this repository, please use
 ```shell
-sudo docker run --name aml --rm -v $(pwd):/a-MLlibrary -it brunoguindani/a-mllibrary
+sudo docker run --name aml --rm -v $(pwd):/aMLlibrary -it brunoguindani/amllibrary
 ```
 which defaults to a `bash` terminal unless a specific command is appended to the line.
 In this terminal, you may run the same commands as in a regular terminal, including the ones from the [Tutorial](#tutorial) section.
