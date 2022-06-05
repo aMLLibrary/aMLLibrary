@@ -45,7 +45,7 @@ def main():
 
     output_dir = os.path.join(parent,'output_fault_tolerance')
     done_file_flag = os.path.join(output_dir,'done')
-    command = "python3 '"+os.path.join(current,'fault_tolerance_slave.py')+"' -d"
+    command = "python3 '"+os.path.join(current,'fault_tolerance_slave.py')+"'"
 
     if os.path.exists(done_file_flag):
         print(output_dir+" already exists with a complete run. Deleting and starting anew...")
