@@ -19,7 +19,9 @@ import argparse
 import os
 import subprocess
 import sys
+
 import time
+import shutil
 
 # getting the name of the directory
 # where the this file is present.
@@ -221,9 +223,14 @@ def main():
         os.mkdir(args.output)
     except FileExistsError:
         if os.path.exists(done_file_flag):
-            print(args.output+" already exists. Terminating the program...")
-            sys.exit(1)
-        
+            print(args.output+" already exists with all tests performed. Deleting and starting anew...")
+            time.sleep(3)
+            shutil.rmtree(args.output)
+            os.mkdir(args.output)
+        else:
+            print(args.output+" already exists. Restarting from where we left...")
+            time.sleep(3)
+
     tests = generate_tests()
 
     #Perform tests

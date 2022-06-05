@@ -21,6 +21,9 @@ import os
 import subprocess
 import sys
 
+import shutil
+import time
+
 import signal
 from time import monotonic as timer
 from subprocess import Popen, PIPE, TimeoutExpired
@@ -40,8 +43,19 @@ def main():
     # where the current directory is present.
     parent = os.path.dirname(current)
 
-    done_file_flag = os.path.join(parent,os.path.join('output_fault_tolerance','done'))
-    command = 'python3 '+os.path.join(current,'fault_tolerance_slave.py')
+    output_dir = os.path.join(parent,'output_fault_tolerance')
+    done_file_flag = os.path.join(output_dir,'done')
+    command = "python3 '"+os.path.join(current,'fault_tolerance_slave.py')+"'"
+
+    if os.path.exists(done_file_flag):
+        print(output_dir+" already exists with a complete run. Deleting and starting anew...")
+        time.sleep(3)
+        shutil.rmtree(output_dir)
+        os.mkdir(output_dir)
+    elif os.path.exists(output_dir):
+        print(output_dir+" already exists. Restarting from where we left...")
+        time.sleep(3)
+
 
     start = timer()
     i = 0
