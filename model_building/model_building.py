@@ -1,6 +1,7 @@
 """
 Copyright 2019 Marco Lattuada
 Copyright 2021 Bruno Guindani
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -120,6 +121,7 @@ class ModelBuilding:
             for exp in tqdm.tqdm(expconfs, dynamic_ncols=True):
                 if self.debug:
                     # Do not use try-except mechanism
+                    self._logger.debug("Now training: "+exp.get_signature_string()) #explicitly show the experiments of expconfs
                     exp.train()
                 else:
                     try:

@@ -45,7 +45,7 @@ def main():
 
     output_dir = os.path.join(parent,'output_fault_tolerance')
     done_file_flag = os.path.join(output_dir,'done')
-    command = "python3 '"+os.path.join(current,'fault_tolerance_slave.py')+"'"
+    command = "python3 '"+os.path.join(current,'fault_tolerance_slave.py')+"' -d"
 
     if os.path.exists(done_file_flag):
         print(output_dir+" already exists with a complete run. Deleting and starting anew...")
@@ -64,7 +64,7 @@ def main():
         with Popen(command, shell=True, stdout=PIPE, preexec_fn=os.setsid, universal_newlines=True) as process:
             try:
                 #CAUTION: timeout should be longer than the maximum time needed to train a model
-                output = process.communicate(timeout=30)[0]
+                output = process.communicate(timeout=10)[0]
             except subprocess.TimeoutExpired:
                 os.killpg(process.pid, signal.SIGTERM) # send signal to the process group
                 output = process.communicate()[0]
