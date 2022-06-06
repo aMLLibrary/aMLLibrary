@@ -154,7 +154,9 @@ class SequenceDataProcessing:
             shutil.copyfile(input_configuration, os.path.join(output, 'configuration.ini'))
         confpars = cp.ConfigParser()
         confpars.read_dict(self._campaign_configuration)
-        confpars.write(open(os.path.join(output, 'configuration_enriched.ini'), 'w'))
+        with open(os.path.join(output, 'configuration_enriched.ini'), 'w') as conf_enriched:
+            confpars.write(conf_enriched)
+
 
         # Check that validation method has been specified
         if 'validation' not in self._campaign_configuration['General']:
@@ -362,4 +364,10 @@ class SequenceDataProcessing:
         with open(self._done_file_flag, 'wb') as f:
             pass
 
+        
+        #Close logging
+        self._logger.removeHandler(file_handler)
+        file_handler.close()
+        
+        
         return regressor

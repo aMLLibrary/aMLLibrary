@@ -1,6 +1,7 @@
 """
 Copyright 2019 Marco Lattuada
 Copyright 2021 Bruno Guindani
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +19,7 @@ limitations under the License.
 from typing import List
 
 import logging
+import mlxtend
 import mlxtend.feature_selection
 import numpy as np
 import pandas as pd
@@ -379,22 +381,14 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
             best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=self._hyperopt_max_evals, verbose=False)
         else:
             # Save Trials object every _hyperopt_save_interval iterations for fault tolerance
-            curr_evals = 0
-            trials = Trials()
             trials_pickle_path = os.path.join(self._experiment_directory, 'trials.pickle')
-            while curr_evals < self._hyperopt_max_evals:
-                # First, check for an existing, partially filled trials file, if any, and restart from there
-                if os.path.isfile(trials_pickle_path):
-                    with open(trials_pickle_path, 'rb') as f:
-                        trials = pickle.load(f)
-                    curr_evals = len(trials.trials)
-                # Perform next _hyperopt_save_interval iterations and save Pickle file
-                curr_evals = min(self._hyperopt_max_evals, curr_evals+self._hyperopt_save_interval)
-                best_params = fmin(self._objective_function, params, algo=tpe.suggest, trials=trials, max_evals=curr_evals, verbose=False)
-                with open(trials_pickle_path, 'wb') as f:
-                    pickle.dump(trials, f)
+
+            #fmin retrieves the last saved .pickle file at each call (if any) and saves every self._hyperopt_save_interval iterations
+            best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=self._hyperopt_max_evals, trials_save_file=trials_pickle_path, max_queue_len=self._hyperopt_save_interval, verbose=False)
+            
             # Clear trials file after finished
             os.remove(trials_pickle_path)
+            
         # Restore output from fmin
         logging.getLogger('hyperopt.tpe').propagate = True
         # Recover 'lost' params entries whose values was set, and were thus not returned by fmin()

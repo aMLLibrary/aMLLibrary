@@ -230,6 +230,7 @@ class ExperimentConfiguration(abc.ABC):
             try:
                 with open(regressor_path, 'rb') as f:
                     self.set_regressor(pickle.load(f))
+                self.trained = True
                 return
             except EOFError:
                 # Run was interrupted in the middle of writing the regressor to file: we restart the experiment

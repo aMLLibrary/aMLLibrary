@@ -86,8 +86,12 @@ class Results:
         self._logger = custom_logger.getLogger(__name__)
 
         # Logger writes to stdout and file
-        file_handler = logging.FileHandler(os.path.join(self._campaign_configuration['General']['output'], 'results.txt'), 'a+')
-        self._logger.addHandler(file_handler)
+        self.file_handler = logging.FileHandler(os.path.join(self._campaign_configuration['General']['output'], 'results.txt'), 'a+')
+        self._logger.addHandler(self.file_handler)
+
+    def dismiss_handler(self):
+        self._logger.removeHandler(self.file_handler)
+        self.file_handler.close()
 
     def collect_data(self):
         """
@@ -207,6 +211,7 @@ class Results:
                             run_tec_set[run][tec][set_name] = run_fold_tec_best_conf[run][fold][tec].mapes[set_name]
                             run_tec_set[run][tec]['rmses'][set_name] = run_fold_tec_best_conf[run][fold][tec].rmses[set_name]
                             run_tec_set[run][tec]['r2s'][set_name] = run_fold_tec_best_conf[run][fold][tec].r2s[set_name]
+
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
                 unused_techniques = self.techniques
@@ -244,6 +249,7 @@ class Results:
 
             # Hyperparameter search aggregating over folders
             for conf in self._exp_confs:
+
                 if not conf.trained:
                     continue
                 run = int(conf.get_signature()[0].replace("run_", ""))
@@ -273,6 +279,7 @@ class Results:
                 unused_techniques = self.techniques
                 self._logger.info("Printing results for run %s", run)
                 overall_run_best = ()  # (technique, configuration, mapes)
+
                 # Print data of single techniques
                 for technique in run_tec_best_conf[run]:
                     temp = run_tec_best_conf[run][technique]

@@ -1,6 +1,7 @@
 """
 Copyright 2019 Marco Lattuada
 Copyright 2021 Bruno Guindani
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -92,7 +93,7 @@ class ModelBuilding:
         Parameters
         ----------
         campaign_configuration: dict of str: dict of str: tr
-            The set of options specified by the user though command line and campaign configuration files
+            The set of options specified by the user through command line and campaign configuration files
 
         regression_inputs: RegressionInputs
             The input of the regression problem
@@ -120,6 +121,7 @@ class ModelBuilding:
             for exp in tqdm.tqdm(expconfs, dynamic_ncols=True):
                 if self.debug:
                     # Do not use try-except mechanism
+                    self._logger.debug("Now training: "+exp.get_signature_string()) #explicitly show the experiments of expconfs
                     exp.train()
                 else:
                     try:
@@ -136,6 +138,7 @@ class ModelBuilding:
             self._logger.info("<--")
 
         self._logger.info("-->Collecting results")
+
         results = re.Results(campaign_configuration, expconfs)
         results.collect_data()
         self._logger.info("<--Collected")
@@ -145,6 +148,7 @@ class ModelBuilding:
                 self._logger.debug("%s: MAPE on %s set is %f", signature, experiment_configuration, mape)
 
         best_confs, best_technique = results.get_bests()
+        results.dismiss_handler()
         best_regressors = {}
 
         file_handler = logging.FileHandler(os.path.join(campaign_configuration['General']['output'], 'results.txt'), 'a+')
