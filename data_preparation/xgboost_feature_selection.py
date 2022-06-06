@@ -94,11 +94,11 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
         if 'XGBoost' not in xgboost_parameters:
             # default parameters if not provided in the ini file
             xgboost_parameters['XGBoost'] = {}
-            xgboost_parameters['XGBoost']['min_child_weight'] = [1, 3]
+            xgboost_parameters['XGBoost']['min_child_weight'] = [1]
             xgboost_parameters['XGBoost']['gamma'] = [0, 1]
-            xgboost_parameters['XGBoost']['n_estimators'] = [50, 100, 150, 250]
-            xgboost_parameters['XGBoost']['learning_rate'] = [0.01, 0.05, 0.1]
-            xgboost_parameters['XGBoost']['max_depth'] = [1, 2, 3, 5, 9, 13]
+            xgboost_parameters['XGBoost']['n_estimators'] = [50]
+            xgboost_parameters['XGBoost']['learning_rate'] = [0.01, 0.1]
+            xgboost_parameters['XGBoost']['max_depth'] = [3]
 
         best_conf = model_building_var.process(xgboost_parameters, inputs, int(self._campaign_configuration['General']['j']))
 

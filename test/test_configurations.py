@@ -237,7 +237,7 @@ def main():
     outcomes = []
     for configuration in tests:
         test_name = configuration.pop('Name')
-        output_path = args.output + '/' + test_name
+        output_path = os.path.join(args.output,test_name)
 
         try:
             #Check if the test was already performed in a previous incomplete run
@@ -250,7 +250,7 @@ def main():
 
             if test_name == 'faas_predict':
                 # Build object
-                predictor_obj = Predictor(regressor_file=args.output+'/faas_test/LRRidge.pickle', output_folder=output_path, debug=args.debug)
+                predictor_obj = Predictor(regressor_file=os.path.join(args.output,'faas_test/LRRidge.pickle'), output_folder=output_path, debug=args.debug)
 
                 # Perform prediction reading from a config file
                 predictor_obj.predict(config_file=configuration, mape_to_file=True)
@@ -265,7 +265,7 @@ def main():
         print('\n\n\n')
 
     #Print results
-    print('\n\n\n\n\n\n\n\n\n\n\n\n*************Test Results*************')
+    print('\n\n\n\n*************Test Results*************')
     i = 0
     for outcome in outcomes:
         i += 1

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """
-Copyright 2019 Marco Lattuada
 Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -96,7 +95,7 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Performs regression tests")
     parser.add_argument('-d', "--debug", help="Enable debug messages", default=False, action="store_true")
-    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default=parent+"/output_fault_tolerance")
+    parser.add_argument('-o', "--output", help="Output folder where all the models will be stored", default=os.path.join(parent,"output_fault_tolerance"))
     args = parser.parse_args()
 
     done_file_flag = os.path.join(args.output, 'done')

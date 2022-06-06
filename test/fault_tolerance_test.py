@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """
-Copyright 2019 Marco Lattuada
 Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,6 +34,10 @@ def main():
 
     Checks that interrupting the tests performed by fault_tolerance_slave.py is fault tolerant
     """
+    parser = argparse.ArgumentParser(description="Performs fault tolerance tests")
+    parser.add_argument('-t', "--timeout", help="Time elapsed between interruptions (in seconds)", type=float, default=10)
+    args = parser.parse_args()
+
     # getting the name of the directory
     # where the this file is present.
     current = os.path.dirname(os.path.realpath(__file__))
@@ -64,7 +67,7 @@ def main():
         with Popen(command, shell=True, stdout=PIPE, preexec_fn=os.setsid, universal_newlines=True) as process:
             try:
                 #CAUTION: timeout should be longer than the maximum time needed to train a model
-                output = process.communicate(timeout=10)[0]
+                output = process.communicate(timeout=args.timeout)[0]
             except subprocess.TimeoutExpired:
                 os.killpg(process.pid, signal.SIGTERM) # send signal to the process group
                 output = process.communicate()[0]
