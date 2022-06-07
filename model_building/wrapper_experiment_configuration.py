@@ -25,8 +25,8 @@ import numpy as np
 import pandas as pd
 import sklearn
 from sklearn.metrics import mean_absolute_percentage_error, r2_score, make_scorer
-from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
-from hyperopt.pyll import scope
+from hyperopt_aml.hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+from hyperopt_aml.hyperopt.pyll import scope
 import os
 import sys
 import pickle
@@ -374,7 +374,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
             the best hyperparameter configuration found by Hyperopt
         """
         # Temporarily disable output from fmin
-        logging.getLogger('hyperopt.tpe').propagate = False
+        logging.getLogger('hyperopt_aml.hyperopt.tpe').propagate = False
         # Call Hyperopt optimizer
         if self._hyperopt_save_interval == 0:
             # Do not perform periodic saves to Pickle files
@@ -390,7 +390,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
             os.remove(trials_pickle_path)
             
         # Restore output from fmin
-        logging.getLogger('hyperopt.tpe').propagate = True
+        logging.getLogger('hyperopt_aml.hyperopt.tpe').propagate = True
         # Recover 'lost' params entries whose values was set, and were thus not returned by fmin()
         for par in params:
             if par not in best_params:
