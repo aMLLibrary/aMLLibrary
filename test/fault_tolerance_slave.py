@@ -114,7 +114,7 @@ def main():
         sequence_data_processor.process()
 
     except Exception as e:
-        print("Exception",e,"raised","\nFault tolerance failed", sep=' ')
+        print("Exception '",e,"'raised","\nFault tolerance failed", sep=' ')
         sys.exit(1)
 
     # Create success flag file
