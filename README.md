@@ -1,4 +1,4 @@
-# a-MLLibrary
+# aMLLibrary
 Library for the generation of regression models.
 
 The main script of the library is `run.py`:
@@ -56,11 +56,11 @@ This section shows how to create and use the Docker container image for this lib
 It is not strictly needed, but it ensures an environment in which dependencies have the correct version, and in which it is guaranteed that the library works correctly.
 This Docker image can be built from the `Dockerfile` at the root folder of this repository by issuing the command line instruction
 ```shell
-sudo docker build -t brunoguindani/a-mllibrary .
+sudo docker build -t amllibrary .
 ```
 To run a container and mount a volume which includes the root folder of this repository, please use
 ```shell
-sudo docker run --name aml --rm -v $(pwd):/a-MLlibrary -it brunoguindani/a-mllibrary
+sudo docker run --name aml --rm -v $(pwd):/aMLlibrary -it amllibrary
 ```
 which defaults to a `bash` terminal unless a specific command is appended to the line.
 In this terminal, you may run the same commands as in a regular terminal, including the ones from the Tutorial section.
@@ -72,9 +72,9 @@ This search mode is activated by inserting the `hyperparameter_tuning = Hyperopt
 When using Hyperopt, strings representing prior distributions, such as `'loguniform(0.01,1)'`, may be assigned to hyperparameters instead of the usual lists of values used in grid search mode.
 Such strings refer to and are interpreted as Hyperopt prior objects, assuming they are appropriately formatted; please head to https://github.com/hyperopt/hyperopt/wiki/FMin#21-parameter-expressions for more information.
 
-Note that logarithm-based distributions follow a different notation in `a-MLLibrary` configuration files than in the Hyperopt library, for the sake of clarity.
+Note that logarithm-based distributions follow a different notation in `aMLLibrary` configuration files than in the Hyperopt library, for the sake of clarity.
 For instance, the string `'loguniform(a,b)'` in a configuration file means a log-uniform distribution with support `[a,b]`, whereas an equivalent distribution in Hyperopt notation would be `'loguniform(e^a,e^b)'` instead.
-(`a-MLLibrary` performs this conversion of parameter notation automatically.)
+(`aMLLibrary` performs this conversion of parameter notation automatically.)
 
 
 ## Acknowledgments
