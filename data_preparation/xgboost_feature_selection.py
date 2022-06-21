@@ -16,11 +16,11 @@ limitations under the License.
 
 import copy
 import os
-
-import eli5
+import pandas as pd
 
 import data_preparation.data_preparation
 import model_building.model_building
+import model_building.xgboost_experiment_configuration as xec
 
 
 class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation):
@@ -105,15 +105,10 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
         # best_conf is a XGBoost configuration experiment
         xgb_regressor = best_conf.get_regressor()
 
-        # top = None means all
-        expl = eli5.xgboost.explain_weights_xgboost(xgb_regressor, feature_names=inputs.x_columns, top=max_features, importance_type='gain')
+        weights = xec.XGBoostExperimentConfiguration.get_weights_dict(xgb_regressor)
+        df = pd.DataFrame({'feature': weights.keys(), 'weight': weights.values()})
 
-        # text version
-        expl_weights = eli5.format_as_text(expl)
-
-        self._logger.debug("XGBoost feature scores:\n%s", str(expl_weights))
-
-        df = eli5.format_as_dataframe(expl)  # data frame version
+        self._logger.debug("XGBoost feature scores:\n%s", str(df))
 
         xgb_sorted_features = df['feature'].values.tolist()  # features list
 
