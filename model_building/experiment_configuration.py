@@ -279,9 +279,11 @@ class ExperimentConfiguration(abc.ABC):
         """
         self._start_file_logger()
 
+        self._logger.debug("Computing metrics for %s", str(self.get_signature()))
         for set_name in ["validation", "hp_selection", "training"]:
             rows = self._regression_inputs.inputs_split[set_name]
-            self._logger.debug("Computing metrics on %s set", set_name)
+            self._logger.debug("On %s set:", set_name)
+            self._logger.debug("-->")
             predicted_y = self.compute_estimations(rows)
             real_y = self._regression_inputs.data.loc[rows, self._regression_inputs.y_column].values.astype(np.float64)
             if self._regression_inputs.y_column in self._regression_inputs.scalers:
@@ -291,13 +293,14 @@ class ExperimentConfiguration(abc.ABC):
             # self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
             # Mean Absolute Percentage Error
             self.mapes[set_name] = mean_absolute_percentage_error(real_y, predicted_y)
-            self._logger.debug("MAPE on %s set is %f", set_name, self.mapes[set_name])
+            self._logger.debug("MAPE is %f", self.mapes[set_name])
             # Root Mean Squared Error
             self.rmses[set_name] = mean_squared_error(real_y, predicted_y, squared=False)
-            self._logger.debug("RMSE on %s set is %f", set_name, self.rmses[set_name])
+            self._logger.debug("RMSE is %f", self.rmses[set_name])
             # R-squared metric
             self.r2s[set_name] = r2_score(real_y, predicted_y)
-            self._logger.debug("R^2  on %s set is %f", set_name, self.r2s[set_name])
+            self._logger.debug("R^2  is %f", self.r2s[set_name])
+            self._logger.debug("<--")
 
         self._stop_file_logger()
 
