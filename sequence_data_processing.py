@@ -72,7 +72,7 @@ class SequenceDataProcessing:
         The random generator used in the whole application both to generate random numbers and to initialize other random generators
     """
 
-    def __init__(self, input_configuration, debug=False, seed=0, output="output", j=1, generate_plots=False, self_check=True, details=False):
+    def __init__(self, input_configuration, debug=False, output="output", j=1, generate_plots=False, self_check=True, details=False):
         """
         Constructor of the class
 
@@ -87,9 +87,6 @@ class SequenceDataProcessing:
 
         debug: bool
             True if debug messages should be printed
-
-        seed: integer
-            The seed to be used to initialize the random generator engine
 
         output: str
             The directory where all the outputs will be written; it is created by this library and cannot exist before using this module
@@ -106,11 +103,10 @@ class SequenceDataProcessing:
         details: bool
             True if the results of the single experiments should be added
         """
+        default_rng_seed = 0
         self._done_file_flag = os.path.join(output, 'done')
 
         self._data_preprocessing_list = []
-
-        self.random_generator = random.Random(seed)
         self.debug = debug
         self._self_check = self_check
 
@@ -128,7 +124,7 @@ class SequenceDataProcessing:
                 self._logger.error("%s does not exist", input_configuration)
                 sys.exit(-1)
             general_args = {'configuration_file': input_configuration, 'output': output,
-                            'seed': str(seed), 'j': str(j), 'debug': str(debug),
+                            'j': str(j), 'debug': str(debug),
                             'generate_plots': str(generate_plots), 'details': str(details)
                            }
             self.load_campaign_configuration(input_configuration, general_args)
@@ -143,6 +139,16 @@ class SequenceDataProcessing:
         else:
             self._logger.error("input_configuration must be a path string to a configuration file or a dictionary")
             sys.exit(1)
+
+        # Initialize random number generator
+        if 'seed' not in self._campaign_configuration['General']:
+            self._campaign_configuration['General']['seed'] = default_rng_seed
+        self.random_generator = random.Random(self._campaign_configuration['General']['seed'])
+
+        self._logger.debug("Parameters configuration is:")
+        self._logger.debug("-->")
+        self._logger.debug(pprint.pformat(self._campaign_configuration, width=1))
+        self._logger.debug("<--")
 
         # Check if output path already exist
         if os.path.exists(output) and os.path.exists(self._done_file_flag):
@@ -277,11 +283,6 @@ class SequenceDataProcessing:
                     self._campaign_configuration[section][item[0]] = ast.literal_eval(item[1])
                 except (ValueError, SyntaxError):
                     self._campaign_configuration[section][item[0]] = item[1]
-
-        self._logger.debug("Parameters configuration is:")
-        self._logger.debug("-->")
-        self._logger.debug(pprint.pformat(self._campaign_configuration, width=1))
-        self._logger.debug("<--")
 
     def process(self):
         """
