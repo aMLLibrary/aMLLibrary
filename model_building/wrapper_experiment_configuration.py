@@ -254,7 +254,7 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         features = self.get_regressor().aml_features
         filtered_xdata = xdata[features]
         ret = self.get_regressor().predict(filtered_xdata)
-        self._logger.debug("Using regressor on %s: %s vs %s", str(filtered_xdata), str(ydata), str(ret))
+        # self._logger.debug("Using regressor on %s: %s vs %s", str(filtered_xdata), str(ydata), str(ret))
 
         return ret
 
@@ -437,7 +437,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
         ret = self.get_regressor().predict(xdata)
-        self._logger.debug("Using regressor on %s: %s vs %s", str(xdata), str(ydata), str(ret))
+        # self._logger.debug("Using regressor on %s: %s vs %s", str(xdata), str(ydata), str(ret))
         return ret
 
     def print_model(self):

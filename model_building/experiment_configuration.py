@@ -288,7 +288,7 @@ class ExperimentConfiguration(abc.ABC):
                 y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
                 predicted_y = y_scaler.inverse_transform(predicted_y)
                 real_y = y_scaler.inverse_transform(real_y)
-            self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
+            # self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
             # Mean Absolute Percentage Error
             self.mapes[set_name] = mean_absolute_percentage_error(real_y, predicted_y)
             self._logger.debug("MAPE on %s set is %f", set_name, self.mapes[set_name])
