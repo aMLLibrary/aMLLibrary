@@ -100,13 +100,14 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         assert len(self._regressor.aml_features) == len(coefficients)
         # Show coefficients in order of decresing absolute value
         idxs = np.argsort(np.abs(coefficients))[::-1]
+        signif_digits = 4
         for i in idxs:
             column = self._regressor.aml_features[i]
             coefficient = coefficients[i]
             ret_string += " + " if ret_string != initial_string else "   "
-            coeff = str(round(coefficient, 3))
+            coeff = str(round(coefficient, signif_digits))
             ret_string = ret_string + "(" + str(coeff) + " * " + column + ")\n"
-        coeff = str(round(self._regressor.intercept_, 3))
+        coeff = str(round(self._regressor.intercept_, signif_digits))
         ret_string = ret_string + " + (" + coeff + ")"
         return ret_string
 
