@@ -153,14 +153,17 @@ class Results:
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
                 unused_techniques = self.techniques
-                self._logger.info("-->Printing results for run %s", str(run))
+                self._logger.info("Printing results for run %s", str(run))
+                self._logger.info("-->MAPE for all techniques:")
                 overall_run_best = None
                 # Print data of single techniques
+                padding = max([len(str(t)) for t in run_tec_best_conf[run]])
                 for technique in run_tec_best_conf[run]:
                     temp = run_tec_best_conf[run][technique]
                     if ec.enum_to_configuration_label[technique] in unused_techniques:
                         unused_techniques.remove(ec.enum_to_configuration_label[technique])
-                    self._logger.info("---Best result for %s - Configuration is %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", technique, temp.get_signature()[4:], temp.mapes["training"], temp.mapes["hp_selection"], temp.mapes["validation"])
+                    printed_name = str(technique).ljust(padding)
+                    self._logger.info("%s: (Training %f - HP Selection %f) - Validation %f", printed_name, temp.mapes["training"], temp.mapes["hp_selection"], temp.mapes["validation"])
 
                     # Compute which is the best technique
                     if not overall_run_best or temp.mapes["hp_selection"] < overall_run_best.mapes["hp_selection"]:
@@ -170,7 +173,7 @@ class Results:
                     exit(1)
                 if unused_techniques:
                     self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
-                self._logger.info("<--Overall best result is %s", overall_run_best.get_signature()[3:])
+                self._logger.info("<--Overall best result is %s, with configuration %s", overall_run_best.technique, overall_run_best.get_signature()[4:])
                 self._logger.info("Metrics for best result:")
                 self._logger.info("-->")
                 self._logger.info("MAPE: (Training %f - HP Selection %f) - Validation %f", overall_run_best.mapes["training"], overall_run_best.mapes["hp_selection"], overall_run_best.mapes["validation"])

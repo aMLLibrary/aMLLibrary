@@ -111,13 +111,13 @@ class ModelBuilding:
         factory = gf.GeneratorsFactory(campaign_configuration, self._random_generator.random())
         top_generator = factory.build()
         self._logger.info("<--")
-        self._logger.info("-->Generate experiments")
+        self._logger.info("Generate experiments")
         expconfs = top_generator.generate_experiment_configurations([], regression_inputs)
         self._logger.info("<--")
 
         assert expconfs
         if processes_number == 1:
-            self._logger.info("-->Run experiments (sequentially)")
+            self._logger.info("Run experiments (sequentially)")
             for exp in tqdm.tqdm(expconfs, dynamic_ncols=True):
                 if self.debug:
                     # Do not use try-except mechanism
@@ -130,18 +130,16 @@ class ModelBuilding:
                         raise ki
                     except:
                         pass
-            self._logger.info("<--")
         else:
-            self._logger.info("-->Run experiments (in parallel)")
+            self._logger.info("Run experiments (in parallel)")
             with multiprocessing.Pool(processes_number) as pool:
                 expconfs = list(tqdm.tqdm(pool.imap(self._process_wrapper, expconfs), total=len(expconfs)))
-            self._logger.info("<--")
 
-        self._logger.info("-->Collecting results")
+        self._logger.info("---Collecting results")
 
         results = re.Results(campaign_configuration, expconfs)
         results.collect_data()
-        self._logger.info("<--Collected")
+        self._logger.info("---Collected")
 
         for signature, mapes in results.raw_results.items():
             for experiment_configuration, mape in mapes.items():
@@ -153,7 +151,7 @@ class ModelBuilding:
 
         file_handler = logging.FileHandler(os.path.join(campaign_configuration['General']['output'], 'results.txt'), 'a+')
         self._logger.addHandler(file_handler)
-        self._logger.info("-->Building the final regressors")
+        self._logger.info("Building the final regressors")
         self._logger.removeHandler(file_handler)
 
         # Create a shadow copy
@@ -163,6 +161,10 @@ class ModelBuilding:
         all_data.inputs_split["training"] = all_data.inputs_split["all"]
         all_data.inputs_split["validation"] = all_data.inputs_split["all"]
         all_data.inputs_split["hp_selection"] = all_data.inputs_split["all"]
+
+        self._logger.addHandler(file_handler)
+        self._logger.info("Validation metrics on full dataset for all techniques:")
+        padding = max([len(str(t)) for t in best_confs])
 
         for technique in best_confs:
             best_conf = best_confs[technique]
@@ -196,14 +198,8 @@ class ModelBuilding:
             best_conf.train(force=True)
             best_conf.evaluate()
 
-            self._logger.addHandler(file_handler)
-            self._logger.info("Validation metrics on full dataset for %s:", technique)
-            self._logger.info("-->")
-            self._logger.info("MAPE: %f", best_conf.mapes["validation"])
-            self._logger.info("RMSE: %f", best_conf.rmses["validation"])
-            self._logger.info("R^2 : %f", best_conf.r2s  ["validation"])
-            self._logger.info("<--")
-            self._logger.removeHandler(file_handler)
+            printed_name = str(technique).ljust(padding)
+            self._logger.info("---%s: MAPE %f - RMSE %f - R^2 %f", printed_name, best_conf.mapes["validation"], best_conf.rmses["validation"], best_conf.r2s["validation"])
 
             # Build the regressor with all data
             best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)
@@ -216,8 +212,7 @@ class ModelBuilding:
         with open(best_pickle_file_name, "wb") as pickle_file:
             pickle.dump(best_regressors[best_technique], pickle_file, protocol=4)
 
-        self._logger.addHandler(file_handler)
-        self._logger.info("<--Built the final regressors")
+        self._logger.info("Built the final regressors")
         if 'rename_columns' in campaign_configuration['DataPreparation']:
             renamed_columns = [str(k) + " -> " + str(v) for k,v in campaign_configuration['DataPreparation']['rename_columns'].items()]
             self._logger.info("Using renamed columns: {" + ", ".join(renamed_columns) + "}")
@@ -225,7 +220,7 @@ class ModelBuilding:
         self._logger.info("-->")
         for tec, conf in best_confs.items():
             self._logger.info("%s:", tec)
-            self._logger.info(conf.print_model())
+            self._logger.info("---" + conf.print_model())
         self._logger.info("<--")
         self._logger.removeHandler(file_handler)
         file_handler.close()
