@@ -153,7 +153,7 @@ class Results:
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
                 unused_techniques = self.techniques
-                self._logger.info("Printing results for run %s", str(run))
+                self._logger.info("Printing results for run %s", run)
                 self._logger.info("-->MAPE for all techniques:")
                 overall_run_best = None
                 # Print data of single techniques
@@ -218,13 +218,16 @@ class Results:
             # Print results for each run
             for run in range(0, self._campaign_configuration['General']['run_num']):
                 unused_techniques = self.techniques
-                self._logger.info("Printing results for run %s", str(run))
+                self._logger.info("Printing results for run %s", run)
+                self._logger.info("-->MAPE for all techniques:")
                 overall_run_best = ()
                 # Print data of single techniques
+                padding = max([len(str(t)) for t in run_tec_set[run]])
                 for technique in run_tec_set[run]:
                     if ec.enum_to_configuration_label[technique] in unused_techniques:
                         unused_techniques.remove(ec.enum_to_configuration_label[technique])
-                    self._logger.info("---Best result for %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", technique, run_tec_set[run][technique]["training"], run_tec_set[run][technique]["hp_selection"], run_tec_set[run][technique]["validation"])
+                    printed_name = str(technique).ljust(padding)
+                    self._logger.info("%s: (Training %f - HP Selection %f) - Validation %f", printed_name, run_tec_set[run][technique]["training"], run_tec_set[run][technique]["hp_selection"], run_tec_set[run][technique]["validation"])
 
                     # Compute which is the best technique
                     if not overall_run_best or run_tec_set[run][technique]["hp_selection"] < overall_run_best[1]["hp_selection"]:
@@ -281,14 +284,17 @@ class Results:
             for run in range(0, self._campaign_configuration['General']['run_num']):
                 unused_techniques = self.techniques
                 self._logger.info("Printing results for run %s", run)
+                self._logger.info("-->MAPE for all techniques:")
                 overall_run_best = ()  # (technique, configuration, mapes)
 
                 # Print data of single techniques
+                padding = max([len(str(t)) for t in run_tec_best_conf[run]])
                 for technique in run_tec_best_conf[run]:
                     temp = run_tec_best_conf[run][technique]
                     if ec.enum_to_configuration_label[technique] in unused_techniques:
                         unused_techniques.remove(ec.enum_to_configuration_label[technique])
-                    self._logger.info("---Best result for %s - Configuration is %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", technique, temp[0], temp[1]["training"], temp[1]["hp_selection"], temp[1]["validation"])
+                    printed_name = str(technique).ljust(padding)
+                    self._logger.info("%s: (Training %f - HP Selection %f) - Validation %f", printed_name, temp[1]["training"], temp[1]["hp_selection"], temp[1]["validation"])
 
                     # Compute which is the best technique
                     if not overall_run_best or temp[1]["hp_selection"] < overall_run_best[2]["hp_selection"]:
@@ -299,7 +305,7 @@ class Results:
                     exit(1)
                 if unused_techniques:
                     self._logger.info("The following techniques had no successful runs: %s", str(unused_techniques))
-                self._logger.info("<--Overall best result is %s %s", overall_run_best[0], overall_run_best[1])
+                self._logger.info("<--Overall best result is %s, with configuration %s", overall_run_best[0], overall_run_best[1])
                 self._logger.info("Metrics for best result:")
                 self._logger.info("-->")
                 self._logger.info("MAPE: (Training %f - HP Selection %f) - Validation %f", overall_run_best[2]["training"], overall_run_best[2]["hp_selection"], overall_run_best[2]["validation"])
@@ -367,13 +373,15 @@ class Results:
             for run in range(0, self._campaign_configuration['General']['run_num']):
                 unused_techniques = self.techniques
                 self._logger.info("Printing results for run %s", run)
+                self._logger.info("-->MAPE for all techniques:")
                 overall_run_best = ()
                 # Print data of single techniques
+                padding = max([len(str(t)) for t in run_tec_set[run]])
                 for technique in run_tec_set[run]:
-                    print(">>", technique)
                     if ec.enum_to_configuration_label[technique] in unused_techniques:
                         unused_techniques.remove(ec.enum_to_configuration_label[technique])
-                    self._logger.info("---Best result for %s - (Training MAPE is %f - HP Selection MAPE is %f) - Validation MAPE is %f", technique, run_tec_set[run][technique]["training"], run_tec_set[run][technique]["hp_selection"], run_tec_set[run][technique]["validation"])
+                    printed_name = str(technique).ljust(padding)
+                    self._logger.info("%s: (Training %f - HP Selection %f) - Validation %f", printed_name, run_tec_set[run][technique]["training"], run_tec_set[run][technique]["hp_selection"], run_tec_set[run][technique]["validation"])
 
                     # Compute which is the best technique
                     if not overall_run_best or run_tec_set[run][technique]["hp_selection"] < overall_run_best[1]["hp_selection"]:
