@@ -234,7 +234,7 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         filtered_xdata = self._sfs.transform(xdata)  # is an np.array
         filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_cols)
         self.set_x_columns(x_cols)
-        self.get_regressor().aml_features = x_cols
+        #self.get_regressor().aml_features = x_cols
         self.get_regressor().fit(filtered_xdata, ydata)
 
     def compute_estimations(self, rows):
@@ -251,7 +251,14 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
             The values predicted by the associated regressor
         """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
-        features = self.get_regressor().aml_features
+        features = self.get_x_columns() #self.get_regressor().aml_features
+
+        #TODO: cancellami
+        print("   --> Features selezionate da",str(self._wrapped_experiment_configuration.print_model()),sep=" ")
+        print("   --> str(features):",str(features),sep=" ")
+        print("   --> xdata.columns:",xdata.columns,sep=" ")
+
+
         filtered_xdata = xdata[features]
         ret = self.get_regressor().predict(filtered_xdata)
         self._logger.debug("Using regressor on %s: %s vs %s", str(filtered_xdata), str(ydata), str(ret))
@@ -262,7 +269,8 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         """
         Print the representation of the generated model
         """
-        return "".join(("Features selected with SFS: ", str(self.get_regressor().aml_features), "\n",
+        #return "".join(("Features selected with SFS: ", str(self.get_regressor().aml_features), "\n",
+        return "".join(("Features selected with SFS: ", str(self.get_x_columns()), "\n",
                         self._wrapped_experiment_configuration.print_model()))
 
 
@@ -420,7 +428,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         self._wrapped_experiment_configuration._regressor = self._wrapped_regressor
         self._wrapped_experiment_configuration._hyperparameters = best_param
         self._wrapped_experiment_configuration._train()
-        self.get_regressor().aml_features = self.get_x_columns()
+        #self.get_regressor().aml_features = self.get_x_columns()
 
     def compute_estimations(self, rows):
         """
@@ -674,7 +682,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         self._wrapped_experiment_configuration._hyperparameters = subsets_best_hyperparams[idx_best]
         self._logger.debug("Selected features: %s", str(best_features))
         self.set_x_columns(best_features)
-        self.get_regressor().aml_features = best_features
+        #self.get_regressor().aml_features = best_features
         self.get_regressor().fit(X_train[best_features], y_train)
 
     def compute_estimations(self, rows):

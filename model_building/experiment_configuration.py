@@ -27,6 +27,8 @@ import numpy as np
 import matplotlib
 from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error, r2_score
 
+import regressor
+
 matplotlib.use('Agg')
 # pylint: disable=wrong-import-position
 import matplotlib.pyplot as plt  # noqa: E402
@@ -229,7 +231,9 @@ class ExperimentConfiguration(abc.ABC):
         if not force and os.path.exists(regressor_path):
             try:
                 with open(regressor_path, 'rb') as f:
-                    self.set_regressor(pickle.load(f))
+                    regressor_obj = pickle.load(f)
+                    self.set_regressor(regressor_obj.get_regressor())
+                    self.set_x_columns(regressor_obj.get_x_columns())
                 self.trained = True
                 return
             except EOFError:
@@ -241,11 +245,14 @@ class ExperimentConfiguration(abc.ABC):
             warnings.simplefilter("ignore")
             self._train()
         self.trained = True
+        """
         if self._regressor and not hasattr(self._regressor, 'aml_features'):
             self._regressor.aml_features = self.get_x_columns()
+        """
         self._stop_file_logger()
+        trained_regressor = regressor.Regressor(self._campaign_configuration,self.get_regressor(),self.get_x_columns(),None)
         with open(regressor_path, 'wb') as f:
-            pickle.dump(self.get_regressor(), f)
+            pickle.dump(trained_regressor, f)
 
     @abc.abstractmethod
     def _train(self):

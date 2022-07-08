@@ -49,6 +49,7 @@ import data_preparation.row_selection
 import data_preparation.xgboost_feature_selection
 
 import model_building.model_building
+import regressor
 
 
 class SequenceDataProcessing:
@@ -352,7 +353,7 @@ class SequenceDataProcessing:
             for technique in self._campaign_configuration['General']['techniques']:
                 pickle_file_name = os.path.join(self._campaign_configuration['General']['output'], technique + ".pickle")
                 with open(pickle_file_name, "rb") as pickle_file:
-                    regressor = pickle.load(pickle_file)
+                    regressor = pickle.load(pickle_file).get_regressor()
 
                 predicted_y = regressor.predict(check_data)
                 mape = mean_absolute_percentage_error(real_y, predicted_y)

@@ -27,6 +27,7 @@ import sequence_data_processing
 import data_preparation.data_loading
 import data_preparation.onehot_encoding
 import model_building.model_building
+import regressor
 
 
 class Predictor(sequence_data_processing.SequenceDataProcessing):
@@ -70,7 +71,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         Loads the given regressor as a class member
         """
         with open(regressor_file, "rb") as f:
-            self._regressor = pickle.load(f)
+            self._regressor = pickle.load(f).get_regressor()
 
 
     def predict(self, config_file, mape_to_file, regressor_file=None):
