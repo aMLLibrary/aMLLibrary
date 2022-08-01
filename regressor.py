@@ -24,6 +24,7 @@ import data_preparation.logarithm
 import data_preparation.product
 import data_preparation.rename_columns
 import regression_inputs
+import copy
 
 
 class Regressor:

@@ -130,7 +130,7 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
         reg: regressor object
             the regressor to be set in this (wrapped) experiment configuration
         """
-        self._wrapped_regressor = reg
+        self._wrapped_regressor = reg #WAIT: ._wrapped_regressor? Penso sia da documentare sopra (in caso, TODO)
         self._wrapped_experiment_configuration._regressor = reg
 
     def get_default_parameters(self):
@@ -148,7 +148,15 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
         list of str:
             the columns used in the regression
         """
-        return self._wrapped_experiment_configuration.get_x_columns()
+        x_cols = super().get_x_columns() #self._wrapped_experiment_configuration.get_x_columns()
+        """
+        try:
+            assert self._wrapped_experiment_configuration.get_x_columns() == super().get_x_columns()
+        except:
+            super().set_x_columns(x_cols)
+        """
+        return x_cols
+        #return super().get_x_columns()
 
     def set_x_columns(self, x_cols):
         """
@@ -159,8 +167,18 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
         x_cols: list of str
             the columns to be used in the regression
         """
+        self._logger.info("Setto: "+str(x_cols))
+
         super().set_x_columns(x_cols)
+        self._logger.info("Wrapped:")
+        self._logger.info(self._regression_inputs.__str__())
+
+        self._logger.info("Wrapper:")
         self._wrapped_experiment_configuration.set_x_columns(x_cols)
+        self._logger.info(self._wrapped_experiment_configuration._regression_inputs.__str__())
+
+        self._logger.info("Get x_columns:")
+        self._logger.info(str(self.get_x_columns()))
 
 
 
@@ -250,16 +268,27 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         -------
             The values predicted by the associated regressor
         """
-        xdata, ydata = self._regression_inputs.get_xy_data(rows)
+        
+        
+        #TODO: cancellami
+        correct_xdata, ydata = self._regression_inputs.get_xy_data(rows)
+
+
+        xdata, ydata = self._regression_inputs.get_xy_data(rows) #self._wrapped_experiment_configuration._regression_inputs.get_xy_data(rows)
         features = self.get_x_columns() #self.get_regressor().aml_features
+        """
+        xdata, ydata = self._regression_inputs.get_xy_data(rows)
+        correct_xdata = xdata
+        features = self.get_x_columns()
+        """
 
         #TODO: cancellami
-        print("   --> Features selezionate da",str(self._wrapped_experiment_configuration.print_model()),sep=" ")
-        print("   --> str(features):",str(features),sep=" ")
-        print("   --> xdata.columns:",xdata.columns,sep=" ")
+        with open('output/log.txt', 'a') as f:
+            f.write("   --> Features selezionate da "+str(self._wrapped_experiment_configuration.print_model()))
+            f.write("\n   --> get_x_columns: "+str(features)+"\n   --> xdata.columns: "+str(list(xdata.columns))+"\n   --> correct xdata.columns: "+str(list(correct_xdata.columns)))
 
 
-        filtered_xdata = xdata[features]
+        filtered_xdata = xdata #xdata[features]
         ret = self.get_regressor().predict(filtered_xdata)
         self._logger.debug("Using regressor on %s: %s vs %s", str(filtered_xdata), str(ydata), str(ret))
 
@@ -681,7 +710,15 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         self._hyperopt_trained = True
         self._wrapped_experiment_configuration._hyperparameters = subsets_best_hyperparams[idx_best]
         self._logger.debug("Selected features: %s", str(best_features))
-        self.set_x_columns(best_features)
+
+
+
+
+        self.set_x_columns(best_features) #era self., ora super().super()
+
+
+
+
         #self.get_regressor().aml_features = best_features
         self.get_regressor().fit(X_train[best_features], y_train)
 

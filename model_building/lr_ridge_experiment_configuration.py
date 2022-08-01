@@ -14,7 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
+import sys
 import numpy as np
 import sklearn.linear_model as lr
 
@@ -98,17 +98,19 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         ret_string = initial_string
         coefficients = self._regressor.coef_
 
-
+        #TODO: togli il try-except, lascia solo l'assert
         try:
             assert len(self.get_x_columns()) == len(coefficients) #len(self._regressor.aml_features) == len(coefficients)
         except:
             print("Assertion error:",str(self.get_x_columns()),str(coefficients),sep=" ")
-            sys.exit(1)
+            #sys.exit(1)
 
 
 
         # Show coefficients in order of decresing absolute value
         idxs = np.argsort(np.abs(coefficients))[::-1]
+        print(idxs)
+        print(str(self.get_x_columns()))
         for i in idxs:
             column = self.get_x_columns()[i] #self._regressor.aml_features[i]
             coefficient = coefficients[i]

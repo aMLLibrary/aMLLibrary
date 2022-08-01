@@ -250,6 +250,13 @@ class ExperimentConfiguration(abc.ABC):
             self._regressor.aml_features = self.get_x_columns()
         """
         self._stop_file_logger()
+
+        print("(train) Wrapped:")
+        print(self._regression_inputs.__str__())
+
+        print("(train) Get x_columns:")
+        print(str(self.get_x_columns()))
+
         trained_regressor = regressor.Regressor(self._campaign_configuration,self.get_regressor(),self.get_x_columns(),None)
         with open(regressor_path, 'wb') as f:
             pickle.dump(trained_regressor, f)
