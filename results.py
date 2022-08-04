@@ -98,6 +98,24 @@ class Results:
         Collect the data of all the performed experiments
         """
         exp_conf: ec.ExperimentConfiguration
+
+        #Remove
+        """
+        for exp in self._exp_confs:
+            print(exp.model_ID)
+            
+            print("Wrapper:")
+            print(exp._regression_inputs.__str__())
+
+            print("Wrapped:")
+            print(exp._wrapped_experiment_configuration._regression_inputs.__str__())
+
+            print("Get x_columns:")
+            print(str(exp.get_x_columns()))
+
+            print(exp._wrapped_experiment_configuration.print_model())
+        """
+
         processes_number = self._campaign_configuration['General']['j']
         if processes_number == 1:
             self._logger.info("-->Evaluate experiments (sequentially)")

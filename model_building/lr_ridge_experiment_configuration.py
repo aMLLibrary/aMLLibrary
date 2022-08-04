@@ -109,10 +109,19 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
 
         # Show coefficients in order of decresing absolute value
         idxs = np.argsort(np.abs(coefficients))[::-1]
+        """
+        print("Print model")
         print(idxs)
         print(str(self.get_x_columns()))
+        print(self._regression_inputs.__str__(),'\n')
+        """
+
         for i in idxs:
-            column = self.get_x_columns()[i] #self._regressor.aml_features[i]
+            try:
+                column = self.get_x_columns()[i] #self._regressor.aml_features[i]
+            except Exception as e:
+                print(e)
+                continue
             coefficient = coefficients[i]
             ret_string += " + " if ret_string != initial_string else "   "
             coeff = str(round(coefficient, 3))

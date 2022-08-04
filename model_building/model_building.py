@@ -29,6 +29,8 @@ import model_building.generators_factory as gf
 import regressor
 import results as re
 
+from pprint import pprint
+
 
 class ModelBuilding:
     """
@@ -116,6 +118,11 @@ class ModelBuilding:
         self._logger.info("<--")
 
         assert expconfs
+
+        #Remove
+        #model_ID = 0
+
+
         if processes_number == 1:
             self._logger.info("-->Run experiments (sequentially)")
             for exp in tqdm.tqdm(expconfs, dynamic_ncols=True):
@@ -125,7 +132,8 @@ class ModelBuilding:
                     exp.train()
                 else:
                     try:
-                        exp.train()
+                        exp.train() #(model_ID=model_ID)
+                        #model_ID += 1
                     except KeyboardInterrupt as ki:
                         raise ki
                     except:
@@ -138,6 +146,50 @@ class ModelBuilding:
             self._logger.info("<--")
 
         self._logger.info("-->Collecting results")
+
+        #Remove
+        """
+        for exp in expconfs:
+            pprint(exp.__dict__)
+        """
+
+        #Remove
+        """
+        print("\n\nPrima di creare results")
+        for exp in expconfs:
+            print(exp.model_ID)
+            
+            print("Wrapper:")
+            print(exp._regression_inputs.__str__())
+
+            print("Wrapped:")
+            print(exp._wrapped_experiment_configuration._regression_inputs.__str__())
+
+            print("Get x_columns:")
+            print(str(exp.get_x_columns()))
+
+            print(exp._wrapped_experiment_configuration.print_model())
+
+            exp._wrapped_experiment_configuration._regression_inputs = exp._regression_inputs
+
+            print("\nAggiornamento!")
+
+            print("Wrapper:")
+            print(exp._regression_inputs.__str__())
+
+            print("Wrapped:")
+            print(exp._wrapped_experiment_configuration._regression_inputs.__str__())
+
+            print("Get x_columns:")
+            print(str(exp.get_x_columns()))
+
+            print(exp._wrapped_experiment_configuration.print_model())
+        """
+
+        #HOTFIX: Wrapper-wrapped synchronization
+        for exp in expconfs:
+            if hasattr(exp, '_wrapped_experiment_configuration'):
+                exp._wrapped_experiment_configuration._regression_inputs = exp._regression_inputs
 
         results = re.Results(campaign_configuration, expconfs)
         results.collect_data()

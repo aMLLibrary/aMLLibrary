@@ -167,18 +167,18 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
         x_cols: list of str
             the columns to be used in the regression
         """
-        self._logger.info("Setto: "+str(x_cols))
+        #self._logger.info("Setto: "+str(x_cols))
 
         super().set_x_columns(x_cols)
-        self._logger.info("Wrapped:")
-        self._logger.info(self._regression_inputs.__str__())
+        #self._logger.info("Wrapper:")
+        #self._logger.info(self._regression_inputs.__str__())
 
-        self._logger.info("Wrapper:")
+        #self._logger.info("Wrapped:")
         self._wrapped_experiment_configuration.set_x_columns(x_cols)
-        self._logger.info(self._wrapped_experiment_configuration._regression_inputs.__str__())
+        #self._logger.info(self._wrapped_experiment_configuration._regression_inputs.__str__())
 
-        self._logger.info("Get x_columns:")
-        self._logger.info(str(self.get_x_columns()))
+        #self._logger.info("Get x_columns:")
+        #self._logger.info(str(self.get_x_columns()))
 
 
 
@@ -283,10 +283,13 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         """
 
         #TODO: cancellami
+        """
         with open('output/log.txt', 'a') as f:
-            f.write("   --> Features selezionate da "+str(self._wrapped_experiment_configuration.print_model()))
+            #f.write("\nModel "+str(self.model_ID))
+            f.write("\n   --> Features selezionate da "+str(self._wrapped_experiment_configuration.print_model()))
             f.write("\n   --> get_x_columns: "+str(features)+"\n   --> xdata.columns: "+str(list(xdata.columns))+"\n   --> correct xdata.columns: "+str(list(correct_xdata.columns)))
-
+        """
+            
 
         filtered_xdata = xdata #xdata[features]
         ret = self.get_regressor().predict(filtered_xdata)
@@ -721,6 +724,10 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
 
         #self.get_regressor().aml_features = best_features
         self.get_regressor().fit(X_train[best_features], y_train)
+
+
+        #self._logger.info("_train di HyperoptSFS:")
+        #self._logger.info(str(self._wrapped_experiment_configuration.print_model()))
 
     def compute_estimations(self, rows):
         """

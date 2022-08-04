@@ -215,7 +215,7 @@ class ExperimentConfiguration(abc.ABC):
             if not os.path.exists(self._experiment_directory):
                 os.makedirs(self._experiment_directory)
 
-    def train(self, force=False):
+    def train(self, force=False): #(self, model_ID, force=False)
         """
         Build the model with the experiment configuration represented by this object
 
@@ -226,7 +226,11 @@ class ExperimentConfiguration(abc.ABC):
         force: bool
             Force training even if Pickle regressor file is present
         """
+        #Remove
+        #self.model_ID = model_ID
+        #self._logger.info("Training model "+str(model_ID))
         regressor_path = os.path.join(self._experiment_directory, 'regressor.pickle')
+
         # Fault tolerance mechanism for interrupted runs
         if not force and os.path.exists(regressor_path):
             try:
@@ -251,11 +255,13 @@ class ExperimentConfiguration(abc.ABC):
         """
         self._stop_file_logger()
 
+        """
         print("(train) Wrapped:")
         print(self._regression_inputs.__str__())
 
         print("(train) Get x_columns:")
         print(str(self.get_x_columns()))
+        """
 
         trained_regressor = regressor.Regressor(self._campaign_configuration,self.get_regressor(),self.get_x_columns(),None)
         with open(regressor_path, 'wb') as f:
@@ -527,7 +533,7 @@ class ExperimentConfiguration(abc.ABC):
 
     def print_model(self):
         """
-        Print the representation of the generated model, or just the model name if if not overridden by the subclass
+        Print the representation of the generated model, or just the model name if not overridden by the subclass
 
         This is not a pure virtual method since not all the subclasses implement it
         """
