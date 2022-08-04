@@ -186,7 +186,9 @@ class ModelBuilding:
             print(exp._wrapped_experiment_configuration.print_model())
         """
 
-        #HOTFIX: Wrapper-wrapped synchronization
+        #HOTFIX: Wrapper-wrapped synchronization, needed since they are (or look so) synchronized during training, but got
+        #        out-of-synch from this moment on. In particular, it looks like wrapped x_columns of every expconf are
+        #        modified by each set_x_column() call, since they all take the value of the last set configuration
         for exp in expconfs:
             if hasattr(exp, '_wrapped_experiment_configuration'):
                 exp._wrapped_experiment_configuration._regression_inputs = exp._regression_inputs
