@@ -22,7 +22,7 @@ import mlxtend.feature_selection
 import numpy as np
 import pandas as pd
 import sklearn
-from sklearn.metrics import mean_absolute_percentage_error, r2_score, make_scorer
+from sklearn.metrics import r2_score, make_scorer
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.pyll import scope
 import os

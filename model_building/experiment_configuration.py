@@ -24,7 +24,7 @@ from enum import Enum
 
 import numpy as np
 import matplotlib
-from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score
 
 matplotlib.use('Agg')
 # pylint: disable=wrong-import-position
@@ -53,6 +53,11 @@ enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST:
                                Technique.SVR: 'SVR', Technique.NNLS: 'NNLS',
                                Technique.STEPWISE: 'Stepwise'}
 
+
+def mean_absolute_percentage_error(y_true, y_pred):
+    epsilon = np.finfo(np.float64).eps
+    mape = np.abs(y_pred - y_true) / np.maximum(np.abs(y_true), epsilon)
+    return np.average(mape, axis=0)
 
 
 class ExperimentConfiguration(abc.ABC):
