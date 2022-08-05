@@ -20,7 +20,6 @@ import os
 import pickle
 import sys
 import pandas as pd
-from sklearn.metrics import mean_absolute_percentage_error
 
 import custom_logger
 import sequence_data_processing

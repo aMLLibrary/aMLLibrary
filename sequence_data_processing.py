@@ -30,8 +30,6 @@ import shutil
 import sys
 import time
 
-from sklearn.metrics import mean_absolute_percentage_error
-
 import custom_logger
 import data_preparation.column_selection
 import data_preparation.data_check
