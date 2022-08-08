@@ -232,14 +232,19 @@ class ExperimentConfiguration(abc.ABC):
         regressor_path = os.path.join(self._experiment_directory, 'regressor.pickle')
 
         # Fault tolerance mechanism for interrupted runs
+
+        #Remove
+        print("Retrieved "+str(self.get_signature)+" and setting it to trained")
+
+
         if not force and os.path.exists(regressor_path):
             try:
                 with open(regressor_path, 'rb') as f:
                     regressor_obj = pickle.load(f)
                     self.set_regressor(regressor_obj.get_regressor())
                     self.set_x_columns(regressor_obj.get_x_columns())
-                self.trained = True
-                return
+                    self.trained = True
+                    return
             except EOFError:
                 # Run was interrupted in the middle of writing the regressor to file: we restart the experiment
                 pass

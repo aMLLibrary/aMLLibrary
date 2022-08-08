@@ -216,6 +216,9 @@ class Results:
                 # First experiment for this fold+technique or better than the current best
                 if technique not in run_fold_tec_best_conf[run][fold] or conf.mapes["hp_selection"] < run_fold_tec_best_conf[run][fold][technique].mapes["hp_selection"]:
                     run_fold_tec_best_conf[run][fold][technique] = conf
+                    with open("home/nahuel/Documents/aml-library/log.txt", 'w') as f:
+                        f.write("Adding "+str(conf)+" to run_tec_best_conf for run "+str(run))
+                        f.write('\n')
 
             # Aggregate different folds (only the value of the metrics)
             run_tec_set = recursivedict()

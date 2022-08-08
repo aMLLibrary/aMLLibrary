@@ -35,7 +35,8 @@ def main():
     Checks that interrupting the tests performed by fault_tolerance_slave.py is fault tolerant
     """
     parser = argparse.ArgumentParser(description="Performs fault tolerance tests")
-    parser.add_argument('-t', "--timeout", help="Time elapsed between interruptions (in seconds)", type=float, default=10)
+    parser.add_argument('-t', "--timeout", help="time elapsed between interruptions (in seconds)", type=float, default=10)
+    parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="output_fault_tolerance")
     args = parser.parse_args()
 
     # getting the name of the directory
@@ -46,9 +47,13 @@ def main():
     # where the current directory is present.
     parent = os.path.dirname(current)
 
-    output_dir = os.path.join(parent,'output_fault_tolerance')
+    if os.path.exists(args.output):
+        output_dir = args.output
+    else:
+        output_dir = os.path.join(parent,args.output)
+
     done_file_flag = os.path.join(output_dir,'done')
-    command = "python3 '"+os.path.join(current,'fault_tolerance_slave.py')+"'"
+    command = "python3 '"+os.path.join(current,'fault_tolerance_slave.py')+"' -o '"+output_dir+"'"
 
     if os.path.exists(done_file_flag):
         print(output_dir+" already exists with a complete run. Deleting and starting anew...")
@@ -58,6 +63,7 @@ def main():
     elif os.path.exists(output_dir):
         print(output_dir+" already exists. Restarting from where we left...")
         time.sleep(3)
+
 
 
     start = timer()

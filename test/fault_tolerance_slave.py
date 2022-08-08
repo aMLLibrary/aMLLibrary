@@ -101,7 +101,7 @@ def main():
     done_file_flag = os.path.join(args.output, 'done')
 
     try:
-        os.mkdir(args.output)
+        os.makedirs(args.output)
     except FileExistsError:
         if os.path.exists(done_file_flag):
             print(args.output+" already exists. Terminating the program...")
@@ -114,7 +114,7 @@ def main():
         sequence_data_processor.process()
 
     except Exception as e:
-        print("Exception '",e,"'raised","\nFault tolerance failed", sep=' ')
+        print("Exception ",e," raised","\nFault tolerance failed", sep=' ')
         sys.exit(1)
 
     # Create success flag file

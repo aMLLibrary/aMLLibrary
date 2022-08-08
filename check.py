@@ -1,15 +1,10 @@
-from model_building.predictor import Predictor
+import os
+import sys
+import argparse
 
-for technique in ['LRRidge','DecisionTree']:
-	print(technique)
-	model_path = '/home/nahuel/Documents/aml-library/a-MLLibrary/output/'+technique+'.pickle'
-	obj = Predictor(regressor_file=model_path)
-	try:
-		print("External: "+str(obj._regressor._x_columns))
-	except:
-		print('_x_columns not found')
-	
-	try:
-		print("Internal: "+str(obj._regressor.get_regressor().aml_features),end='\n\n')
-	except:
-		print('aml_features not found',end='\n\n')
+parser = argparse.ArgumentParser(description="Performs fault tolerance tests")
+parser.add_argument('-t', "--timeout", help="time elapsed between interruptions (in seconds)", type=float, default=10)
+parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="output_fault_tolerance")
+args = parser.parse_args()
+
+print(args)
