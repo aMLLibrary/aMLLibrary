@@ -216,9 +216,6 @@ class Results:
                 # First experiment for this fold+technique or better than the current best
                 if technique not in run_fold_tec_best_conf[run][fold] or conf.mapes["hp_selection"] < run_fold_tec_best_conf[run][fold][technique].mapes["hp_selection"]:
                     run_fold_tec_best_conf[run][fold][technique] = conf
-                    with open("home/nahuel/Documents/aml-library/log.txt", 'w') as f:
-                        f.write("Adding "+str(conf)+" to run_tec_best_conf for run "+str(run))
-                        f.write('\n')
 
             # Aggregate different folds (only the value of the metrics)
             run_tec_set = recursivedict()
@@ -269,7 +266,18 @@ class Results:
             run_tec_conf_set = recursivedict()
 
             # Hyperparameter search aggregating over folders
+
+            #Remove
+            with open("/home/nahuel/Documents/aml-library/log.txt", 'a') as f:
+                f.write("Aggregating")
+                f.write('\n')
+
             for conf in self._exp_confs:
+
+                #Remove
+                with open("/home/nahuel/Documents/aml-library/log.txt", 'a') as f:
+                    f.write("conf: "+str(conf)[:50]+" with trained: "+str(conf.trained))
+                    f.write('\n')
 
                 if not conf.trained:
                     continue
@@ -289,10 +297,33 @@ class Results:
 
             # Select the best configuration for each technique across different folders
             run_tec_best_conf = recursivedict()
+
+            #Remove
+            with open("/home/nahuel/Documents/aml-library/log.txt", 'a') as f:
+                f.write("run_tec_conf_set: "+str(run_tec_conf_set))
+                f.write('\n')
+
             for run in run_tec_conf_set:
                 for tec in run_tec_conf_set[run]:
+
+                    #Remove
+                    with open("/home/nahuel/Documents/aml-library/log.txt", 'a') as f:
+                        f.write("Considering "+str(tec))
+
                     for conf in run_tec_conf_set[run][tec]:
+
+                        #Remove
+                        with open("/home/nahuel/Documents/aml-library/log.txt", 'a') as f:
+                            f.write(" with conf "+str(conf))
+                            f.write('\n')
+
                         if tec not in run_tec_best_conf[run] or run_tec_conf_set[run][tec][conf]["hp_selection"] < run_tec_best_conf[run][tec][1]["hp_selection"]:
+
+                            #Remove
+                            with open("/home/nahuel/Documents/aml-library/log.txt", 'a') as f:
+                                f.write("Adding "+str(tec))
+                                f.write('\n')
+
                             run_tec_best_conf[run][tec] = (conf, run_tec_conf_set[run][tec][conf])
 
             # Print results for each run

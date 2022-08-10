@@ -185,4 +185,4 @@ class Regressor:
         """
         Return the internal x_columns"
         """
-        return copy.deepcopy(self.x_columns)
+        return copy.deepcopy(self._x_columns)

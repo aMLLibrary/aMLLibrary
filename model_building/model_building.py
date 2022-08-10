@@ -119,10 +119,6 @@ class ModelBuilding:
 
         assert expconfs
 
-        #Remove
-        #model_ID = 0
-
-
         if processes_number == 1:
             self._logger.info("-->Run experiments (sequentially)")
             for exp in tqdm.tqdm(expconfs, dynamic_ncols=True):
@@ -132,8 +128,7 @@ class ModelBuilding:
                     exp.train()
                 else:
                     try:
-                        exp.train() #(model_ID=model_ID)
-                        #model_ID += 1
+                        exp.train() 
                     except KeyboardInterrupt as ki:
                         raise ki
                     except:
@@ -191,6 +186,11 @@ class ModelBuilding:
         #        modified by each set_x_column() call, since they all take the value of the last set configuration
         for exp in expconfs:
             if hasattr(exp, '_wrapped_experiment_configuration'):
+                """
+                with open("/home/nahuel/Documents/aml-library/log.txt", 'a') as f, open(os.path.join(exp._experiment_directory, 'regressor.pickle'), 'rb') as v:
+                    reg = pickle.load(v)
+                    f.write("Internal: "+str(exp._wrapped_experiment_configuration._regression_inputs.x_columns)+"\nExternal: "+str(exp._regression_inputs.x_columns)+"\nSaved: "+str(reg.get_x_columns())+"\n\n")
+                """
                 exp._wrapped_experiment_configuration._regression_inputs = exp._regression_inputs
 
         results = re.Results(campaign_configuration, expconfs)
@@ -222,6 +222,7 @@ class ModelBuilding:
             best_conf = best_confs[technique]
             # Get information about the used x_columns
             all_data.x_columns = best_conf.get_x_columns() #get_regressor().aml_features
+            self._logger.info("-->Ok 0")
 
             if 'normalization' in campaign_configuration['DataPreparation'] and campaign_configuration['DataPreparation']['normalization']:
                 # Restore non-normalized columns
@@ -246,9 +247,13 @@ class ModelBuilding:
             # Set training set as the whole dataframe
             best_conf.set_training_data(all_data)
 
+            self._logger.info("-->Ok 1")
+
             # Train and evaluate by several metrics
             best_conf.train(force=True)
+            self._logger.info("-->Ok 2")
             best_conf.evaluate()
+            self._logger.info("-->Ok 3")
 
             self._logger.addHandler(file_handler)
             self._logger.info("Validation metrics on full dataset for %s:", technique)

@@ -70,6 +70,12 @@ def main():
     i = 0
     while not(os.path.exists(done_file_flag)):
         print("\n\nFault tolerance test: iteration",i+1, sep=' ',end='\n\n')
+
+        #Remove
+        with open("/home/nahuel/Documents/aml-library/log.txt", 'a') as f:
+            f.write("Iteration "+str(i+1))
+            f.write("\n")
+
         with Popen(command, shell=True, stdout=PIPE, preexec_fn=os.setsid, universal_newlines=True) as process:
             try:
                 #CAUTION: timeout should be longer than the maximum time needed to train a model

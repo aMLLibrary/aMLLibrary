@@ -234,17 +234,24 @@ class ExperimentConfiguration(abc.ABC):
         # Fault tolerance mechanism for interrupted runs
 
         #Remove
-        print("Retrieved "+str(self.get_signature)+" and setting it to trained")
+        """
+        with open("/home/nahuel/Documents/aml-library/log.txt", 'a') as f:
+            f.write("Retrieved "+str(self._campaign_configuration)+" with force: "+str(force)+", os.path.exists(regressor_path): "+str(os.path.exists(regressor_path)))
+            f.write("\n")
+        """
 
 
         if not force and os.path.exists(regressor_path):
             try:
-                with open(regressor_path, 'rb') as f:
-                    regressor_obj = pickle.load(f)
-                    self.set_regressor(regressor_obj.get_regressor())
-                    self.set_x_columns(regressor_obj.get_x_columns())
-                    self.trained = True
-                    return
+                with open(regressor_path, 'rb') as f, open("/home/nahuel/Documents/aml-library/log.txt", 'a') as v:
+                    regressor_obj = pickle.load(f) #keep
+                    #v.write("Loaded\n")
+                    self.set_regressor(regressor_obj.get_regressor()) #keep
+                    #v.write("set regressor\n")
+                    self.set_x_columns(regressor_obj.get_x_columns()) #keep
+                    v.write("set x_columns\n")
+                    self.trained = True #keep
+                return
             except EOFError:
                 # Run was interrupted in the middle of writing the regressor to file: we restart the experiment
                 pass
