@@ -29,8 +29,6 @@ import model_building.generators_factory as gf
 import regressor
 import results as re
 
-from pprint import pprint
-
 
 class ModelBuilding:
     """
@@ -142,55 +140,11 @@ class ModelBuilding:
 
         self._logger.info("-->Collecting results")
 
-        #Remove
-        """
-        for exp in expconfs:
-            pprint(exp.__dict__)
-        """
-
-        #Remove
-        """
-        print("\n\nPrima di creare results")
-        for exp in expconfs:
-            print(exp.model_ID)
-            
-            print("Wrapper:")
-            print(exp._regression_inputs.__str__())
-
-            print("Wrapped:")
-            print(exp._wrapped_experiment_configuration._regression_inputs.__str__())
-
-            print("Get x_columns:")
-            print(str(exp.get_x_columns()))
-
-            print(exp._wrapped_experiment_configuration.print_model())
-
-            exp._wrapped_experiment_configuration._regression_inputs = exp._regression_inputs
-
-            print("\nAggiornamento!")
-
-            print("Wrapper:")
-            print(exp._regression_inputs.__str__())
-
-            print("Wrapped:")
-            print(exp._wrapped_experiment_configuration._regression_inputs.__str__())
-
-            print("Get x_columns:")
-            print(str(exp.get_x_columns()))
-
-            print(exp._wrapped_experiment_configuration.print_model())
-        """
-
         #HOTFIX: Wrapper-wrapped synchronization, needed since they are (or look so) synchronized during training, but got
         #        out-of-synch from this moment on. In particular, it looks like wrapped x_columns of every expconf are
         #        modified by each set_x_column() call, since they all take the value of the last set configuration
         for exp in expconfs:
             if hasattr(exp, '_wrapped_experiment_configuration'):
-                """
-                with open("/home/nahuel/Documents/aml-library/log.txt", 'a') as f, open(os.path.join(exp._experiment_directory, 'regressor.pickle'), 'rb') as v:
-                    reg = pickle.load(v)
-                    f.write("Internal: "+str(exp._wrapped_experiment_configuration._regression_inputs.x_columns)+"\nExternal: "+str(exp._regression_inputs.x_columns)+"\nSaved: "+str(reg.get_x_columns())+"\n\n")
-                """
                 exp._wrapped_experiment_configuration._regression_inputs = exp._regression_inputs
 
         results = re.Results(campaign_configuration, expconfs)
@@ -222,7 +176,6 @@ class ModelBuilding:
             best_conf = best_confs[technique]
             # Get information about the used x_columns
             all_data.x_columns = best_conf.get_x_columns() #get_regressor().aml_features
-            self._logger.info("-->Ok 0")
 
             if 'normalization' in campaign_configuration['DataPreparation'] and campaign_configuration['DataPreparation']['normalization']:
                 # Restore non-normalized columns
@@ -239,7 +192,7 @@ class ModelBuilding:
 
             if 'save_training_regressors' in campaign_configuration['General'] and campaign_configuration['General']['save_training_regressors']:
                 # Build the regressor trained on the train set only
-                training_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), regression_inputs.scalers)
+                training_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), regression_inputs.scalers, best_conf._wrapped_experiment_configuration._hyperparameters)
                 pickle_training_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + "_training.pickle")
                 with open(pickle_training_file_name, "wb") as pickle_file:
                     pickle.dump(training_regressor, pickle_file, protocol=4)
@@ -247,13 +200,12 @@ class ModelBuilding:
             # Set training set as the whole dataframe
             best_conf.set_training_data(all_data)
 
-            self._logger.info("-->Ok 1")
-
             # Train and evaluate by several metrics
-            best_conf.train(force=True)
-            self._logger.info("-->Ok 2")
+            if hasattr(best_conf, '_wrapped_experiment_configuration'): #feature selection is not performed again on the final model, but the found features and hypers are used
+                best_conf._wrapped_experiment_configuration.train(force=True)
+            else:
+                best_conf.train(force=True)
             best_conf.evaluate()
-            self._logger.info("-->Ok 3")
 
             self._logger.addHandler(file_handler)
             self._logger.info("Validation metrics on full dataset for %s:", technique)
@@ -265,7 +217,7 @@ class ModelBuilding:
             self._logger.removeHandler(file_handler)
 
             # Build the regressor with all data
-            best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)
+            best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers, best_conf._wrapped_experiment_configuration._hyperparameters)
             pickle_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + ".pickle")
             with open(pickle_file_name, "wb") as pickle_file:
                 pickle.dump(best_regressors[technique], pickle_file, protocol=4)

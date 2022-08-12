@@ -1,6 +1,7 @@
 """
 Copyright 2019 Marco Lattuada
 Copyright 2021 Bruno Guindani
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -75,7 +76,7 @@ class ExperimentConfiguration(abc.ABC):
     ----------
     _campaign_configuration: dict of str: dict of str: str
         The set of options specified by the user though command line and campaign configuration files
-
+    
     hyperparameters: dict of str: object
         The combination of hyperparameters of this experiment configuration (key is the name of the hyperparameter, value is the value in this configuration)
 
@@ -226,31 +227,20 @@ class ExperimentConfiguration(abc.ABC):
         force: bool
             Force training even if Pickle regressor file is present
         """
-        #Remove
-        #self.model_ID = model_ID
-        #self._logger.info("Training model "+str(model_ID))
         regressor_path = os.path.join(self._experiment_directory, 'regressor.pickle')
 
         # Fault tolerance mechanism for interrupted runs
-
-        #Remove
-        """
-        with open("/home/nahuel/Documents/aml-library/log.txt", 'a') as f:
-            f.write("Retrieved "+str(self._campaign_configuration)+" with force: "+str(force)+", os.path.exists(regressor_path): "+str(os.path.exists(regressor_path)))
-            f.write("\n")
-        """
-
-
-        if not force and os.path.exists(regressor_path):
+        if os.path.exists(regressor_path):
             try:
-                with open(regressor_path, 'rb') as f, open("/home/nahuel/Documents/aml-library/log.txt", 'a') as v:
+                with open(regressor_path, 'rb') as f:
                     regressor_obj = pickle.load(f) #keep
-                    #v.write("Loaded\n")
-                    self.set_regressor(regressor_obj.get_regressor()) #keep
-                    #v.write("set regressor\n")
-                    self.set_x_columns(regressor_obj.get_x_columns()) #keep
-                    v.write("set x_columns\n")
-                    self.trained = True #keep
+                    if force: #re-training the model requires keeping the same hyperparameters previously found
+                        self._hyperparameters = regressor_obj.get_hypers()
+                    else:
+                        self.set_regressor(regressor_obj.get_regressor())
+                        self.set_x_columns(regressor_obj.get_x_columns())
+                        self._hyperparameters = regressor_obj.get_hypers() #possibly not needed
+                        self.trained = True
                 return
             except EOFError:
                 # Run was interrupted in the middle of writing the regressor to file: we restart the experiment
@@ -267,15 +257,7 @@ class ExperimentConfiguration(abc.ABC):
         """
         self._stop_file_logger()
 
-        """
-        print("(train) Wrapped:")
-        print(self._regression_inputs.__str__())
-
-        print("(train) Get x_columns:")
-        print(str(self.get_x_columns()))
-        """
-
-        trained_regressor = regressor.Regressor(self._campaign_configuration,self.get_regressor(),self.get_x_columns(),None)
+        trained_regressor = regressor.Regressor(self._campaign_configuration,self.get_regressor(),self.get_x_columns(),None,self.get_hyperparameters())
         with open(regressor_path, 'wb') as f:
             pickle.dump(trained_regressor, f)
 

@@ -30,6 +30,7 @@ from hyperopt_aml.hyperopt.pyll import scope
 import os
 import sys
 import pickle
+import copy
 
 import model_building.experiment_configuration as ec
 
@@ -46,6 +47,9 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
     ----------
     _wrapped_experiment_configuration : ExperimentConfiguration
         The regressor to be used in conjunction with sequential feature selection
+
+    _wrapped_regressor : Regressor
+        The regressor object of the wrapped experiment configuration
 
     Methods
     -------
@@ -69,6 +73,9 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
 
     set_x_columns()
         Set the columns to be used in the regression
+
+    get_hyperparameters()
+        Return the values of the hyperparameters associated with this experiment configuration
     """
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         """
@@ -130,7 +137,7 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
         reg: regressor object
             the regressor to be set in this (wrapped) experiment configuration
         """
-        self._wrapped_regressor = reg #WAIT: ._wrapped_regressor? Penso sia da documentare sopra (in caso, TODO)
+        self._wrapped_regressor = reg
         self._wrapped_experiment_configuration._regressor = reg
 
     def get_default_parameters(self):
@@ -179,6 +186,15 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
 
         #self._logger.info("Get x_columns:")
         #self._logger.info(str(self.get_x_columns()))
+
+    def get_hyperparameters(self):
+        """
+        Return
+        ------
+        dict of str: object
+            The hyperparameters associated with this experiment
+        """
+        return copy.deepcopy(self._wrapped_experiment_configuration._hyperparameters)
 
 
 
@@ -268,30 +284,10 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         -------
             The values predicted by the associated regressor
         """
-        
-        
-        #TODO: cancellami
-        correct_xdata, ydata = self._regression_inputs.get_xy_data(rows)
-
-
-        xdata, ydata = self._regression_inputs.get_xy_data(rows) #self._wrapped_experiment_configuration._regression_inputs.get_xy_data(rows)
-        features = self.get_x_columns() #self.get_regressor().aml_features
-        """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
-        correct_xdata = xdata
         features = self.get_x_columns()
-        """
-
-        #TODO: cancellami
-        """
-        with open('output/log.txt', 'a') as f:
-            #f.write("\nModel "+str(self.model_ID))
-            f.write("\n   --> Features selezionate da "+str(self._wrapped_experiment_configuration.print_model()))
-            f.write("\n   --> get_x_columns: "+str(features)+"\n   --> xdata.columns: "+str(list(xdata.columns))+"\n   --> correct xdata.columns: "+str(list(correct_xdata.columns)))
-        """
-            
-
-        filtered_xdata = xdata #xdata[features]
+        
+        filtered_xdata = xdata
         ret = self.get_regressor().predict(filtered_xdata)
         self._logger.debug("Using regressor on %s: %s vs %s", str(filtered_xdata), str(ydata), str(ret))
 
@@ -639,6 +635,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         """
         if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
             SFSExperimentConfiguration._train(self)
+            self._logger.info("Hyperopt already run")
             return
         self._wrapped_regressor = self.get_regressor()
         # Read parameter priors
@@ -713,21 +710,8 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         self._hyperopt_trained = True
         self._wrapped_experiment_configuration._hyperparameters = subsets_best_hyperparams[idx_best]
         self._logger.debug("Selected features: %s", str(best_features))
-
-
-
-
-        self.set_x_columns(best_features) #era self., ora super().super()
-
-
-
-
-        #self.get_regressor().aml_features = best_features
+        self.set_x_columns(best_features)
         self.get_regressor().fit(X_train[best_features], y_train)
-
-
-        #self._logger.info("_train di HyperoptSFS:")
-        #self._logger.info(str(self._wrapped_experiment_configuration.print_model()))
 
     def compute_estimations(self, rows):
         """

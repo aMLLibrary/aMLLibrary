@@ -124,12 +124,5 @@ class RegressionInputs:
         """
         xdata = self._get_data(rows, self.x_columns)
         ydata = self._get_data(rows, self.y_column)
-
-        #TODO: cancellami
-        try:
-            assert list(xdata.columns) == self.x_columns
-        except:
-            print("---> get_xy_data error! <---")
-            print("xdata.columns:",xdata.columns,"\nself.x_columns:",self.x_columns, sep=" ")
-
+        
         return xdata, ydata

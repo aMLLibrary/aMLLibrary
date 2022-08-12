@@ -1,5 +1,6 @@
 """
 Copyright 2019 Marco Lattuada
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -48,6 +49,10 @@ class Regressor:
     _logger
         The internal logger
 
+    _hypers
+        The set of hyperparameters: used only to guarantee fault tolerance (i.e. they are saved along with
+        the actual _regressor and placed in the right place upon loading)
+
     Methods
     -------
     predict()
@@ -56,7 +61,7 @@ class Regressor:
     get_regressor()
         Return the regressor associated with this experiment configuration
     """
-    def __init__(self, campaign_configuration, regressor, x_cols, scalers):
+    def __init__(self, campaign_configuration, regressor, x_cols, scalers, hypers):
         """
         Parameters
         regressor
@@ -73,6 +78,7 @@ class Regressor:
         self._x_columns = x_cols
         self._scalers = scalers
         self._logger = custom_logger.getLogger(__name__)
+        self._hypers = hypers
 
     def __getstate__(self):
         """
@@ -186,3 +192,9 @@ class Regressor:
         Return the internal x_columns"
         """
         return copy.deepcopy(self._x_columns)
+
+    def get_hypers(self):
+        """
+        Return the internal hyperparameters"
+        """
+        return copy.deepcopy(self._hypers)
