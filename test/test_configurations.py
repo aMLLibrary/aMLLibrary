@@ -19,6 +19,7 @@ import argparse
 import os
 import subprocess
 import sys
+import traceback
 
 import time
 import shutil
@@ -259,6 +260,7 @@ def main():
                 sequence_data_processor.process()
         except Exception as e:
             print("Exception",e,"raised", sep=' ')
+            print(traceback.format_exc())
             outcomes.append(str(test_name)+" failed with exception "+str(e))
         else:
             outcomes.append(str(test_name)+" successfully run")
