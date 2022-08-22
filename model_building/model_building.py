@@ -192,7 +192,11 @@ class ModelBuilding:
 
             if 'save_training_regressors' in campaign_configuration['General'] and campaign_configuration['General']['save_training_regressors']:
                 # Build the regressor trained on the train set only
-                training_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), regression_inputs.scalers, best_conf._wrapped_experiment_configuration._hyperparameters)
+                if hasattr(best_conf, '_wrapped_experiment_configuration'):
+                    training_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), regression_inputs.scalers, best_conf._wrapped_experiment_configuration._hyperparameters)
+                else:
+                    training_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), regression_inputs.scalers, best_conf._hyperparameters)
+                
                 pickle_training_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + "_training.pickle")
                 with open(pickle_training_file_name, "wb") as pickle_file:
                     pickle.dump(training_regressor, pickle_file, protocol=4)
@@ -217,7 +221,11 @@ class ModelBuilding:
             self._logger.removeHandler(file_handler)
 
             # Build the regressor with all data
-            best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers, best_conf._wrapped_experiment_configuration._hyperparameters)
+            if hasattr(best_conf, '_wrapped_experiment_configuration'):
+                    best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers, best_conf._wrapped_experiment_configuration._hyperparameters)
+            else:
+                best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers, best_conf._hyperparameters)
+
             pickle_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + ".pickle")
             with open(pickle_file_name, "wb") as pickle_file:
                 pickle.dump(best_regressors[technique], pickle_file, protocol=4)
