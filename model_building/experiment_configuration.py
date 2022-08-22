@@ -171,6 +171,9 @@ class ExperimentConfiguration(abc.ABC):
 
     set_training_data()
         Set the training data overwriting current ones
+
+    is_wrapper()
+        Return whether this object has a wrapped experiment configuration
     """
 
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):

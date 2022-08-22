@@ -60,6 +60,12 @@ class Regressor:
 
     get_regressor()
         Return the regressor associated with this experiment configuration
+
+    get_x_columns()
+        Return the columns used by the regressor
+
+    get_hypers()
+        Return the hyperparameters used by the regressor (especially when optimised with hyperopt)
     """
     def __init__(self, campaign_configuration, regressor, x_cols, scalers, hypers):
         """
@@ -82,7 +88,7 @@ class Regressor:
 
     def __getstate__(self):
         """
-        Auxilixiary function used by pickle. Overridden to avoid problems with logger lock
+        Auxiliary function used by pickle. Overridden to avoid problems with logger lock
         """
         temp_d = self.__dict__.copy()
         if '_logger' in temp_d:
@@ -183,18 +189,18 @@ class Regressor:
 
     def get_regressor(self):
         """
-        Return the internal regressor"
+        Return the internal regressor
         """
         return self._regressor
 
     def get_x_columns(self):
         """
-        Return the internal x_columns"
+        Return the internal x_columns
         """
         return copy.deepcopy(self._x_columns)
 
     def get_hypers(self):
         """
-        Return the internal hyperparameters"
+        Return the internal hyperparameters
         """
         return copy.deepcopy(self._hypers)

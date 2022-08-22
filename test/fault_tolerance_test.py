@@ -79,7 +79,6 @@ def main():
                 output = process.communicate()[0]
             else:
                 print(output)
-                sys.exit(1)
         i += 1
     print("Fault tolerance test passed in",timer()-start, sep=' ')
 
