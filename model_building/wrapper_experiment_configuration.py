@@ -156,14 +156,7 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
             the columns used in the regression
         """
         x_cols = super().get_x_columns() #self._wrapped_experiment_configuration.get_x_columns()
-        """
-        try:
-            assert self._wrapped_experiment_configuration.get_x_columns() == super().get_x_columns()
-        except:
-            super().set_x_columns(x_cols)
-        """
         return x_cols
-        #return super().get_x_columns()
 
     def set_x_columns(self, x_cols):
         """
@@ -174,18 +167,8 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
         x_cols: list of str
             the columns to be used in the regression
         """
-        #self._logger.info("Setto: "+str(x_cols))
-
         super().set_x_columns(x_cols)
-        #self._logger.info("Wrapper:")
-        #self._logger.info(self._regression_inputs.__str__())
-
-        #self._logger.info("Wrapped:")
         self._wrapped_experiment_configuration.set_x_columns(x_cols)
-        #self._logger.info(self._wrapped_experiment_configuration._regression_inputs.__str__())
-
-        #self._logger.info("Get x_columns:")
-        #self._logger.info(str(self.get_x_columns()))
 
     def get_hyperparameters(self):
         """
@@ -268,7 +251,6 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         filtered_xdata = self._sfs.transform(xdata)  # is an np.array
         filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_cols)
         self.set_x_columns(x_cols)
-        #self.get_regressor().aml_features = x_cols
         self.get_regressor().fit(filtered_xdata, ydata)
 
     def compute_estimations(self, rows):
@@ -297,7 +279,6 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         """
         Print the representation of the generated model
         """
-        #return "".join(("Features selected with SFS: ", str(self.get_regressor().aml_features), "\n",
         return "".join(("Features selected with SFS: ", str(self.get_x_columns()), "\n",
                         self._wrapped_experiment_configuration.print_model()))
 
@@ -456,7 +437,6 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         self._wrapped_experiment_configuration._regressor = self._wrapped_regressor
         self._wrapped_experiment_configuration._hyperparameters = best_param
         self._wrapped_experiment_configuration._train()
-        #self.get_regressor().aml_features = self.get_x_columns()
 
     def compute_estimations(self, rows):
         """

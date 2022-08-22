@@ -534,3 +534,6 @@ class ExperimentConfiguration(abc.ABC):
         Set the training set of this experiment configuration
         """
         self._regression_inputs = new_training_data
+
+    def is_wrapper(self):
+        return hasattr(self, '_wrapped_experiment_configuration')

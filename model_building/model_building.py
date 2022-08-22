@@ -144,7 +144,7 @@ class ModelBuilding:
         #        out-of-synch from this moment on. In particular, it looks like wrapped x_columns of every expconf are
         #        modified by each set_x_column() call, since they all take the value of the last set configuration
         for exp in expconfs:
-            if hasattr(exp, '_wrapped_experiment_configuration'):
+            if exp.is_wrapper():
                 exp._wrapped_experiment_configuration._regression_inputs = exp._regression_inputs
 
         results = re.Results(campaign_configuration, expconfs)
@@ -192,10 +192,8 @@ class ModelBuilding:
 
             if 'save_training_regressors' in campaign_configuration['General'] and campaign_configuration['General']['save_training_regressors']:
                 # Build the regressor trained on the train set only
-                if hasattr(best_conf, '_wrapped_experiment_configuration'):
-                    training_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), regression_inputs.scalers, best_conf._wrapped_experiment_configuration._hyperparameters)
-                else:
-                    training_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), regression_inputs.scalers, best_conf._hyperparameters)
+                hypers = best_conf._wrapped_experiment_configuration._hyperparameters if best_conf.is_wrapper() else best_conf._hyperparameters
+                training_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), regression_inputs.scalers, hypers)
                 
                 pickle_training_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + "_training.pickle")
                 with open(pickle_training_file_name, "wb") as pickle_file:
@@ -205,7 +203,7 @@ class ModelBuilding:
             best_conf.set_training_data(all_data)
 
             # Train and evaluate by several metrics
-            if hasattr(best_conf, '_wrapped_experiment_configuration'): #feature selection is not performed again on the final model, but the found features and hypers are used
+            if best_conf.is_wrapper(): #feature selection is not performed again on the final model, but the found features and hypers are used
                 best_conf._wrapped_experiment_configuration.train(force=True)
             else:
                 best_conf.train(force=True)
@@ -221,10 +219,8 @@ class ModelBuilding:
             self._logger.removeHandler(file_handler)
 
             # Build the regressor with all data
-            if hasattr(best_conf, '_wrapped_experiment_configuration'):
-                    best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers, best_conf._wrapped_experiment_configuration._hyperparameters)
-            else:
-                best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers, best_conf._hyperparameters)
+            hypers = best_conf._wrapped_experiment_configuration._hyperparameters if best_conf.is_wrapper() else best_conf._hyperparameters
+            best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers, hypers)
 
             pickle_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + ".pickle")
             with open(pickle_file_name, "wb") as pickle_file:
