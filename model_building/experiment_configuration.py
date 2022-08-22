@@ -76,7 +76,7 @@ class ExperimentConfiguration(abc.ABC):
     ----------
     _campaign_configuration: dict of str: dict of str: str
         The set of options specified by the user though command line and campaign configuration files
-    
+
     hyperparameters: dict of str: object
         The combination of hyperparameters of this experiment configuration (key is the name of the hyperparameter, value is the value in this configuration)
 
@@ -216,7 +216,7 @@ class ExperimentConfiguration(abc.ABC):
             if not os.path.exists(self._experiment_directory):
                 os.makedirs(self._experiment_directory)
 
-    def train(self, force=False): #(self, model_ID, force=False)
+    def train(self, force=False):
         """
         Build the model with the experiment configuration represented by this object
 
@@ -234,13 +234,13 @@ class ExperimentConfiguration(abc.ABC):
             try:
                 with open(regressor_path, 'rb') as f:
                     regressor_obj = pickle.load(f) #keep
-                    if force: #re-training the model requires keeping the same hyperparameters previously found
-                        self._hyperparameters = regressor_obj.get_hypers()
-                    else:
-                        self.set_regressor(regressor_obj.get_regressor())
-                        self.set_x_columns(regressor_obj.get_x_columns())
-                        self._hyperparameters = regressor_obj.get_hypers() #possibly not needed
-                        self.trained = True
+                if force: #re-training the model requires keeping the same hyperparameters previously found
+                    self._hyperparameters = regressor_obj.get_hypers()
+                else:
+                    self.set_regressor(regressor_obj.get_regressor())
+                    self.set_x_columns(regressor_obj.get_x_columns())
+                    self._hyperparameters = regressor_obj.get_hypers() #possibly not needed
+                    self.trained = True
                 return
             except EOFError:
                 # Run was interrupted in the middle of writing the regressor to file: we restart the experiment
@@ -251,10 +251,6 @@ class ExperimentConfiguration(abc.ABC):
             warnings.simplefilter("ignore")
             self._train()
         self.trained = True
-        """
-        if self._regressor and not hasattr(self._regressor, 'aml_features'):
-            self._regressor.aml_features = self.get_x_columns()
-        """
         self._stop_file_logger()
 
         trained_regressor = regressor.Regressor(self._campaign_configuration,self.get_regressor(),self.get_x_columns(),None,self.get_hyperparameters())

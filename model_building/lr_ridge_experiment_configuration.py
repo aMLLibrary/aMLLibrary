@@ -98,30 +98,13 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         ret_string = initial_string
         coefficients = self._regressor.coef_
 
-        #TODO: togli il try-except, lascia solo l'assert
-        try:
-            assert len(self.get_x_columns()) == len(coefficients) #len(self._regressor.aml_features) == len(coefficients)
-        except:
-            print("Assertion error:",str(self.get_x_columns()),str(coefficients),sep=" ")
-            #sys.exit(1)
-
-
+        assert len(self.get_x_columns()) == len(coefficients) #len(self._regressor.aml_features) == len(coefficients)
 
         # Show coefficients in order of decresing absolute value
         idxs = np.argsort(np.abs(coefficients))[::-1]
-        """
-        print("Print model")
-        print(idxs)
-        print(str(self.get_x_columns()))
-        print(self._regression_inputs.__str__(),'\n')
-        """
 
         for i in idxs:
-            try:
-                column = self.get_x_columns()[i] #self._regressor.aml_features[i]
-            except Exception as e:
-                print(e)
-                continue
+            column = self.get_x_columns()[i]
             coefficient = coefficients[i]
             ret_string += " + " if ret_string != initial_string else "   "
             coeff = str(round(coefficient, 3))
