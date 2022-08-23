@@ -155,7 +155,7 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
         list of str:
             the columns used in the regression
         """
-        x_cols = super().get_x_columns() #self._wrapped_experiment_configuration.get_x_columns()
+        x_cols = super().get_x_columns()
         return x_cols
 
     def set_x_columns(self, x_cols):
@@ -613,9 +613,9 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
 
         This method manually implements Feature Selection in order for it to work with Hyperopt parameter optimization
         """
-        if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
+        if self._hyperopt_trained:  # do not run Hyperopt again for the same exp_conf
+            self._logger.debug("Hyperopt already run, thus performing SFS training only")
             SFSExperimentConfiguration._train(self)
-            self._logger.info("Hyperopt already run")
             return
         self._wrapped_regressor = self.get_regressor()
         # Read parameter priors
