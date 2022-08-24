@@ -49,6 +49,7 @@ import data_preparation.row_selection
 import data_preparation.xgboost_feature_selection
 
 import model_building.model_building
+import regressor
 
 
 class SequenceDataProcessing:

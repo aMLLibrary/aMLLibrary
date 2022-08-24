@@ -124,4 +124,5 @@ class RegressionInputs:
         """
         xdata = self._get_data(rows, self.x_columns)
         ydata = self._get_data(rows, self.y_column)
+        
         return xdata, ydata

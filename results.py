@@ -98,6 +98,7 @@ class Results:
         Collect the data of all the performed experiments
         """
         exp_conf: ec.ExperimentConfiguration
+        
         processes_number = self._campaign_configuration['General']['j']
         if processes_number == 1:
             self._logger.info("-->Evaluate experiments (sequentially)")
@@ -255,7 +256,6 @@ class Results:
 
             # Hyperparameter search aggregating over folders
             for conf in self._exp_confs:
-
                 if not conf.trained:
                     continue
                 run = int(conf.get_signature()[0].replace("run_", ""))

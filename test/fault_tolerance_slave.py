@@ -18,6 +18,7 @@ limitations under the License.
 import argparse
 import os
 import sys
+import traceback
 
 # getting the name of the directory
 # where the this file is present.
@@ -101,7 +102,7 @@ def main():
     done_file_flag = os.path.join(args.output, 'done')
 
     try:
-        os.mkdir(args.output)
+        os.makedirs(args.output)
     except FileExistsError:
         if os.path.exists(done_file_flag):
             print(args.output+" already exists. Terminating the program...")
@@ -114,7 +115,9 @@ def main():
         sequence_data_processor.process()
 
     except Exception as e:
-        print("Exception '",e,"'raised","\nFault tolerance failed", sep=' ')
+        print("Exception ",e," raised", sep=' ')
+        print(traceback.format_exc())
+        print("\nFault tolerance failed")
         sys.exit(1)
 
     # Create success flag file

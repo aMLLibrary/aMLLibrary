@@ -1,6 +1,7 @@
 """
 Copyright 2019 Marco Lattuada
 Copyright 2021 Bruno Guindani
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,6 +27,8 @@ import warnings
 import numpy as np
 import matplotlib
 from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error, r2_score
+
+import regressor
 
 matplotlib.use('Agg')
 # pylint: disable=wrong-import-position
@@ -168,6 +171,9 @@ class ExperimentConfiguration(abc.ABC):
 
     set_training_data()
         Set the training data overwriting current ones
+
+    is_wrapper()
+        Return whether this object has a wrapped experiment configuration
     """
 
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
@@ -225,12 +231,19 @@ class ExperimentConfiguration(abc.ABC):
             Force training even if Pickle regressor file is present
         """
         regressor_path = os.path.join(self._experiment_directory, 'regressor.pickle')
+
         # Fault tolerance mechanism for interrupted runs
-        if not force and os.path.exists(regressor_path):
+        if os.path.exists(regressor_path):
             try:
                 with open(regressor_path, 'rb') as f:
-                    self.set_regressor(pickle.load(f))
-                self.trained = True
+                    regressor_obj = pickle.load(f) #keep
+                if force: #re-training the model requires keeping the same hyperparameters previously found
+                    self._hyperparameters = regressor_obj.get_hypers()
+                else:
+                    self.set_regressor(regressor_obj.get_regressor())
+                    self.set_x_columns(regressor_obj.get_x_columns())
+                    self._hyperparameters = regressor_obj.get_hypers() #possibly not needed
+                    self.trained = True
                 return
             except EOFError:
                 # Run was interrupted in the middle of writing the regressor to file: we restart the experiment
@@ -241,11 +254,11 @@ class ExperimentConfiguration(abc.ABC):
             warnings.simplefilter("ignore")
             self._train()
         self.trained = True
-        if self._regressor and not hasattr(self._regressor, 'aml_features'):
-            self._regressor.aml_features = self.get_x_columns()
         self._stop_file_logger()
+
+        trained_regressor = regressor.Regressor(self._campaign_configuration,self.get_regressor(),self.get_x_columns(),None,self.get_hyperparameters())
         with open(regressor_path, 'wb') as f:
-            pickle.dump(self.get_regressor(), f)
+            pickle.dump(trained_regressor, f)
 
     @abc.abstractmethod
     def _train(self):
@@ -516,7 +529,7 @@ class ExperimentConfiguration(abc.ABC):
 
     def print_model(self):
         """
-        Print the representation of the generated model, or just the model name if if not overridden by the subclass
+        Print the representation of the generated model, or just the model name if not overridden by the subclass
 
         This is not a pure virtual method since not all the subclasses implement it
         """
@@ -527,3 +540,6 @@ class ExperimentConfiguration(abc.ABC):
         Set the training set of this experiment configuration
         """
         self._regression_inputs = new_training_data
+
+    def is_wrapper(self):
+        return hasattr(self, '_wrapped_experiment_configuration')

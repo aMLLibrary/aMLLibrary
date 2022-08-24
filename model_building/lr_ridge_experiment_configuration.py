@@ -14,7 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
+import sys
 import numpy as np
 import sklearn.linear_model as lr
 
@@ -97,12 +97,15 @@ class LRRidgeExperimentConfiguration(ec.ExperimentConfiguration):
         initial_string = "LRRidge coefficients:\n"
         ret_string = initial_string
         coefficients = self._regressor.coef_
-        assert len(self._regressor.aml_features) == len(coefficients)
+        columns = self.get_x_columns()
+
+        assert len(columns) == len(coefficients)
+
         # Show coefficients in order of decresing absolute value
         idxs = np.argsort(np.abs(coefficients))[::-1]
         signif_digits = 4
         for i in idxs:
-            column = self._regressor.aml_features[i]
+            column = columns[i]
             coefficient = coefficients[i]
             ret_string += " + " if ret_string != initial_string else "   "
             coeff = str(round(coefficient, signif_digits))

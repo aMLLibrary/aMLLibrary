@@ -116,6 +116,7 @@ class ModelBuilding:
         self._logger.info("<--")
 
         assert expconfs
+
         if processes_number == 1:
             self._logger.info("Run experiments (sequentially)")
             for exp in tqdm.tqdm(expconfs, dynamic_ncols=True):
@@ -136,6 +137,13 @@ class ModelBuilding:
                 expconfs = list(tqdm.tqdm(pool.imap(self._process_wrapper, expconfs), total=len(expconfs)))
 
         self._logger.info("---Collecting results")
+
+        #HOTFIX: Wrapper-wrapped synchronization, needed since they are synchronized during training (or look so), but 
+        #        get out-of-synch from this moment on. In particular, it looks like wrapped x_columns of every expconf 
+        #        are modified by each set_x_column() call, since they all take the value of the last set configuration
+        for exp in expconfs:
+            if exp.is_wrapper():
+                exp._wrapped_experiment_configuration._regression_inputs = exp._regression_inputs
 
         results = re.Results(campaign_configuration, expconfs)
         results.collect_data()
@@ -169,7 +177,7 @@ class ModelBuilding:
         for technique in best_confs:
             best_conf = best_confs[technique]
             # Get information about the used x_columns
-            all_data.x_columns = best_conf.get_regressor().aml_features
+            all_data.x_columns = best_conf.get_x_columns()
 
             if 'normalization' in campaign_configuration['DataPreparation'] and campaign_configuration['DataPreparation']['normalization']:
                 # Restore non-normalized columns
@@ -186,7 +194,9 @@ class ModelBuilding:
 
             if 'save_training_regressors' in campaign_configuration['General'] and campaign_configuration['General']['save_training_regressors']:
                 # Build the regressor trained on the train set only
-                training_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), regression_inputs.scalers)
+                hypers = best_conf._wrapped_experiment_configuration._hyperparameters if best_conf.is_wrapper() else best_conf._hyperparameters
+                training_regressor = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), regression_inputs.scalers, hypers)
+                
                 pickle_training_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + "_training.pickle")
                 with open(pickle_training_file_name, "wb") as pickle_file:
                     pickle.dump(training_regressor, pickle_file, protocol=4)
@@ -195,14 +205,19 @@ class ModelBuilding:
             best_conf.set_training_data(all_data)
 
             # Train and evaluate by several metrics
-            best_conf.train(force=True)
+            if best_conf.is_wrapper(): #feature selection is not performed again on the final model, but the found features and hypers are used
+                best_conf._wrapped_experiment_configuration.train(force=True)
+            else:
+                best_conf.train(force=True)
             best_conf.evaluate()
 
             printed_name = str(technique).ljust(padding)
             self._logger.info("---%s: MAPE %f - RMSE %f - R^2 %f", printed_name, best_conf.mapes["validation"], best_conf.rmses["validation"], best_conf.r2s["validation"])
 
             # Build the regressor with all data
-            best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers)
+            hypers = best_conf._wrapped_experiment_configuration._hyperparameters if best_conf.is_wrapper() else best_conf._hyperparameters
+            best_regressors[technique] = regressor.Regressor(campaign_configuration, best_conf.get_regressor(), best_conf.get_x_columns(), all_data.scalers, hypers)
+
             pickle_file_name = os.path.join(campaign_configuration['General']['output'], ec.enum_to_configuration_label[technique] + ".pickle")
             with open(pickle_file_name, "wb") as pickle_file:
                 pickle.dump(best_regressors[technique], pickle_file, protocol=4)
