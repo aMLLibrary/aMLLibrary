@@ -1,6 +1,7 @@
 """
 Copyright 2019 Marco Lattuada
 Copyright 2021 Bruno Guindani
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -198,7 +199,7 @@ class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
             new_prefix = prefix.copy()
             new_prefix.append(key)
             assert new_prefix
-            return_list.extend(generator.generate_experiment_configurations(new_prefix, regression_inputs))
+            return_list.extend(generator.generate_experiment_configurations(new_prefix, regression_inputs.copy()))
 
         assert return_list
         self._logger.debug("<--")
@@ -206,7 +207,7 @@ class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
 
     def __deepcopy__(self, memo):
         campaign_configuration, seed, generators = self._get_deep_copy_parameters()
-        return MultiTechniquesExpConfsGenerator(campaign_configuration, seed, generators)
+        return MultiTechniquesExpConfsGenerator(campaign_configuration, seed, copy.deepcopy(generators))
 
 
 class TechniqueExpConfsGenerator(ExpConfsGenerator):
@@ -286,25 +287,25 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
 
             if self._technique == ec.Technique.LR_RIDGE:
                 point = lr.LRRidgeExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
-                                                          regression_inputs, prefix)
+                                                          regression_inputs.copy(), prefix)
             elif self._technique == ec.Technique.XGBOOST:
                 point = xgb.XGBoostExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
-                                                           regression_inputs, prefix)
+                                                           regression_inputs.copy(), prefix)
             elif self._technique == ec.Technique.DT:
                 point = dt.DecisionTreeExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
-                                                               regression_inputs, prefix)
+                                                               regression_inputs.copy(), prefix)
             elif self._technique == ec.Technique.RF:
                 point = rf.RandomForestExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
-                                                               regression_inputs, prefix)
+                                                               regression_inputs.copy(), prefix)
             elif self._technique == ec.Technique.SVR:
                 point = svr.SVRExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
-                                                       regression_inputs, prefix)
+                                                       regression_inputs.copy(), prefix)
             elif self._technique == ec.Technique.NNLS:
                 point = nnls.NNLSExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
-                                                         regression_inputs, prefix)
+                                                         regression_inputs.copy(), prefix)
             elif self._technique == ec.Technique.STEPWISE:
                 point = sw.StepwiseExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
-                                                           regression_inputs, prefix)
+                                                           regression_inputs.copy(), prefix)
             else:
                 self._logger.error("Not supported regression technique")
                 sys.exit(-1)
@@ -390,7 +391,8 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
             new_prefix = prefix.copy()
             new_prefix.append(key)
             self._logger.debug("-->Generating experiments for run %s", str(key))
-            return_list.extend(generator.generate_experiment_configurations(new_prefix, regression_inputs))
+
+            return_list.extend(generator.generate_experiment_configurations(new_prefix, regression_inputs.copy()))
             self._logger.debug("<--")
 
         assert return_list
@@ -660,7 +662,7 @@ class AllExpConfsGenerator(SelectionValidationExpConfsGenerator):
         self._logger.debug("-->Generating experiments by AllExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("All")
-        local_regression_inputs = copy.copy(regression_inputs)
+        local_regression_inputs = regression_inputs.copy()
 
         if self._is_validation:
             local_regression_inputs.inputs_split["validation"] = local_regression_inputs.inputs_split["training"].copy()
@@ -727,7 +729,7 @@ class ExtrapolationExpConfsGenerator(SelectionValidationExpConfsGenerator):
         self._logger.debug("-->Generating experiments by ExtrapolationExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("Extrapolation")
-        local_regression_inputs = copy.copy(regression_inputs)
+        local_regression_inputs = regression_inputs.copy()
 
         assert self._is_validation
         # Do nothing: validation set has already been built by the pre-processing step
@@ -792,7 +794,7 @@ class InterpolationExpConfsGenerator(SelectionValidationExpConfsGenerator):
         self._logger.debug("-->Generating experiments by InterpolationExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("Interpolation")
-        local_regression_inputs = copy.copy(regression_inputs)
+        local_regression_inputs = regression_inputs.copy()
 
         assert self._is_validation
         # Do nothing: validation set has already been built by the pre-processing step
@@ -956,7 +958,7 @@ class KFoldExpConfsGenerator(SelectionValidationExpConfsGenerator):
             assert fold_prefix
             fold_prefix.append("f" + str(fold))
             assert fold_prefix
-            fold_regression_inputs = copy.copy(regression_inputs)
+            fold_regression_inputs = regression_inputs.copy()
 
             if fold == self._k - 1:
                 fold_testing_idx = remaining
@@ -1024,7 +1026,7 @@ class NormalizationExpConfsGenerator(ExpConfsGenerator):
         """
         self._logger.debug("-->Generating experiments by NormalizationExpConfsGenerator")
         normalizer = data_preparation.normalization.Normalization(self._campaign_configuration)
-        local_regression_inputs = copy.copy(regression_inputs)
+        local_regression_inputs = regression_inputs.copy()
         local_regression_inputs = normalizer.process(local_regression_inputs)
         ret_list = self._wrapped_generator.generate_experiment_configurations(prefix, local_regression_inputs)
         self._logger.debug("<--")
@@ -1150,10 +1152,10 @@ class SFSExpConfsGenerator(ExpConfsGenerator):
             a list of the experiment configurations to be evaluated
         """
         self._logger.debug("-->Generating experiments by SFSExpConfsGenerator")
-        internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
+        internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs.copy())
         ret_list = []
         for wrapped_point in internal_list:
-            ret_list.append(wec.SFSExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
+            ret_list.append(wec.SFSExperimentConfiguration(self._campaign_configuration, regression_inputs.copy(), prefix, wrapped_point))
         self._logger.debug("<--")
         return ret_list
 
@@ -1211,7 +1213,7 @@ class HyperoptExpConfsGenerator(ExpConfsGenerator):
             a list of the experiment configurations to be evaluated
         """
         self._logger.debug("-->Generating experiments by HyperoptExpConfsGenerator")
-        internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
+        internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs.copy())
         ret_list = []
         for wrapped_point in internal_list:
             ret_list.append(wec.HyperoptExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
@@ -1270,7 +1272,7 @@ class HyperoptSFSExpConfsGenerator(ExpConfsGenerator):
             a list of the experiment configurations to be evaluated
         """
         self._logger.debug("-->Generating experiments by HyperoptSFSExpConfsGenerator")
-        internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
+        internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs.copy())
         ret_list = []
         for wrapped_point in internal_list:
             ret_list.append(wec.HyperoptSFSExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))

@@ -133,7 +133,7 @@ class SequenceDataProcessing:
             # Read configuration from the argument dict
             self.input_configuration_file = None
             self._campaign_configuration = input_configuration
-            general_args = {'output': output, 'seed': seed, 'j': j, 'debug': debug,
+            general_args = {'output': output, 'j': j, 'debug': debug,
                             'generate_plots': generate_plots, 'details': details
                            }
             self._campaign_configuration['General'].update(general_args)
