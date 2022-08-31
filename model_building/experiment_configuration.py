@@ -194,7 +194,7 @@ class ExperimentConfiguration(abc.ABC):
         # Initialized attributes
         self._campaign_configuration = campaign_configuration
         self._hyperparameters = hyperparameters
-        self._regression_inputs = regression_inputs
+        self._regression_inputs = regression_inputs.copy()
         self._signature = self._compute_signature(prefix)
         self._logger = custom_logger.getLogger(self.get_signature_string())
         self.mapes = {}

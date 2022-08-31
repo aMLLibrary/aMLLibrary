@@ -145,16 +145,11 @@ class ModelBuilding:
 
         self._logger.info("---Collecting results")
 
-        #HOTFIX: Wrapper-wrapped synchronization, needed since they are synchronized during training (or look so), but 
-        #        get out-of-synch from this moment on. In particular, it looks like wrapped x_columns of every expconf 
-        #        are modified by each set_x_column() call, since they all take the value of the last set configuration
-        #UPDATE: No longer needed, but messages are left here for debug
         self._logger.debug("After training, features look like:")
         for exp in expconfs:
             self._logger.debug("\nWrapper: "+str(exp.get_x_columns()))
             if exp.is_wrapper():
                 self._logger.debug("Wrapped: "+str(exp._wrapped_experiment_configuration.get_x_columns()))
-                #exp._wrapped_experiment_configuration._regression_inputs = exp._regression_inputs #old hotfix
 
         results = re.Results(campaign_configuration, expconfs)
         results.collect_data()
