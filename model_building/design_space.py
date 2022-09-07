@@ -662,7 +662,7 @@ class AllExpConfsGenerator(SelectionValidationExpConfsGenerator):
         self._logger.debug("-->Generating experiments by AllExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("All")
-        local_regression_inputs = regression_inputs
+        local_regression_inputs = regression_inputs.copy()
 
         if self._is_validation:
             local_regression_inputs.inputs_split["validation"] = local_regression_inputs.inputs_split["training"].copy()
@@ -729,7 +729,7 @@ class ExtrapolationExpConfsGenerator(SelectionValidationExpConfsGenerator):
         self._logger.debug("-->Generating experiments by ExtrapolationExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("Extrapolation")
-        local_regression_inputs = regression_inputs
+        local_regression_inputs = regression_inputs.copy()
 
         assert self._is_validation
         # Do nothing: validation set has already been built by the pre-processing step
@@ -794,7 +794,7 @@ class InterpolationExpConfsGenerator(SelectionValidationExpConfsGenerator):
         self._logger.debug("-->Generating experiments by InterpolationExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("Interpolation")
-        local_regression_inputs = regression_inputs
+        local_regression_inputs = regression_inputs.copy()
 
         assert self._is_validation
         # Do nothing: validation set has already been built by the pre-processing step
@@ -859,7 +859,7 @@ class HoldOutExpConfsGenerator(SelectionValidationExpConfsGenerator):
         self._logger.debug("-->Generating experiments by HoldOutExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("HoldOut")
-        local_regression_inputs = regression_inputs
+        local_regression_inputs = regression_inputs.copy()
         destination_set = "validation" if self._is_validation else "hp_selection"
         splitter = data_preparation.random_splitting.RandomSplitting(self._campaign_configuration,
                                                                      self._random_generator.random(), "training",
@@ -958,7 +958,7 @@ class KFoldExpConfsGenerator(SelectionValidationExpConfsGenerator):
             assert fold_prefix
             fold_prefix.append("f" + str(fold))
             assert fold_prefix
-            fold_regression_inputs = regression_inputs
+            fold_regression_inputs = regression_inputs.copy()
 
             if fold == self._k - 1:
                 fold_testing_idx = remaining
@@ -1026,7 +1026,7 @@ class NormalizationExpConfsGenerator(ExpConfsGenerator):
         """
         self._logger.debug("-->Generating experiments by NormalizationExpConfsGenerator")
         normalizer = data_preparation.normalization.Normalization(self._campaign_configuration)
-        local_regression_inputs = regression_inputs
+        local_regression_inputs = regression_inputs.copy()
         local_regression_inputs = normalizer.process(local_regression_inputs)
         ret_list = self._wrapped_generator.generate_experiment_configurations(prefix, local_regression_inputs)
         self._logger.debug("<--")

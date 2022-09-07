@@ -168,20 +168,21 @@ class ModelBuilding:
         self._logger.info("Building the final regressors")
         self._logger.removeHandler(file_handler)
 
-        # Create a shadow copy
-        all_data = regression_inputs.copy()
-
-        # Set all sets equal to whole input set
-        all_data.inputs_split["training"] = all_data.inputs_split["all"]
-        all_data.inputs_split["validation"] = all_data.inputs_split["all"]
-        all_data.inputs_split["hp_selection"] = all_data.inputs_split["all"]
-
         self._logger.addHandler(file_handler)
         self._logger.info("Validation metrics on full dataset for all techniques:")
         padding = max([len(str(t)) for t in best_confs])
 
         for technique in best_confs:
+            # Create a shadow copy
+            all_data = regression_inputs.copy()
+
+            # Set all sets equal to whole input set
+            all_data.inputs_split["training"] = all_data.inputs_split["all"]
+            all_data.inputs_split["validation"] = all_data.inputs_split["all"]
+            all_data.inputs_split["hp_selection"] = all_data.inputs_split["all"]
+
             best_conf = best_confs[technique]
+
             # Get information about the used x_columns
             all_data.x_columns = best_conf.get_x_columns()
 
@@ -211,11 +212,14 @@ class ModelBuilding:
             best_conf.set_training_data(all_data)
 
             # Train and evaluate by several metrics
-            if best_conf.is_wrapper(): #feature selection is not performed again on the final model, but the found features and hypers are used
-                best_conf._wrapped_experiment_configuration.train(force=True)
-            else:
-                best_conf.train(force=True)
+            best_conf.train(force=True)
             best_conf.evaluate()
+
+            self._logger.debug("After final training of "+str(technique)+", features look like:")
+            for exp in expconfs:
+                self._logger.debug("\nWrapper: "+str(exp.get_x_columns()))
+                if exp.is_wrapper():
+                    self._logger.debug("Wrapped: "+str(exp._wrapped_experiment_configuration.get_x_columns()))
 
             printed_name = str(technique).ljust(padding)
             self._logger.info("---%s: MAPE %f - RMSE %f - R^2 %f", printed_name, best_conf.mapes["validation"], best_conf.rmses["validation"], best_conf.r2s["validation"])

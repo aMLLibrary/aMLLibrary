@@ -236,7 +236,7 @@ class ExperimentConfiguration(abc.ABC):
         if os.path.exists(regressor_path):
             try:
                 with open(regressor_path, 'rb') as f:
-                    regressor_obj = pickle.load(f) #keep
+                    regressor_obj = pickle.load(f)
                 if force: #re-training the model requires keeping the same hyperparameters previously found
                     self._hyperparameters = regressor_obj.get_hypers()
                 else:
@@ -244,7 +244,7 @@ class ExperimentConfiguration(abc.ABC):
                     self.set_x_columns(regressor_obj.get_x_columns())
                     self._hyperparameters = regressor_obj.get_hypers() #possibly not needed
                     self.trained = True
-                return
+                    return
             except EOFError:
                 # Run was interrupted in the middle of writing the regressor to file: we restart the experiment
                 pass
