@@ -221,6 +221,7 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
 
         """
         super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
+        self._sfs_trained = False
         self._check_num_features()
 
     def _check_num_features(self):
@@ -236,6 +237,10 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         """
         Build the model with the experiment configuration represented by this object
         """
+        if self._sfs_trained:  # do not run SFS again for the same exp.conf.
+            self._logger.debug("SFS already run, thus performing model training only")
+            self._wrapped_experiment_configuration._train()
+            return
         verbose = 2 if self._campaign_configuration['General']['debug'] else 0
         self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
@@ -252,6 +257,7 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_cols)
         self.set_x_columns(x_cols)
         self.get_regressor().fit(filtered_xdata, ydata)
+        self._sfs_trained = True
 
     def compute_estimations(self, rows):
         """
@@ -420,6 +426,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
+            self._logger.debug("Hyperopt already run, thus performing model training only")
             self._wrapped_experiment_configuration._train()
             return
         self._wrapped_regressor = self.get_regressor()
@@ -551,6 +558,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
 
         """
         super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
+        self._sfs_trained = False
         SFSExperimentConfiguration._check_num_features(self)
 
     def _get_standard_evaluator(self, scorer):
@@ -599,6 +607,8 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         """
         Print the representation of the generated model
         """
+        assert self.get_x_columns() == self._wrapped_experiment_configuration.get_x_columns()
+
         hypers = self._wrapped_experiment_configuration._hyperparameters.copy()
         for key in hypers:
             if isinstance(hypers[key], float):
@@ -688,6 +698,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         best_features = subsets_best_features[idx_best]
         self._wrapped_experiment_configuration._regressor = subsets_best_models[idx_best]
         self._hyperopt_trained = True
+        self._sfs_trained = True
         self._wrapped_experiment_configuration._hyperparameters = subsets_best_hyperparams[idx_best]
         self._logger.debug("Selected features: %s", str(best_features))
         self.set_x_columns(best_features)

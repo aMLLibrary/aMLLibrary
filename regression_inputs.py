@@ -1,5 +1,6 @@
 """
 Copyright 2019 Marco Lattuada
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -51,6 +52,12 @@ class RegressionInputs:
 
     get_xy_data()
         Generates the two pandas data frame with x_columns and y
+
+    copy()
+        Returns a copy of this object
+
+    __copy__()
+        Hidden method that actually performs the copy
 
     """
     def __init__(self, data, inputs_split, x_cols, y_column):
