@@ -238,6 +238,7 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         if self._sfs_trained:  # do not run SFS again for the same exp.conf.
+            self._logger.debug("SFS already run, thus performing model training only")
             self._wrapped_experiment_configuration._train()
             return
         verbose = 2 if self._campaign_configuration['General']['debug'] else 0
@@ -425,6 +426,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
+            self._logger.debug("Hyperopt already run, thus performing model training only")
             self._wrapped_experiment_configuration._train()
             return
         self._wrapped_regressor = self.get_regressor()
@@ -622,6 +624,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         This method manually implements Feature Selection in order for it to work with Hyperopt parameter optimization
         """
         if self._hyperopt_trained:  # do not run Hyperopt again for the same exp_conf
+            self._logger.debug("Hyperopt already run, thus performing SFS training only")
             SFSExperimentConfiguration._train(self)
             return
         self._wrapped_regressor = self.get_regressor()
