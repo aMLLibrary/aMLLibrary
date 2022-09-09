@@ -2,6 +2,7 @@
 Copyright 2019 Marco Lattuada
 Copyright 2019 Danilo Ardagna
 Copyright 2021 Bruno Guindani
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -143,7 +144,7 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         if not getattr(self, '_hyperparameters', None):
             self._regressor = xgb.XGBRegressor()
         else:
-            self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', n_jobs=1)
+            self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', nthread=1, n_jobs=1)
 
     def get_default_parameters(self):
         """

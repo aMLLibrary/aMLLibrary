@@ -2,6 +2,7 @@
 Copyright 2019 Marco Lattuada
 Copyright 2019 Danilo Ardagna
 Copyright 2021 Bruno Guindani
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,6 +16,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import copy
 
 import sklearn.svm as svm
 
@@ -38,6 +40,9 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
 
     get_default_parameters()
         Get a dictionary with all technique parameters with default values
+
+    repair_hyperparameters()
+        Repair and return hyperparameter values which cause the regressor to raise errors
     """
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
         """
@@ -108,3 +113,22 @@ class SVRExperimentConfiguration(ec.ExperimentConfiguration):
                 'gamma': 1e-7,
                 'kernel': 'linear',
                 'degree': 2}
+
+    def repair_hyperparameters(self, hypers):
+        """
+        Repair and return hyperparameter values which cause the regressor to raise errors
+
+        Parameters
+        ----------
+        hypers: dict of str: object
+            the hyperparameters to be repaired
+
+        Return
+        ------
+        dict of str: object
+            the repaired hyperparameters
+        """
+        new_hypers = copy.deepcopy(hypers)
+        for key in ['degree']:
+            new_hypers[key] = int(new_hypers[key])
+        return new_hypers
