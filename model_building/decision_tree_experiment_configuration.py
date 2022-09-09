@@ -22,8 +22,6 @@ import sklearn.tree as dt
 
 import model_building.experiment_configuration as ec
 
-import sys
-
 
 class DecisionTreeExperimentConfiguration(ec.ExperimentConfiguration):
     """
