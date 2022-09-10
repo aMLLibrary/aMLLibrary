@@ -134,9 +134,10 @@ class ModelBuilding:
                         self._logger.debug("Wrapper: "+str(exp.get_x_columns()))
                         if exp.is_wrapper():
                             self._logger.debug("Wrapped: "+str(exp._wrapped_experiment_configuration.get_x_columns()))
-                    except KeyboardInterrupt as ki:
+                    except KeyError as ki:
                         raise ki
-                    except:
+                    except Exception as e:
+                        self._logger.debug(str(e))
                         pass
         else:
             self._logger.info("Run experiments (in parallel)")
