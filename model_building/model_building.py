@@ -135,10 +135,15 @@ class ModelBuilding:
                         if exp.is_wrapper():
                             self._logger.debug("Wrapped: "+str(exp._wrapped_experiment_configuration.get_x_columns()))
                     except KeyError as ki:
-                        raise ki
+                        if hasattr(exp, '_sfs'):
+                            if exp._sfs.interrupted_:
+                                print("\nKeyboard interrupt generates a KeyError in mlxtend, thus the following unusual traceback:\n")
+                                raise KeyboardInterrupt
+                        self._logger.debug(str(ki))
+                    except KeyboardInterrupt as key:
+                        raise key
                     except Exception as e:
                         self._logger.debug(str(e))
-                        pass
         else:
             self._logger.info("Run experiments (in parallel)")
             with multiprocessing.Pool(processes_number) as pool:
