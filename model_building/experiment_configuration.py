@@ -219,7 +219,7 @@ class ExperimentConfiguration(abc.ABC):
             if not os.path.exists(self._experiment_directory):
                 os.makedirs(self._experiment_directory)
 
-    def train(self, force=False):
+    def train(self, force=False, parallelism=False):
         """
         Build the model with the experiment configuration represented by this object
 
@@ -230,6 +230,7 @@ class ExperimentConfiguration(abc.ABC):
         force: bool
             Force training even if Pickle regressor file is present
         """
+        self._parallelism = parallelism
         regressor_path = os.path.join(self._experiment_directory, 'regressor.pickle')
 
         # Fault tolerance mechanism for interrupted runs

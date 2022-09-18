@@ -74,15 +74,19 @@ class ModelBuilding:
         """
         if self.debug:
             # Do not use try-except mechanism
-            experiment_configuration.train()
+            experiment_configuration.train(parallelism=True)
         else:
             try:
-                experiment_configuration.train()
-            except KeyboardInterrupt as ki:
-                raise ki
-            except:
-                pass
-        return experiment_configuration
+                experiment_configuration.train(parallelism=True)
+            except KeyError as ki:
+                if hasattr(exp, '_sfs'):
+                    if exp._sfs.interrupted_:
+                        raise KeyboardInterrupt
+                self._logger.debug(str(ki))
+            except KeyboardInterrupt as key:
+                raise key
+            except Exception as e:
+                self._logger.debug(str(e))
 
     def process(self, campaign_configuration, regression_inputs, processes_number):
         """
