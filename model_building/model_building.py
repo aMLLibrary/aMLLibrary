@@ -74,14 +74,13 @@ class ModelBuilding:
         """
         if self.debug:
             # Do not use try-except mechanism
-            experiment_configuration.train(parallelism=True)
+            experiment_configuration.train(disable_model_parallelism=True)
         else:
             try:
-                experiment_configuration.train(parallelism=True)
+                experiment_configuration.train(disable_model_parallelism=True)
             except KeyError as ki:
-                if hasattr(exp, '_sfs'):
-                    if exp._sfs.interrupted_:
-                        raise KeyboardInterrupt
+                if hasattr(exp, '_sfs') and exp._sfs.interrupted_:
+                    raise KeyboardInterrupt
                 self._logger.debug(str(ki))
             except KeyboardInterrupt as key:
                 raise key
@@ -139,8 +138,7 @@ class ModelBuilding:
                         if exp.is_wrapper():
                             self._logger.debug("Wrapped: "+str(exp._wrapped_experiment_configuration.get_x_columns()))
                     except KeyError as ki:
-                        if hasattr(exp, '_sfs'):
-                            if exp._sfs.interrupted_:
+                        if hasattr(exp, '_sfs') and exp._sfs.interrupted_:
                                 print("\nKeyboard interrupt generates a KeyError in mlxtend, thus the following unusual traceback:\n")
                                 raise KeyboardInterrupt
                         self._logger.debug(str(ki))
