@@ -107,6 +107,10 @@ class ExperimentConfiguration(abc.ABC):
     _hyperparameters: dict of str: object
         The hyperparameter values for the technique regressor
 
+    _disable_model_parallelism: bool
+        Signals whether each XGBoost model parallelism is disabled (True, thus disabled, when parallel training of models is enabled from
+        the configuration file, False otherwise)
+
     Methods
     -------
     train()
@@ -219,7 +223,7 @@ class ExperimentConfiguration(abc.ABC):
             if not os.path.exists(self._experiment_directory):
                 os.makedirs(self._experiment_directory)
 
-    def train(self, force=False):
+    def train(self, force=False, disable_model_parallelism=False):
         """
         Build the model with the experiment configuration represented by this object
 
@@ -229,7 +233,15 @@ class ExperimentConfiguration(abc.ABC):
         ----------
         force: bool
             Force training even if Pickle regressor file is present
+
+        disable_model_parallelism: bool
+            Signals whether each XGBoost model parallelism is disabled (True, thus disabled, when parallel training of models is enabled from
+            the configuration file, False otherwise)
         """
+        self._disable_model_parallelism = disable_model_parallelism
+        if self.is_wrapper():
+            self._wrapped_experiment_configuration._disable_model_parallelism = disable_model_parallelism
+        
         regressor_path = os.path.join(self._experiment_directory, 'regressor.pickle')
 
         # Fault tolerance mechanism for interrupted runs

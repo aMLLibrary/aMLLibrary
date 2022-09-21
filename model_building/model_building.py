@@ -74,14 +74,18 @@ class ModelBuilding:
         """
         if self.debug:
             # Do not use try-except mechanism
-            experiment_configuration.train()
+            experiment_configuration.train(disable_model_parallelism=True)
         else:
             try:
-                experiment_configuration.train()
-            except KeyboardInterrupt as ki:
-                raise ki
-            except:
-                pass
+                experiment_configuration.train(disable_model_parallelism=True)
+            except KeyError as ki:
+                if hasattr(experiment_configuration, '_sfs') and experiment_configuration._sfs.interrupted_:
+                    raise KeyboardInterrupt
+                self._logger.debug(str(ki))
+            except KeyboardInterrupt as key:
+                raise key
+            except Exception as e:
+                self._logger.debug(str(e))
         return experiment_configuration
 
     def process(self, campaign_configuration, regression_inputs, processes_number):
@@ -134,10 +138,15 @@ class ModelBuilding:
                         self._logger.debug("Wrapper: "+str(exp.get_x_columns()))
                         if exp.is_wrapper():
                             self._logger.debug("Wrapped: "+str(exp._wrapped_experiment_configuration.get_x_columns()))
-                    except KeyboardInterrupt as ki:
-                        raise ki
-                    except:
-                        pass
+                    except KeyError as ki:
+                        if hasattr(exp, '_sfs') and exp._sfs.interrupted_:
+                                print("\nKeyboard interrupt generates a KeyError in mlxtend, thus the following unusual traceback:\n")
+                                raise KeyboardInterrupt
+                        self._logger.debug(str(ki))
+                    except KeyboardInterrupt as key:
+                        raise key
+                    except Exception as e:
+                        self._logger.debug(str(e))
         else:
             self._logger.info("Run experiments (in parallel)")
             with multiprocessing.Pool(processes_number) as pool:
@@ -252,3 +261,4 @@ class ModelBuilding:
 
         # Return the regressor
         return best_regressors[best_technique]
+
