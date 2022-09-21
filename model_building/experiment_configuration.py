@@ -238,7 +238,7 @@ class ExperimentConfiguration(abc.ABC):
             Signals whether each XGBoost model parallelism is disabled (True, thus disabled, when parallel training of models is enabled from
             the configuration file, False otherwise)
         """
-        self._disable_model_parallelism = True#disable_model_parallelism
+        self._disable_model_parallelism = disable_model_parallelism
         if self.is_wrapper():
             self._wrapped_experiment_configuration._disable_model_parallelism = disable_model_parallelism
         
