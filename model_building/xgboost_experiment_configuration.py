@@ -140,6 +140,8 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
     def initialize_regressor(self):
         """
         Initialize the regressor object for the experiments
+
+        See ExperimentConfiguration class for _disable_model_parallelism
         """
         if not getattr(self, '_hyperparameters', None):
             self._regressor = xgb.XGBRegressor()

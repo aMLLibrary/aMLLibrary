@@ -107,6 +107,10 @@ class ExperimentConfiguration(abc.ABC):
     _hyperparameters: dict of str: object
         The hyperparameter values for the technique regressor
 
+    _disable_model_parallelism: bool
+        Signals whether each XGBoost model parallelism is disabled (True, thus disabled, when parallel training of models is enabled from
+        the configuration file, False otherwise)
+
     Methods
     -------
     train()
