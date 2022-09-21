@@ -627,6 +627,10 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
             self._logger.debug("Hyperopt already run, thus performing SFS training only")
             SFSExperimentConfiguration._train(self)
             return
+        if self._sfs_trained:
+            self._logger.debug("SFS already run, thus performing hyperopt training only")
+            HyperoptExperimentConfiguration._train(self)
+            return
         self._wrapped_regressor = self.get_regressor()
         # Read parameter priors
         prior_dict = self._wrapped_experiment_configuration._hyperparameters
@@ -679,7 +683,16 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
                 candidate_models.append(model)
                 candidate_metrics.append(score)
             # STEP 2b: SELECT BEST CANDIDATE WITH THIS DIM
-            idx_best_candidate = candidates_argbest(candidate_metrics)
+            try:
+                idx_best_candidate = candidates_argbest(candidate_metrics)
+            except Exception as e:
+                print("\n\nE' successo\n\n")
+                print(str(all_features))
+                print(str(selected_features))
+                print(str(remaining_features))
+                print(str(candidate_metrics))
+                print("\n\nSollevo eccezione\n\n")
+                raise e
             # Update selected feature
             selected_features.append(remaining_features[idx_best_candidate])
             # Save best candidate features

@@ -67,7 +67,7 @@ class RegressionInputs:
             The whole dataframe
 
         inputs_split: map of str to list of integers
-            How the input is split. Key is the type of set (e.g., training, cv1, validation), value is the list of rows beloning to that set
+            How the input is split. Key is the type of set (e.g., training, cv1, validation), value is the list of rows belonging to that set
 
         x_cols: list of strings
             The labels of the columns of the data frame to be used to train the model
