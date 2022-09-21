@@ -152,19 +152,13 @@ class ModelBuilding:
             with multiprocessing.Pool(processes_number) as pool:
                 expconfs = list(tqdm.tqdm(pool.imap(self._process_wrapper, expconfs), total=len(expconfs)))
 
-        for exp_conf in expconfs:
-            print("Showing model_building types of expconf")
-            print(type(exp_conf))
-            print("\n\n\n")
-
         self._logger.info("---Collecting results")
 
         self._logger.debug("After training, features look like:")
         for exp in expconfs:
-            pass
-            #self._logger.debug("\nWrapper: "+str(exp.get_x_columns()))
-            #if exp.is_wrapper():
-                #self._logger.debug("Wrapped: "+str(exp._wrapped_experiment_configuration.get_x_columns()))
+            self._logger.debug("\nWrapper: "+str(exp.get_x_columns()))
+            if exp.is_wrapper():
+                self._logger.debug("Wrapped: "+str(exp._wrapped_experiment_configuration.get_x_columns()))
 
         results = re.Results(campaign_configuration, expconfs)
         results.collect_data()
