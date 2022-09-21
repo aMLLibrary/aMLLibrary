@@ -74,12 +74,10 @@ class ModelBuilding:
         """
         if self.debug:
             # Do not use try-except mechanism
-            experiment_configuration.train()#disable_model_parallelism=True)
+            experiment_configuration.train()#force=False,disable_model_parallelism=True)
         else:
-            pass
-            """
             try:
-                experiment_configuration.train()#disable_model_parallelism=True)
+                experiment_configuration.train()#force=False,disable_model_parallelism=True)
             except KeyError as ki:
                 if hasattr(experiment_configuration, '_sfs') and experiment_configuration._sfs.interrupted_:
                     raise KeyboardInterrupt
@@ -88,7 +86,6 @@ class ModelBuilding:
                 raise key
             except Exception as e:
                 self._logger.debug(str(e))
-            """
 
     def process(self, campaign_configuration, regression_inputs, processes_number):
         """
@@ -229,7 +226,7 @@ class ModelBuilding:
             best_conf.set_training_data(all_data)
 
             # Train and evaluate by several metrics
-            best_conf.train(force=True)
+            best_conf.train(force=True)#,disable_model_parallelism=False)
             best_conf.evaluate()
 
             self._logger.debug("After final training of "+str(technique)+", features look like:")
