@@ -79,7 +79,7 @@ class ModelBuilding:
             try:
                 experiment_configuration.train(disable_model_parallelism=True)
             except KeyError as ki:
-                if hasattr(exp, '_sfs') and exp._sfs.interrupted_:
+                if hasattr(experiment_configuration, '_sfs') and experiment_configuration._sfs.interrupted_:
                     raise KeyboardInterrupt
                 self._logger.debug(str(ki))
             except KeyboardInterrupt as key:
@@ -151,13 +151,19 @@ class ModelBuilding:
             with multiprocessing.Pool(processes_number) as pool:
                 expconfs = list(tqdm.tqdm(pool.imap(self._process_wrapper, expconfs), total=len(expconfs)))
 
+        for exp_conf in expconfs:
+            print("Showing model_building types of expconf")
+            print(type(exp_conf))
+            print("\n\n\n")
+
         self._logger.info("---Collecting results")
 
         self._logger.debug("After training, features look like:")
         for exp in expconfs:
-            self._logger.debug("\nWrapper: "+str(exp.get_x_columns()))
-            if exp.is_wrapper():
-                self._logger.debug("Wrapped: "+str(exp._wrapped_experiment_configuration.get_x_columns()))
+            pass
+            #self._logger.debug("\nWrapper: "+str(exp.get_x_columns()))
+            #if exp.is_wrapper():
+                #self._logger.debug("Wrapped: "+str(exp._wrapped_experiment_configuration.get_x_columns()))
 
         results = re.Results(campaign_configuration, expconfs)
         results.collect_data()

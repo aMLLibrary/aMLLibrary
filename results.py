@@ -112,6 +112,12 @@ class Results:
         else:
             self._logger.info("-->Evaluate experiments (in parallel)")
             with multiprocessing.Pool(processes_number) as pool:
+
+                for exp_conf in self._exp_confs:
+                    print("Showing types of expconf")
+                    print(type(exp_conf))
+                    print("\n\n\n")
+
                 self._exp_confs = list(tqdm.tqdm(pool.imap(evaluate_wrapper, self._exp_confs), total=len(self._exp_confs)))
                 if bool(self._campaign_configuration['General']['generate_plots']):
                     self._exp_confs = list(tqdm.tqdm(pool.imap(plot_wrapper, self._exp_confs), total=len(self._exp_confs)))

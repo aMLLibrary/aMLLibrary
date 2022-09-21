@@ -239,6 +239,11 @@ class ExperimentConfiguration(abc.ABC):
             the configuration file, False otherwise)
         """
         self._disable_model_parallelism = disable_model_parallelism
+        if self.is_wrapper():
+            self._wrapped_experiment_configuration._disable_model_parallelism = disable_model_parallelism
+        print("\n\n\n\n\n")
+        print(self._disable_model_parallelism)
+        print("\n\n\n\n\n")
         regressor_path = os.path.join(self._experiment_directory, 'regressor.pickle')
 
         # Fault tolerance mechanism for interrupted runs
@@ -263,6 +268,9 @@ class ExperimentConfiguration(abc.ABC):
             warnings.simplefilter("ignore")
             self._train()
         self.trained = True
+        if self.is_wrapper():
+            print("\n\n\nWrapped trained? "+str(self._wrapped_experiment_configuration.trained)+"\n\n\n")
+            self._wrapped_experiment_configuration.trained = True
         self._stop_file_logger()
 
         trained_regressor = regressor.Regressor(self._campaign_configuration,self.get_regressor(),self.get_x_columns(),None,self.get_hyperparameters())
