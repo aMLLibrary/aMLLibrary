@@ -223,7 +223,7 @@ class ExperimentConfiguration(abc.ABC):
             if not os.path.exists(self._experiment_directory):
                 os.makedirs(self._experiment_directory)
 
-    def train(self, force=False, disable_model_parallelism=False):
+    def train(self, force=False):#, disable_model_parallelism=False):
         """
         Build the model with the experiment configuration represented by this object
 
@@ -238,12 +238,12 @@ class ExperimentConfiguration(abc.ABC):
             Signals whether each XGBoost model parallelism is disabled (True, thus disabled, when parallel training of models is enabled from
             the configuration file, False otherwise)
         """
+        """
         self._disable_model_parallelism = disable_model_parallelism
         if self.is_wrapper():
             self._wrapped_experiment_configuration._disable_model_parallelism = disable_model_parallelism
-        print("\n\n\n\n\n")
-        print(self._disable_model_parallelism)
-        print("\n\n\n\n\n")
+        """
+        
         regressor_path = os.path.join(self._experiment_directory, 'regressor.pickle')
 
         # Fault tolerance mechanism for interrupted runs
@@ -264,13 +264,23 @@ class ExperimentConfiguration(abc.ABC):
                 pass
         self._start_file_logger()
         self.initialize_regressor()
+        """
+        self._logger.debug("\n\n\n\n\n")
+        self._logger.debug("Wrapper:")
+        self._logger.debug(str(self._disable_model_parallelism))
+        self._logger.debug("Wrapped")
+        self._logger.debug(str(self._wrapped_experiment_configuration._disable_model_parallelism))
+        self._logger.debug("\n\n\n\n\n")
+        """
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             self._train()
         self.trained = True
+        """
         if self.is_wrapper():
             print("\n\n\nWrapped trained? "+str(self._wrapped_experiment_configuration.trained)+"\n\n\n")
             self._wrapped_experiment_configuration.trained = True
+        """
         self._stop_file_logger()
 
         trained_regressor = regressor.Regressor(self._campaign_configuration,self.get_regressor(),self.get_x_columns(),None,self.get_hyperparameters())
