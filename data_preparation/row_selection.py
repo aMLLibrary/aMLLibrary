@@ -48,7 +48,7 @@ class RowSelection(data_preparation.data_preparation.DataPreparation):
         """
         Main method of the class which actually performs the filtering
         """
-        data = inputs
+        data = inputs.copy()
         if 'skip_rows' in self._campaign_configuration['DataPreparation']:
             skip_dict = self._campaign_configuration['DataPreparation']['skip_rows']
             for index, row in data.data.iterrows():
@@ -64,7 +64,7 @@ class RowSelection(data_preparation.data_preparation.DataPreparation):
             sys.exit(-1)
 
         data_indexes = data.data.index.values.tolist()
-        data.inputs_split["training"] = data_indexes.copy()
-        data.inputs_split["all"] = data_indexes.copy()
+        inputs.inputs_split["training"] = data_indexes.copy()
+        inputs.inputs_split["all"] = data_indexes.copy()
 
-        return data
+        return inputs

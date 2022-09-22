@@ -683,16 +683,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
                 candidate_models.append(model)
                 candidate_metrics.append(score)
             # STEP 2b: SELECT BEST CANDIDATE WITH THIS DIM
-            try:
-                idx_best_candidate = candidates_argbest(candidate_metrics)
-            except Exception as e:
-                print("\n\nE' successo\n\n")
-                print(str(all_features))
-                print(str(selected_features))
-                print(str(remaining_features))
-                print(str(candidate_metrics))
-                print("\n\nSollevo eccezione\n\n")
-                raise e
+            idx_best_candidate = candidates_argbest(candidate_metrics)
             # Update selected feature
             selected_features.append(remaining_features[idx_best_candidate])
             # Save best candidate features
