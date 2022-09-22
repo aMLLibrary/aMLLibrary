@@ -140,11 +140,18 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
     def initialize_regressor(self):
         """
         Initialize the regressor object for the experiments
+
+        See ExperimentConfiguration class for _disable_model_parallelism
         """
         if not getattr(self, '_hyperparameters', None):
             self._regressor = xgb.XGBRegressor()
         else:
-            self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', nthread=1, n_jobs=1)
+            if self._disable_model_parallelism:
+                self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', nthread=1, n_jobs=1)
+                self._logger.debug("\nSetup model with no parallelism\n")
+            else:
+                self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', n_jobs=1)
+                self._logger.debug("\nSetup model with parallelism\n")
 
     def get_default_parameters(self):
         """

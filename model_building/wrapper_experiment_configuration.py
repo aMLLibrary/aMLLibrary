@@ -250,6 +250,9 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
             self._sfs.k_features = (1,xdata.shape[1])
         # Perform feature selection
         self._sfs.fit(xdata, ydata)
+        if self._sfs.interrupted_:
+            raise KeyboardInterrupt
+
         x_cols = list(self._sfs.k_feature_names_)
         self._logger.debug("Selected features: %s", str(x_cols))
         # Use the selected features to retrain the regressor, after restoring column names
