@@ -85,5 +85,6 @@ class Normalization(dp.DataPreparation):
             normalized_data = data.scalers[column].transform(data_to_be_normalized)
             data.data["original_" + column] = data.data[column]
             data.data[column] = normalized_data
+            data = data.copy()
 
         return data
