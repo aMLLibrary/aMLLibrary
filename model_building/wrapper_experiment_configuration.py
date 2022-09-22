@@ -630,6 +630,10 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
             self._logger.debug("Hyperopt already run, thus performing SFS training only")
             SFSExperimentConfiguration._train(self)
             return
+        if self._sfs_trained:
+            self._logger.debug("SFS already run, thus performing hyperopt training only")
+            HyperoptExperimentConfiguration._train(self)
+            return
         self._wrapped_regressor = self.get_regressor()
         # Read parameter priors
         prior_dict = self._wrapped_experiment_configuration._hyperparameters

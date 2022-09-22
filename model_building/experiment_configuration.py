@@ -251,11 +251,19 @@ class ExperimentConfiguration(abc.ABC):
                     regressor_obj = pickle.load(f)
                 if force: #re-training the model requires keeping the same hyperparameters previously found
                     self._hyperparameters = regressor_obj.get_hypers()
+                    if self.is_wrapper():
+                        self._wrapped_experiment_configuration._hyperparameters = self._hyperparameters
                 else:
                     self.set_regressor(regressor_obj.get_regressor())
                     self.set_x_columns(regressor_obj.get_x_columns())
-                    self._hyperparameters = regressor_obj.get_hypers() #possibly not needed
+                    self._hyperparameters = regressor_obj.get_hypers()
+                    if self.is_wrapper():
+                        self._wrapped_experiment_configuration._hyperparameters = self._hyperparameters
                     self.trained = True
+                    if hasattr(self, '_sfs_trained'):
+                        self._sfs_trained = True
+                    if hasattr(self, '_hyperopt_trained'):
+                        self._hyperopt_trained = True
                     return
             except EOFError:
                 # Run was interrupted in the middle of writing the regressor to file: we restart the experiment
@@ -309,8 +317,8 @@ class ExperimentConfiguration(abc.ABC):
             rows = self._regression_inputs.inputs_split[set_name]
             self._logger.debug("On %s set:", set_name)
             self._logger.debug("-->")
-            predicted_y = self.compute_estimations(rows)
-            real_y = self._regression_inputs.data.loc[rows, self._regression_inputs.y_column].values.astype(np.float64)
+            predicted_y = self.compute_estimations(rows).reshape(-1,1)
+            real_y = self._regression_inputs.data.loc[rows, self._regression_inputs.y_column].values.astype(np.float64).reshape(-1,1)
             if self._regression_inputs.y_column in self._regression_inputs.scalers:
                 y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
                 predicted_y = y_scaler.inverse_transform(predicted_y)
