@@ -49,6 +49,8 @@ class RowSelection(data_preparation.data_preparation.DataPreparation):
         Main method of the class which actually performs the filtering
         """
         data = inputs.copy()
+        indexes = data.data.index.values.tolist()
+        indexes_to_be_removed = []
         if 'skip_rows' in self._campaign_configuration['DataPreparation']:
             skip_dict = self._campaign_configuration['DataPreparation']['skip_rows']
             for index, row in data.data.iterrows():
@@ -58,13 +60,14 @@ class RowSelection(data_preparation.data_preparation.DataPreparation):
                         remove = True
                         break
                 if remove:
-                    data.data.drop(index, inplace=True)
+                    indexes_to_be_removed.append(index)
         else:
-            self._logger.error("Unexpected condition")
-            sys.exit(-1)
+            self._logger.error("Skip rows started but skip_rows parameter could not be found in configuration file")
+            sys.exit(1)
 
-        data_indexes = data.data.index.values.tolist()
-        inputs.inputs_split["training"] = data_indexes.copy()
-        inputs.inputs_split["all"] = data_indexes.copy()
+        s = set(indexes_to_be_removed)
+        data_indexes = [x for x in indexes if x not in s]
+        data.inputs_split["training"] = data_indexes.copy()
+        data.inputs_split["all"] = data_indexes.copy()
 
-        return inputs
+        return data
