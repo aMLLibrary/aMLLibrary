@@ -100,6 +100,7 @@ def main():
     args = parser.parse_args()
 
     done_file_flag = os.path.join(args.output, 'done')
+    success_file_flag = os.path.join(args.output, 'success')
 
     try:
         os.makedirs(args.output)
@@ -118,10 +119,13 @@ def main():
         print("Exception ",e," raised", sep=' ')
         print(traceback.format_exc())
         print("\nFault tolerance failed")
+        # Create termination flag
+        with open(done_file_flag, 'wb') as f:
+            pass
         sys.exit(1)
 
     # Create success flag file
-    with open(done_file_flag, 'wb') as f:
+    with open(success_file_flag, 'wb') as f:
         pass
 
 
