@@ -45,6 +45,7 @@ import data_preparation.rename_columns
 import data_preparation.row_selection
 import data_preparation.xgboost_feature_selection
 
+from model_building.experiment_configuration import mean_absolute_percentage_error
 import model_building.model_building
 
 

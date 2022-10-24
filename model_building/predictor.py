@@ -25,6 +25,7 @@ import custom_logger
 import sequence_data_processing
 import data_preparation.data_loading
 import data_preparation.onehot_encoding
+from model_building.experiment_configuration import mean_absolute_percentage_error
 import model_building.model_building
 
 
