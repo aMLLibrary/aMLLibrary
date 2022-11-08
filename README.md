@@ -70,3 +70,9 @@ In this terminal, you may run the same commands as in a regular terminal, includ
 ## Hyperopt
 This library is integrated with the Hyperopt package for hyperparameter tuning via Bayesian Optimization.
 For more information, please refer to the [`README.md`](example_configurations/README.md#hyperopt) for configuration files.
+
+
+## Acknowledgments
+This library is currently maintained by the LIGATE project, which was partially funded by the European Commission under the Horizon 2020 Grant Agreement number 956137, as part of the European High-Performance Computing (EuroHPC) Joint Undertaking program.
+
+It was previously maintained by the ATMOSPHERE project, which was also funded by the European Union under the Horizon 2020 Cooperation Programme, with Grant Agreement number 777154.
