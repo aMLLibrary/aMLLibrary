@@ -90,6 +90,13 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         regressor_file: str
             Pickle binary file that stores the model to be used for prediction
         """
+        if regressor_file:
+            self.load_regressor(regressor_file)
+
+        # Read configuration from the file indicated by the argument
+        if not os.path.exists(config_file):
+            self._logger.error("%s does not exist", config_file)
+            sys.exit(-1)
 
         # Check if output path already exist
         if os.path.exists(self._output_folder) and os.path.exists(self._done_file_flag):
@@ -156,7 +163,10 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         with open(self._done_file_flag, 'wb') as f:
             pass
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> upstream/master
     def predict_from_df(self, xx, regressor_file=None):
         """
         Performs prediction on a dataframe
