@@ -163,10 +163,6 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         with open(self._done_file_flag, 'wb') as f:
             pass
 
-<<<<<<< HEAD
-
-=======
->>>>>>> upstream/master
     def predict_from_df(self, xx, regressor_file=None):
         """
         Performs prediction on a dataframe
