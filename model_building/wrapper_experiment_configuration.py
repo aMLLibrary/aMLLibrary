@@ -1,6 +1,7 @@
 """
 Copyright 2019 Marco Lattuada
 Copyright 2021 Bruno Guindani
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,16 +19,20 @@ limitations under the License.
 from typing import List
 
 import logging
+import mlxtend
 import mlxtend.feature_selection
 import numpy as np
 import pandas as pd
 import sklearn
 from sklearn.metrics import r2_score, make_scorer
-from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
-from hyperopt.pyll import scope
+
+from hyperopt_aml.hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+from hyperopt_aml.hyperopt.pyll import scope
+
 import os
 import sys
 import pickle
+import copy
 
 import model_building.experiment_configuration as ec
 
@@ -44,6 +49,9 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
     ----------
     _wrapped_experiment_configuration : ExperimentConfiguration
         The regressor to be used in conjunction with sequential feature selection
+
+    _wrapped_regressor : Regressor
+        The regressor object of the wrapped experiment configuration
 
     Methods
     -------
@@ -67,6 +75,9 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
 
     set_x_columns()
         Set the columns to be used in the regression
+
+    get_hyperparameters()
+        Return the values of the hyperparameters associated with this experiment configuration
     """
     def __init__(self, campaign_configuration, regression_inputs, prefix: List[str], wrapped_experiment_configuration):
         """
@@ -146,7 +157,8 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
         list of str:
             the columns used in the regression
         """
-        return self._wrapped_experiment_configuration.get_x_columns()
+        x_cols = super().get_x_columns()
+        return x_cols
 
     def set_x_columns(self, x_cols):
         """
@@ -159,6 +171,15 @@ class WrapperExperimentConfiguration(ec.ExperimentConfiguration):
         """
         super().set_x_columns(x_cols)
         self._wrapped_experiment_configuration.set_x_columns(x_cols)
+
+    def get_hyperparameters(self):
+        """
+        Return
+        ------
+        dict of str: object
+            The hyperparameters associated with this experiment
+        """
+        return copy.deepcopy(self._wrapped_experiment_configuration._hyperparameters)
 
 
 
@@ -202,6 +223,7 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
 
         """
         super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
+        self._sfs_trained = False
         self._check_num_features()
 
     def _check_num_features(self):
@@ -217,6 +239,10 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         """
         Build the model with the experiment configuration represented by this object
         """
+        if self._sfs_trained:  # do not run SFS again for the same exp.conf.
+            self._logger.debug("SFS already run, thus performing model training only")
+            self._wrapped_experiment_configuration._train()
+            return
         verbose = 2 if self._campaign_configuration['General']['debug'] else 0
         self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(ec.mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
@@ -226,14 +252,17 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
             self._sfs.k_features = (1,xdata.shape[1])
         # Perform feature selection
         self._sfs.fit(xdata, ydata)
+        if self._sfs.interrupted_:
+            raise KeyboardInterrupt
+
         x_cols = list(self._sfs.k_feature_names_)
         self._logger.debug("Selected features: %s", str(x_cols))
         # Use the selected features to retrain the regressor, after restoring column names
         filtered_xdata = self._sfs.transform(xdata)  # is an np.array
         filtered_xdata = pd.DataFrame(filtered_xdata, columns=x_cols)
         self.set_x_columns(x_cols)
-        self.get_regressor().aml_features = x_cols
         self.get_regressor().fit(filtered_xdata, ydata)
+        self._sfs_trained = True
 
     def compute_estimations(self, rows):
         """
@@ -249,10 +278,11 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
             The values predicted by the associated regressor
         """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
-        features = self.get_regressor().aml_features
-        filtered_xdata = xdata[features]
+        features = self.get_x_columns()
+        
+        filtered_xdata = xdata
         ret = self.get_regressor().predict(filtered_xdata)
-        self._logger.debug("Using regressor on %s: %s vs %s", str(filtered_xdata), str(ydata), str(ret))
+        # self._logger.debug("Using regressor on %s: %s vs %s", str(filtered_xdata), str(ydata), str(ret))
 
         return ret
 
@@ -260,7 +290,7 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
         """
         Print the representation of the generated model
         """
-        return "".join(("Features selected with SFS: ", str(self.get_regressor().aml_features), "\n",
+        return "".join(("Features selected with SFS: ", str(self.get_x_columns()), "\n",
                         self._wrapped_experiment_configuration.print_model()))
 
 
@@ -372,31 +402,23 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
             the best hyperparameter configuration found by Hyperopt
         """
         # Temporarily disable output from fmin
-        logging.getLogger('hyperopt.tpe').propagate = False
+        logging.getLogger('hyperopt_aml.hyperopt.tpe').propagate = False
         # Call Hyperopt optimizer
         if self._hyperopt_save_interval == 0:
             # Do not perform periodic saves to Pickle files
             best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=self._hyperopt_max_evals, verbose=False)
         else:
             # Save Trials object every _hyperopt_save_interval iterations for fault tolerance
-            curr_evals = 0
-            trials = Trials()
             trials_pickle_path = os.path.join(self._experiment_directory, 'trials.pickle')
-            while curr_evals < self._hyperopt_max_evals:
-                # First, check for an existing, partially filled trials file, if any, and restart from there
-                if os.path.isfile(trials_pickle_path):
-                    with open(trials_pickle_path, 'rb') as f:
-                        trials = pickle.load(f)
-                    curr_evals = len(trials.trials)
-                # Perform next _hyperopt_save_interval iterations and save Pickle file
-                curr_evals = min(self._hyperopt_max_evals, curr_evals+self._hyperopt_save_interval)
-                best_params = fmin(self._objective_function, params, algo=tpe.suggest, trials=trials, max_evals=curr_evals, verbose=False)
-                with open(trials_pickle_path, 'wb') as f:
-                    pickle.dump(trials, f)
+
+            #fmin retrieves the last saved .pickle file at each call (if any) and saves every self._hyperopt_save_interval iterations
+            best_params = fmin(self._objective_function, params, algo=tpe.suggest, max_evals=self._hyperopt_max_evals, trials_save_file=trials_pickle_path, max_queue_len=self._hyperopt_save_interval, verbose=False)
+            
             # Clear trials file after finished
             os.remove(trials_pickle_path)
+            
         # Restore output from fmin
-        logging.getLogger('hyperopt.tpe').propagate = True
+        logging.getLogger('hyperopt_aml.hyperopt.tpe').propagate = True
         # Recover 'lost' params entries whose values was set, and were thus not returned by fmin()
         for par in params:
             if par not in best_params:
@@ -409,6 +431,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         Build the model with the experiment configuration represented by this object
         """
         if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
+            self._logger.debug("Hyperopt already run, thus performing model training only")
             self._wrapped_experiment_configuration._train()
             return
         self._wrapped_regressor = self.get_regressor()
@@ -426,7 +449,6 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         self._wrapped_experiment_configuration._regressor = self._wrapped_regressor
         self._wrapped_experiment_configuration._hyperparameters = best_param
         self._wrapped_experiment_configuration._train()
-        self.get_regressor().aml_features = self.get_x_columns()
 
     def compute_estimations(self, rows):
         """
@@ -443,7 +465,7 @@ class HyperoptExperimentConfiguration(WrapperExperimentConfiguration):
         """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
         ret = self.get_regressor().predict(xdata)
-        self._logger.debug("Using regressor on %s: %s vs %s", str(xdata), str(ydata), str(ret))
+        # self._logger.debug("Using regressor on %s: %s vs %s", str(xdata), str(ydata), str(ret))
         return ret
 
     def print_model(self):
@@ -541,6 +563,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
 
         """
         super().__init__(campaign_configuration, regression_inputs, prefix, wrapped_experiment_configuration)
+        self._sfs_trained = False
         SFSExperimentConfiguration._check_num_features(self)
 
     def _get_standard_evaluator(self, scorer):
@@ -589,6 +612,8 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         """
         Print the representation of the generated model
         """
+        assert self.get_x_columns() == self._wrapped_experiment_configuration.get_x_columns()
+
         hypers = self._wrapped_experiment_configuration._hyperparameters.copy()
         for key in hypers:
             if isinstance(hypers[key], float):
@@ -603,8 +628,13 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
 
         This method manually implements Feature Selection in order for it to work with Hyperopt parameter optimization
         """
-        if self._hyperopt_trained:  # do not run Hyperopt again for the same exp.conf.
+        if self._hyperopt_trained:  # do not run Hyperopt again for the same exp_conf
+            self._logger.debug("Hyperopt already run, thus performing SFS training only")
             SFSExperimentConfiguration._train(self)
+            return
+        if self._sfs_trained:
+            self._logger.debug("SFS already run, thus performing hyperopt training only")
+            HyperoptExperimentConfiguration._train(self)
             return
         self._wrapped_regressor = self.get_regressor()
         # Read parameter priors
@@ -677,10 +707,10 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         best_features = subsets_best_features[idx_best]
         self._wrapped_experiment_configuration._regressor = subsets_best_models[idx_best]
         self._hyperopt_trained = True
+        self._sfs_trained = True
         self._wrapped_experiment_configuration._hyperparameters = subsets_best_hyperparams[idx_best]
         self._logger.debug("Selected features: %s", str(best_features))
         self.set_x_columns(best_features)
-        self.get_regressor().aml_features = best_features
         self.get_regressor().fit(X_train[best_features], y_train)
 
     def compute_estimations(self, rows):

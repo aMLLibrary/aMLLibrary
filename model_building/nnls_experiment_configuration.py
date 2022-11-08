@@ -97,11 +97,12 @@ class NNLSExperimentConfiguration(ec.ExperimentConfiguration):
         initial_string = "NNLS coefficients:\n"
         ret_string = initial_string
         coefficients = self._regressor.coef_
-        assert len(self._regressor.aml_features) == len(coefficients)
+        columns = self.get_x_columns()
+        assert len(columns) == len(coefficients)
         # Show coefficients in order of decresing absolute value
         idxs = np.argsort(np.abs(coefficients))[::-1]
         for i in idxs:
-            column = self._regressor.aml_features[i]
+            column = columns[i]
             coefficient = coefficients[i]
             ret_string += " + " if ret_string != initial_string else "   "
             coeff = str(round(coefficient, 3))

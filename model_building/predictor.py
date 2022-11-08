@@ -27,6 +27,7 @@ import data_preparation.data_loading
 import data_preparation.onehot_encoding
 from model_building.experiment_configuration import mean_absolute_percentage_error
 import model_building.model_building
+import regressor
 
 
 class Predictor(sequence_data_processing.SequenceDataProcessing):
@@ -58,6 +59,7 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
 
         # Initialize flags
         self._output_folder = output_folder
+        self._done_file_flag = os.path.join(output_folder, 'done')
 
         # Read regressor if given
         if regressor_file:
@@ -78,8 +80,9 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
 
         Parameters
         ----------
-        config_file: str
-            The configuration file describing the experimental campaign to be performed
+        config_file: str or dict
+            The configuration file describing the experimental campaign to be performed,
+            or a dictionary with the same structure
 
         mape_to_file: bool
             True if computed MAPE should be written to a text file (file name is mape.txt)
@@ -94,14 +97,28 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         if not os.path.exists(config_file):
             self._logger.error("%s does not exist", config_file)
             sys.exit(-1)
+
         # Check if output path already exist
-        if os.path.exists(self._output_folder):
+        if os.path.exists(self._output_folder) and os.path.exists(self._done_file_flag):
             self._logger.error("%s already exists. Terminating the program...", self._output_folder)
             sys.exit(1)
-        os.mkdir(self._output_folder)
-
-        # Read config file
-        self.load_campaign_configuration(config_file)
+        if not os.path.exists(self._output_folder):
+            os.mkdir(self._output_folder)
+        
+        #Check configuration input type
+        if isinstance(config_file,str):
+            # Read configuration from the file indicated by the argument
+            if not os.path.exists(config_file):
+                self._logger.error("%s does not exist", config_file)
+                sys.exit(-1)
+            # Read config file
+            self.load_campaign_configuration(config_file)
+        elif isinstance(config_file,dict):
+            # Read configuration from the dictionary indicated by the argument
+            self._campaign_configuration = config_file
+        else:
+            print('Unrecognized type for configuration file: '+str(type(config_file)))
+            sys.exit(1)
 
         # Read data
         self._logger.info("-->Executing data load")
@@ -142,6 +159,9 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
 
         self._logger.info("<--Performed prediction")
 
+        # Create success flag file
+        with open(self._done_file_flag, 'wb') as f:
+            pass
 
     def predict_from_df(self, xx, regressor_file=None):
         """

@@ -23,6 +23,7 @@ optional arguments:
   -l, --details         Print results of the single experiments
 ```
 Example of configuration files can be found under `example_configurations` directory.
+See also the [`README.md`](example_configurations/README.md) file there.
 
 
 ## Tutorial
@@ -39,7 +40,7 @@ Results will be summarized in the `results.txt` file, as well as printed to scre
 
 ### Predicting module
 This library also has a predicting module, in which you can use an output regressor in the form of a Pickle file to make predictions about new, previously-unseen data.
-It is run via the `predict.py` file.
+It is run via the [`predict.py`](predict.py) file.
 First of all, run the library to create a regression model similarly to what was indicated in the first part of the tutorial section:
 ```shell
 python3 run.py -c example_configurations/faas_test.ini -o output_test
@@ -48,7 +49,7 @@ Then, you can apply the obtained regressor in the form of the `LRRidge.pickle` f
 ```shell
 python3 predict.py -c example_configurations/faas_predict.ini -r output_test/LRRidge.pickle -o output_test_predict
 ```
-Please refer to the `predict.py` file itself for more information.
+For more information, please refer to the [`predict.py`](predict.py) file itself and to the [README.md](example_configurations/README.md#prediction-files) for configuration files.
 
 
 ## Docker image
@@ -63,18 +64,12 @@ To run a container and mount a volume which includes the root folder of this rep
 sudo docker run --name aml --rm -v $(pwd):/aMLlibrary -it amllibrary
 ```
 which defaults to a `bash` terminal unless a specific command is appended to the line.
-In this terminal, you may run the same commands as in a regular terminal, including the ones from the Tutorial section.
+In this terminal, you may run the same commands as in a regular terminal, including the ones from the [Tutorial](#tutorial) section.
 
 
 ## Hyperopt
 This library is integrated with the Hyperopt package for hyperparameter tuning via Bayesian Optimization.
-This search mode is activated by inserting the `hyperparameter_tuning = Hyperopt` flag in the "General" section of the configuration file, as well as appropriate `hyperopt_max_evals` and `hyperopt_save_interval` values.
-When using Hyperopt, strings representing prior distributions, such as `'loguniform(0.01,1)'`, may be assigned to hyperparameters instead of the usual lists of values used in grid search mode.
-Such strings refer to and are interpreted as Hyperopt prior objects, assuming they are appropriately formatted; please head to https://github.com/hyperopt/hyperopt/wiki/FMin#21-parameter-expressions for more information.
-
-Note that logarithm-based distributions follow a different notation in `aMLLibrary` configuration files than in the Hyperopt library, for the sake of clarity.
-For instance, the string `'loguniform(a,b)'` in a configuration file means a log-uniform distribution with support `[a,b]`, whereas an equivalent distribution in Hyperopt notation would be `'loguniform(e^a,e^b)'` instead.
-(`aMLLibrary` performs this conversion of parameter notation automatically.)
+For more information, please refer to the [`README.md`](example_configurations/README.md#hyperopt) for configuration files.
 
 
 ## Acknowledgments

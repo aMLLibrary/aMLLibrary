@@ -1,5 +1,6 @@
 """
 Copyright 2019 Marco Lattuada
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -52,6 +53,12 @@ class RegressionInputs:
     get_xy_data()
         Generates the two pandas data frame with x_columns and y
 
+    copy()
+        Returns a copy of this object
+
+    __copy__()
+        Hidden method that actually performs the copy
+
     """
     def __init__(self, data, inputs_split, x_cols, y_column):
         """
@@ -60,7 +67,7 @@ class RegressionInputs:
             The whole dataframe
 
         inputs_split: map of str to list of integers
-            How the input is split. Key is the type of set (e.g., training, cv1, validation), value is the list of rows beloning to that set
+            How the input is split. Key is the type of set (e.g., training, cv1, validation), value is the list of rows belonging to that set
 
         x_cols: list of strings
             The labels of the columns of the data frame to be used to train the model
@@ -124,4 +131,5 @@ class RegressionInputs:
         """
         xdata = self._get_data(rows, self.x_columns)
         ydata = self._get_data(rows, self.y_column)
+        
         return xdata, ydata

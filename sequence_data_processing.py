@@ -23,6 +23,7 @@ import ast
 import configparser as cp
 import logging
 import os
+import pandas as pd
 import pickle
 import pprint
 import random
@@ -47,6 +48,7 @@ import data_preparation.xgboost_feature_selection
 
 from model_building.experiment_configuration import mean_absolute_percentage_error
 import model_building.model_building
+import regressor
 
 
 class SequenceDataProcessing:
@@ -70,7 +72,7 @@ class SequenceDataProcessing:
         The random generator used in the whole application both to generate random numbers and to initialize other random generators
     """
 
-    def __init__(self, input_configuration, debug=False, seed=0, output="output", j=1, generate_plots=False, self_check=True, details=False):
+    def __init__(self, input_configuration, debug=False, output="output", j=1, generate_plots=False, self_check=True, details=False):
         """
         Constructor of the class
 
@@ -85,9 +87,6 @@ class SequenceDataProcessing:
 
         debug: bool
             True if debug messages should be printed
-
-        seed: integer
-            The seed to be used to initialize the random generator engine
 
         output: str
             The directory where all the outputs will be written; it is created by this library and cannot exist before using this module
@@ -104,11 +103,10 @@ class SequenceDataProcessing:
         details: bool
             True if the results of the single experiments should be added
         """
+        default_rng_seed = 0
         self._done_file_flag = os.path.join(output, 'done')
 
         self._data_preprocessing_list = []
-
-        self.random_generator = random.Random(seed)
         self.debug = debug
         self._self_check = self_check
 
@@ -126,7 +124,7 @@ class SequenceDataProcessing:
                 self._logger.error("%s does not exist", input_configuration)
                 sys.exit(-1)
             general_args = {'configuration_file': input_configuration, 'output': output,
-                            'seed': str(seed), 'j': str(j), 'debug': str(debug),
+                            'j': str(j), 'debug': str(debug),
                             'generate_plots': str(generate_plots), 'details': str(details)
                            }
             self.load_campaign_configuration(input_configuration, general_args)
@@ -134,12 +132,23 @@ class SequenceDataProcessing:
             # Read configuration from the argument dict
             self.input_configuration_file = None
             self._campaign_configuration = input_configuration
-            general_args = {'output': output, 'seed': seed, 'j': j, 'debug': debug,
+            general_args = {'output': output, 'j': j, 'debug': debug,
                             'generate_plots': generate_plots, 'details': details
                            }
             self._campaign_configuration['General'].update(general_args)
         else:
             self._logger.error("input_configuration must be a path string to a configuration file or a dictionary")
+            sys.exit(1)
+
+        # Initialize random number generator
+        if 'seed' not in self._campaign_configuration['General']:
+            self._campaign_configuration['General']['seed'] = default_rng_seed
+        self.random_generator = random.Random(self._campaign_configuration['General']['seed'])
+
+        self._logger.debug("Parameters configuration is:")
+        self._logger.debug("-->")
+        self._logger.debug(pprint.pformat(self._campaign_configuration, width=1))
+        self._logger.debug("<--")
 
         # Check if output path already exist
         if os.path.exists(output) and os.path.exists(self._done_file_flag):
@@ -151,7 +160,9 @@ class SequenceDataProcessing:
             shutil.copyfile(input_configuration, os.path.join(output, 'configuration.ini'))
         confpars = cp.ConfigParser()
         confpars.read_dict(self._campaign_configuration)
-        confpars.write(open(os.path.join(output, 'configuration_enriched.ini'), 'w'))
+        with open(os.path.join(output, 'configuration_enriched.ini'), 'w') as conf_enriched:
+            confpars.write(conf_enriched)
+
 
         # Check that validation method has been specified
         if 'validation' not in self._campaign_configuration['General']:
@@ -273,11 +284,6 @@ class SequenceDataProcessing:
                 except (ValueError, SyntaxError):
                     self._campaign_configuration[section][item[0]] = item[1]
 
-        self._logger.debug("Parameters configuration is:")
-        self._logger.debug("-->")
-        self._logger.debug(pprint.pformat(self._campaign_configuration, width=1))
-        self._logger.debug("<--")
-
     def process(self):
         """
         the main code which actually performs the design space exploration of models
@@ -317,7 +323,15 @@ class SequenceDataProcessing:
             self._logger.debug("Current data frame is:\n%s", str(data_processing))
             self._logger.info("<--")
 
-        shutil.copyfile(self._campaign_configuration['DataPreparation']['input_path'], os.path.join(self._campaign_configuration['General']['output'], 'data.csv'))
+        data = self._campaign_configuration['DataPreparation']['input_path']
+        if isinstance(data, str):
+            shutil.copyfile(data, os.path.join(self._campaign_configuration['General']['output'], 'data.csv'))
+        elif isinstance(data, pd.DataFrame):
+            data.to_csv(os.path.join(self._campaign_configuration['General']['output'], 'data.csv'))
+        else:
+            self._logger.error("input_path must be a path string to a dataset or a pandas.DataFrame")
+            sys.exit(1)
+
         data_processing.data.to_csv(os.path.join(self._campaign_configuration['General']['output'], 'data_preprocessed.csv'))
 
         regressor = self._model_building.process(self._campaign_configuration, data_processing, int(self._campaign_configuration['General']['j']))
@@ -351,4 +365,10 @@ class SequenceDataProcessing:
         with open(self._done_file_flag, 'wb') as f:
             pass
 
+        
+        #Close logging
+        self._logger.removeHandler(file_handler)
+        file_handler.close()
+        
+        
         return regressor

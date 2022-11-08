@@ -1,6 +1,7 @@
 """
 Copyright 2019 Marco Lattuada
 Copyright 2021 Bruno Guindani
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -206,7 +207,7 @@ class MultiTechniquesExpConfsGenerator(MultiExpConfsGenerator):
 
     def __deepcopy__(self, memo):
         campaign_configuration, seed, generators = self._get_deep_copy_parameters()
-        return MultiTechniquesExpConfsGenerator(campaign_configuration, seed, generators)
+        return MultiTechniquesExpConfsGenerator(campaign_configuration, seed, copy.deepcopy(generators))
 
 
 class TechniqueExpConfsGenerator(ExpConfsGenerator):
@@ -390,6 +391,7 @@ class RepeatedExpConfsGenerator(MultiExpConfsGenerator):
             new_prefix = prefix.copy()
             new_prefix.append(key)
             self._logger.debug("-->Generating experiments for run %s", str(key))
+
             return_list.extend(generator.generate_experiment_configurations(new_prefix, regression_inputs))
             self._logger.debug("<--")
 
@@ -660,7 +662,7 @@ class AllExpConfsGenerator(SelectionValidationExpConfsGenerator):
         self._logger.debug("-->Generating experiments by AllExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("All")
-        local_regression_inputs = copy.copy(regression_inputs)
+        local_regression_inputs = regression_inputs.copy()
 
         if self._is_validation:
             local_regression_inputs.inputs_split["validation"] = local_regression_inputs.inputs_split["training"].copy()
@@ -727,7 +729,7 @@ class ExtrapolationExpConfsGenerator(SelectionValidationExpConfsGenerator):
         self._logger.debug("-->Generating experiments by ExtrapolationExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("Extrapolation")
-        local_regression_inputs = copy.copy(regression_inputs)
+        local_regression_inputs = regression_inputs.copy()
 
         assert self._is_validation
         # Do nothing: validation set has already been built by the pre-processing step
@@ -792,7 +794,7 @@ class InterpolationExpConfsGenerator(SelectionValidationExpConfsGenerator):
         self._logger.debug("-->Generating experiments by InterpolationExpConfsGenerator")
         local_prefix = copy.copy(prefix)
         local_prefix.append("Interpolation")
-        local_regression_inputs = copy.copy(regression_inputs)
+        local_regression_inputs = regression_inputs.copy()
 
         assert self._is_validation
         # Do nothing: validation set has already been built by the pre-processing step
@@ -956,7 +958,7 @@ class KFoldExpConfsGenerator(SelectionValidationExpConfsGenerator):
             assert fold_prefix
             fold_prefix.append("f" + str(fold))
             assert fold_prefix
-            fold_regression_inputs = copy.copy(regression_inputs)
+            fold_regression_inputs = regression_inputs.copy()
 
             if fold == self._k - 1:
                 fold_testing_idx = remaining
@@ -1024,7 +1026,7 @@ class NormalizationExpConfsGenerator(ExpConfsGenerator):
         """
         self._logger.debug("-->Generating experiments by NormalizationExpConfsGenerator")
         normalizer = data_preparation.normalization.Normalization(self._campaign_configuration)
-        local_regression_inputs = copy.copy(regression_inputs)
+        local_regression_inputs = regression_inputs.copy()
         local_regression_inputs = normalizer.process(local_regression_inputs)
         ret_list = self._wrapped_generator.generate_experiment_configurations(prefix, local_regression_inputs)
         self._logger.debug("<--")
@@ -1153,7 +1155,7 @@ class SFSExpConfsGenerator(ExpConfsGenerator):
         internal_list = self._wrapped_generator.generate_experiment_configurations(prefix, regression_inputs)
         ret_list = []
         for wrapped_point in internal_list:
-            ret_list.append(wec.SFSExperimentConfiguration(self._campaign_configuration, copy.deepcopy(regression_inputs), prefix, wrapped_point))
+            ret_list.append(wec.SFSExperimentConfiguration(self._campaign_configuration, regression_inputs, prefix, wrapped_point))
         self._logger.debug("<--")
         return ret_list
 

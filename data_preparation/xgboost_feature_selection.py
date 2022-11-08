@@ -16,11 +16,11 @@ limitations under the License.
 
 import copy
 import os
-
-import eli5
+import pandas as pd
 
 import data_preparation.data_preparation
 import model_building.model_building
+import model_building.xgboost_experiment_configuration as xec
 
 
 class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation):
@@ -94,26 +94,21 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
         if 'XGBoost' not in xgboost_parameters:
             # default parameters if not provided in the ini file
             xgboost_parameters['XGBoost'] = {}
-            xgboost_parameters['XGBoost']['min_child_weight'] = [1, 3]
+            xgboost_parameters['XGBoost']['min_child_weight'] = [1]
             xgboost_parameters['XGBoost']['gamma'] = [0, 1]
-            xgboost_parameters['XGBoost']['n_estimators'] = [50, 100, 150, 250]
-            xgboost_parameters['XGBoost']['learning_rate'] = [0.01, 0.05, 0.1]
-            xgboost_parameters['XGBoost']['max_depth'] = [1, 2, 3, 5, 9, 13]
+            xgboost_parameters['XGBoost']['n_estimators'] = [50]
+            xgboost_parameters['XGBoost']['learning_rate'] = [0.01, 0.1]
+            xgboost_parameters['XGBoost']['max_depth'] = [3]
 
         best_conf = model_building_var.process(xgboost_parameters, inputs, int(self._campaign_configuration['General']['j']))
 
         # best_conf is a XGBoost configuration experiment
         xgb_regressor = best_conf.get_regressor()
 
-        # top = None means all
-        expl = eli5.xgboost.explain_weights_xgboost(xgb_regressor, feature_names=inputs.x_columns, top=max_features, importance_type='gain')
+        weights = xec.XGBoostExperimentConfiguration.get_weights_dict(xgb_regressor)
+        df = pd.DataFrame({'feature': weights.keys(), 'weight': weights.values()})
 
-        # text version
-        expl_weights = eli5.format_as_text(expl)
-
-        self._logger.debug("XGBoost feature scores:\n%s", str(expl_weights))
-
-        df = eli5.format_as_dataframe(expl)  # data frame version
+        self._logger.debug("XGBoost feature scores:\n%s", str(df))
 
         xgb_sorted_features = df['feature'].values.tolist()  # features list
 

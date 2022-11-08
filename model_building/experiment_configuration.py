@@ -1,6 +1,7 @@
 """
 Copyright 2019 Marco Lattuada
 Copyright 2021 Bruno Guindani
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,10 +22,13 @@ import logging
 import pickle
 import os
 from enum import Enum
+import warnings
 
 import numpy as np
 import matplotlib
 from sklearn.metrics import mean_squared_error, r2_score
+
+import regressor
 
 matplotlib.use('Agg')
 # pylint: disable=wrong-import-position
@@ -108,6 +112,10 @@ class ExperimentConfiguration(abc.ABC):
     _hyperparameters: dict of str: object
         The hyperparameter values for the technique regressor
 
+    _disable_model_parallelism: bool
+        Signals whether each XGBoost model parallelism is disabled (True, thus disabled, when parallel training of models is enabled from
+        the configuration file, False otherwise)
+
     Methods
     -------
     train()
@@ -172,6 +180,9 @@ class ExperimentConfiguration(abc.ABC):
 
     set_training_data()
         Set the training data overwriting current ones
+
+    is_wrapper()
+        Return whether this object has a wrapped experiment configuration
     """
 
     def __init__(self, campaign_configuration, hyperparameters, regression_inputs, prefix):
@@ -192,7 +203,7 @@ class ExperimentConfiguration(abc.ABC):
         # Initialized attributes
         self._campaign_configuration = campaign_configuration
         self._hyperparameters = hyperparameters
-        self._regression_inputs = regression_inputs
+        self._regression_inputs = regression_inputs.copy()
         self._signature = self._compute_signature(prefix)
         self._logger = custom_logger.getLogger(self.get_signature_string())
         self.mapes = {}
@@ -217,31 +228,62 @@ class ExperimentConfiguration(abc.ABC):
             if not os.path.exists(self._experiment_directory):
                 os.makedirs(self._experiment_directory)
 
-    def train(self):
+    def train(self, force=False, disable_model_parallelism=False):
         """
         Build the model with the experiment configuration represented by this object
 
         This public method wraps the private method which performs the actual work. In doing this it controls the start/stop of logging on file
+
+        Parameters
+        ----------
+        force: bool
+            Force training even if Pickle regressor file is present
+
+        disable_model_parallelism: bool
+            Signals whether each XGBoost model parallelism is disabled (True, thus disabled, when parallel training of models is enabled from
+            the configuration file, False otherwise)
         """
+        self._disable_model_parallelism = disable_model_parallelism
+        if self.is_wrapper():
+            self._wrapped_experiment_configuration._disable_model_parallelism = disable_model_parallelism
+        
         regressor_path = os.path.join(self._experiment_directory, 'regressor.pickle')
+
         # Fault tolerance mechanism for interrupted runs
         if os.path.exists(regressor_path):
             try:
                 with open(regressor_path, 'rb') as f:
-                    self.set_regressor(pickle.load(f))
-                return
+                    regressor_obj = pickle.load(f)
+                if force: #re-training the model requires keeping the same hyperparameters previously found
+                    self._hyperparameters = regressor_obj.get_hypers()
+                    if self.is_wrapper():
+                        self._wrapped_experiment_configuration._hyperparameters = self._hyperparameters
+                else:
+                    self.set_regressor(regressor_obj.get_regressor())
+                    self.set_x_columns(regressor_obj.get_x_columns())
+                    self._hyperparameters = regressor_obj.get_hypers()
+                    if self.is_wrapper():
+                        self._wrapped_experiment_configuration._hyperparameters = self._hyperparameters
+                    self.trained = True
+                    if hasattr(self, '_sfs_trained'):
+                        self._sfs_trained = True
+                    if hasattr(self, '_hyperopt_trained'):
+                        self._hyperopt_trained = True
+                    return
             except EOFError:
                 # Run was interrupted in the middle of writing the regressor to file: we restart the experiment
                 pass
         self._start_file_logger()
         self.initialize_regressor()
-        self._train()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self._train()
         self.trained = True
-        if self._regressor and not hasattr(self._regressor, 'aml_features'):
-            self._regressor.aml_features = self.get_x_columns()
         self._stop_file_logger()
+
+        trained_regressor = regressor.Regressor(self._campaign_configuration,self.get_regressor(),self.get_x_columns(),None,self.get_hyperparameters())
         with open(regressor_path, 'wb') as f:
-            pickle.dump(self.get_regressor(), f)
+            pickle.dump(trained_regressor, f)
 
     @abc.abstractmethod
     def _train(self):
@@ -275,25 +317,28 @@ class ExperimentConfiguration(abc.ABC):
         """
         self._start_file_logger()
 
+        self._logger.debug("Computing metrics for %s", str(self.get_signature()))
         for set_name in ["validation", "hp_selection", "training"]:
             rows = self._regression_inputs.inputs_split[set_name]
-            self._logger.debug("Computing metrics on %s set", set_name)
-            predicted_y = self.compute_estimations(rows)
-            real_y = self._regression_inputs.data.loc[rows, self._regression_inputs.y_column].values.astype(np.float64)
+            self._logger.debug("On %s set:", set_name)
+            self._logger.debug("-->")
+            predicted_y = self.compute_estimations(rows).reshape(-1,1)
+            real_y = self._regression_inputs.data.loc[rows, self._regression_inputs.y_column].values.astype(np.float64).reshape(-1,1)
             if self._regression_inputs.y_column in self._regression_inputs.scalers:
                 y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
                 predicted_y = y_scaler.inverse_transform(predicted_y)
                 real_y = y_scaler.inverse_transform(real_y)
-            self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
+            # self._logger.debug("Real vs. predicted: %s %s", str(real_y), str(predicted_y))
             # Mean Absolute Percentage Error
             self.mapes[set_name] = mean_absolute_percentage_error(real_y, predicted_y)
-            self._logger.debug("MAPE on %s set is %f", set_name, self.mapes[set_name])
+            self._logger.debug("MAPE is %f", self.mapes[set_name])
             # Root Mean Squared Error
             self.rmses[set_name] = mean_squared_error(real_y, predicted_y, squared=False)
-            self._logger.debug("RMSE on %s set is %f", set_name, self.rmses[set_name])
+            self._logger.debug("RMSE is %f", self.rmses[set_name])
             # R-squared metric
             self.r2s[set_name] = r2_score(real_y, predicted_y)
-            self._logger.debug("R^2  on %s set is %f", set_name, self.r2s[set_name])
+            self._logger.debug("R^2  is %f", self.r2s[set_name])
+            self._logger.debug("<--")
 
         self._stop_file_logger()
 
@@ -509,7 +554,7 @@ class ExperimentConfiguration(abc.ABC):
 
     def print_model(self):
         """
-        Print the representation of the generated model, or just the model name if if not overridden by the subclass
+        Print the representation of the generated model, or just the model name if not overridden by the subclass
 
         This is not a pure virtual method since not all the subclasses implement it
         """
@@ -520,3 +565,6 @@ class ExperimentConfiguration(abc.ABC):
         Set the training set of this experiment configuration
         """
         self._regression_inputs = new_training_data
+
+    def is_wrapper(self):
+        return hasattr(self, '_wrapped_experiment_configuration')

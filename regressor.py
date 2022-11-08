@@ -1,5 +1,6 @@
 """
 Copyright 2019 Marco Lattuada
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,6 +25,7 @@ import data_preparation.logarithm
 import data_preparation.product
 import data_preparation.rename_columns
 import regression_inputs
+import copy
 
 
 class Regressor:
@@ -47,6 +49,10 @@ class Regressor:
     _logger
         The internal logger
 
+    _hypers
+        The set of hyperparameters: used only to guarantee fault tolerance (i.e. they are saved along with
+        the actual _regressor and placed in the right place upon loading)
+
     Methods
     -------
     predict()
@@ -54,8 +60,14 @@ class Regressor:
 
     get_regressor()
         Return the regressor associated with this experiment configuration
+
+    get_x_columns()
+        Return the columns used by the regressor
+
+    get_hypers()
+        Return the hyperparameters used by the regressor (especially when optimised with hyperopt)
     """
-    def __init__(self, campaign_configuration, regressor, x_cols, scalers):
+    def __init__(self, campaign_configuration, regressor, x_cols, scalers, hypers):
         """
         Parameters
         regressor
@@ -64,16 +76,19 @@ class Regressor:
         assert regressor
         self._campaign_configuration = campaign_configuration
         self._regressor = regressor
+        """
         if hasattr(self._regressor, 'aml_features'):
             self._x_columns = self._regressor.aml_features
         else:
-            self._x_columns = x_cols
+        """
+        self._x_columns = x_cols
         self._scalers = scalers
         self._logger = custom_logger.getLogger(__name__)
+        self._hypers = hypers
 
     def __getstate__(self):
         """
-        Auxilixiary function used by pickle. Overridden to avoid problems with logger lock
+        Auxiliary function used by pickle. Overridden to avoid problems with logger lock
         """
         temp_d = self.__dict__.copy()
         if '_logger' in temp_d:
@@ -174,6 +189,18 @@ class Regressor:
 
     def get_regressor(self):
         """
-        Return the internal regressor"
+        Return the internal regressor
         """
         return self._regressor
+
+    def get_x_columns(self):
+        """
+        Return the internal x_columns
+        """
+        return copy.deepcopy(self._x_columns)
+
+    def get_hypers(self):
+        """
+        Return the internal hyperparameters
+        """
+        return copy.deepcopy(self._hypers)

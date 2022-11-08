@@ -30,7 +30,6 @@ def main():
 
     Other arguments are:
     -d, --debug: enables the debug printing.
-    -s, --seed: specifies the seed to be used; it is mainly exploited in the split of the data into training, hyper-parameter selection, and validtion set. If it is not specified, seed=0 will be used making the whole process deterministic.input
     -o, --output: specifies the output directory where logs and results will be put. If the directory already exists, the script fails. This behaviour has been designed to avoid unintentinal overwriting.
     -j: specifies the maximum number of processes which can be used.
     -g, --generate-plots: enables generation of plots of type actual vs. predicted.
@@ -40,7 +39,6 @@ def main():
     parser = argparse.ArgumentParser(description="Perform exploration of regression techniques")
     parser.add_argument('-c', "--configuration-file", help="configuration file for the infrastructure", required=True)
     parser.add_argument('-d', "--debug", help="enable debug messages", default=False, action="store_true")
-    parser.add_argument('-s', "--seed", help="RNG seed", default=0)
     parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="output")
     parser.add_argument('-j', help="number of processes to be used", default=1)
     parser.add_argument('-g', "--generate-plots", help="generate plots", default=False, action="store_true")
@@ -50,7 +48,7 @@ def main():
 
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-    sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args.configuration_file, debug=args.debug, seed=args.seed, output=args.output, j=args.j, generate_plots=args.generate_plots, self_check=args.self_check, details=args.details)
+    sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args.configuration_file, debug=args.debug, output=args.output, j=args.j, generate_plots=args.generate_plots, self_check=args.self_check, details=args.details)
     sequence_data_processor.process()
 
 

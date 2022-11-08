@@ -2,6 +2,7 @@
 Copyright 2019 Marco Lattuada
 Copyright 2019 Danilo Ardagna
 Copyright 2021 Bruno Guindani
+Copyright 2022 Nahuel Coliva
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -102,7 +103,8 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
             warnings.simplefilter("ignore")
             self._regressor.fit(xdata, ydata)
         self._logger.debug("---Model built")
-        for key, val in self.get_weights_dict().items():
+        weights = self.get_weights_dict(self._regressor)
+        for key, val in weights.items():
             self._logger.debug("The weight for %s is %f", key, val)
 
     def compute_estimations(self, rows):
@@ -127,7 +129,8 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
         """
         Print the representation of the generated model
         """
-        sorted_weights = dict(sorted(self.get_weights_dict().items(), key=operator.itemgetter(1), reverse=True))
+        weights = self.get_weights_dict(self._regressor)
+        sorted_weights = dict(sorted(weights.items(), key=operator.itemgetter(1), reverse=True))
         ret = "XGBoost weights: {\n"
         for key, val in sorted_weights.items():
             ret += "    " + str(round(val, 3)) + " " + key + "\n"
@@ -137,11 +140,18 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
     def initialize_regressor(self):
         """
         Initialize the regressor object for the experiments
+
+        See ExperimentConfiguration class for _disable_model_parallelism
         """
         if not getattr(self, '_hyperparameters', None):
             self._regressor = xgb.XGBRegressor()
         else:
-            self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', n_jobs=1)
+            if self._disable_model_parallelism:
+                self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', nthread=1, n_jobs=1)
+                self._logger.debug("\nSetup model with no parallelism\n")
+            else:
+                self._regressor = xgb.XGBRegressor(min_child_weight=self._hyperparameters['min_child_weight'], gamma=self._hyperparameters['gamma'], n_estimators=self._hyperparameters['n_estimators'], learning_rate=self._hyperparameters['learning_rate'], max_depth=self._hyperparameters['max_depth'], tree_method="hist", objective='reg:squarederror', n_jobs=1)
+                self._logger.debug("\nSetup model with parallelism\n")
 
     def get_default_parameters(self):
         """
@@ -172,11 +182,12 @@ class XGBoostExperimentConfiguration(ec.ExperimentConfiguration):
             new_hypers[key] = int(new_hypers[key])
         return new_hypers
 
-    def get_weights_dict(self):
+    @staticmethod
+    def get_weights_dict(xgb_regressor):
         """
         Return a dictionary containing the regressor's normalized importance weights for each feature
         """
-        weights = self._regressor.get_booster().get_fscore()
+        weights = xgb_regressor.get_booster().get_fscore()
         weights_sum = sum(weights.values())
         for key in weights:
             weights[key] /= weights_sum
