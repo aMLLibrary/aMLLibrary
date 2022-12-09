@@ -53,6 +53,7 @@ def main():
         output_dir = os.path.join(parent,args.output)
 
     done_file_flag = os.path.join(output_dir,'done')
+    success_file_flag = os.path.join(output_dir,'success')
     command = "python3 '"+os.path.join(current,'fault_tolerance_slave.py')+"' -o '"+output_dir+"'"
 
     if os.path.exists(done_file_flag):
@@ -80,7 +81,11 @@ def main():
             else:
                 print(output)
         i += 1
-    print("Fault tolerance test passed in",timer()-start, sep=' ')
+
+    if os.path.exists(success_file_flag):
+        print("Fault tolerance test passed in",timer()-start, sep=' ')
+    else:
+        print("Fault tolerance test failed in",timer()-start, sep=' ')
 
 
 
