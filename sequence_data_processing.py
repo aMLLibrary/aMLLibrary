@@ -196,7 +196,7 @@ class SequenceDataProcessing:
         # Check that if ernest is used, normalization, product, column_selection, and inversion are disabled
         if 'ernest' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['ernest']:
             if 'use_columns' in self._campaign_configuration['DataPreparation'] or "skip_columns" in self._campaign_configuration['DataPreparation']:
-                logging.error("use_columns and skip_columns cannot be used with ernest")
+                logging.error("use_columns and skip_columns cannot be used with ernest") #SHOULD BE self._logger.error(...)?
                 sys.exit(1)
             if 'inverse' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['inverse']:
                 logging.error("inverse cannot be used with ernest")
