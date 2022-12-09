@@ -24,9 +24,11 @@ import mlxtend.feature_selection
 import numpy as np
 import pandas as pd
 import sklearn
-from sklearn.metrics import mean_absolute_percentage_error, r2_score, make_scorer
+from sklearn.metrics import r2_score, make_scorer
+
 from hyperopt_aml.hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt_aml.hyperopt.pyll import scope
+
 import os
 import sys
 import pickle
@@ -242,7 +244,7 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
             self._wrapped_experiment_configuration._train()
             return
         verbose = 2 if self._campaign_configuration['General']['debug'] else 0
-        self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
+        self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(ec.mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         # set the maximum number of required features to the minimum between itself and the number of existing features
         if self._campaign_configuration['FeatureSelection']['max_features'] > xdata.shape[1]:

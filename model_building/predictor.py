@@ -20,12 +20,12 @@ import os
 import pickle
 import sys
 import pandas as pd
-from sklearn.metrics import mean_absolute_percentage_error
 
 import custom_logger
 import sequence_data_processing
 import data_preparation.data_loading
 import data_preparation.onehot_encoding
+from model_building.experiment_configuration import mean_absolute_percentage_error
 import model_building.model_building
 import regressor
 
@@ -90,6 +90,13 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         regressor_file: str
             Pickle binary file that stores the model to be used for prediction
         """
+        if regressor_file:
+            self.load_regressor(regressor_file)
+
+        # Read configuration from the file indicated by the argument
+        if not os.path.exists(config_file):
+            self._logger.error("%s does not exist", config_file)
+            sys.exit(-1)
 
         # Check if output path already exist
         if os.path.exists(self._output_folder) and os.path.exists(self._done_file_flag):
@@ -155,7 +162,6 @@ class Predictor(sequence_data_processing.SequenceDataProcessing):
         # Create success flag file
         with open(self._done_file_flag, 'wb') as f:
             pass
-
 
     def predict_from_df(self, xx, regressor_file=None):
         """

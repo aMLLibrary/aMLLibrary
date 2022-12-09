@@ -113,7 +113,7 @@ class Stepwise(BaseEstimator):
                 possible_additions = X.loc[:, not_in_use]
                 rho = possible_additions.join(residuals).corr()
                 # Find optimal feature
-                most_correlated = rho.iloc[-1, :-1].abs().idxmax(axis="columns")
+                most_correlated = rho.iloc[-1, :-1].abs().idxmax()
                 current_columns = self.k_feature_names_ + [most_correlated]
                 current_data = X.loc[:, current_columns]
                 # Perform regression and hypothesis test
