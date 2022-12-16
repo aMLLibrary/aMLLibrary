@@ -17,6 +17,7 @@ limitations under the License.
 
 import numpy as np
 import pandas as pd
+import warnings
 from sklearn.base import BaseEstimator
 from scipy import linalg, stats
 
@@ -48,7 +49,7 @@ class Stepwise(BaseEstimator):
     k_feature_names_: list of str
         The list of selected features
     """
-    def __init__(self, p_to_add=0.05, p_to_remove=0.1, fit_intercept=True, max_iter=100):
+    def __init__(self, p_to_add=0.05, p_to_remove=0.1, fit_intercept=True, max_iter=100, logger=None):
         """
         p_to_add: float
             The minimum significance to add a feature
@@ -61,6 +62,9 @@ class Stepwise(BaseEstimator):
 
         max_iter: integer
             The maximum number of iterations
+
+        logger:
+            The logger object of this ExperimentConfiguration
         """
         self.p_to_add = p_to_add
         self.p_to_remove = p_to_remove
@@ -69,6 +73,7 @@ class Stepwise(BaseEstimator):
         self.coef_ = None
         self.intercept_ = None
         self.k_feature_names_ = None
+        self._logger = logger
 
     def fit(self, Xinput, y):
         """
@@ -124,7 +129,8 @@ class Stepwise(BaseEstimator):
                     z_new = np.abs(b_new[-1] / (b_int_new[-1, 1] - b_new[-1]))
                     if z_new > 1:  # which means you accept to add the feature
                         added = True
-                except:  # in case of ill-conditioned matrices or other numerical issues
+                except Exception as e:  # in case of ill-conditioned matrices or other numerical issues
+                    self._logger.debug(e)
                     added = False
                 if added:
                     b = b_new

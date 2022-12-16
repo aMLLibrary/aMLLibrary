@@ -133,6 +133,7 @@ class StepwiseExperimentConfiguration(ec.ExperimentConfiguration):
                 for label in possible_flags
                 if label in self._hyperparameters
             }
+            hp_flags["logger"] = self._logger
             self._regressor = sw.Stepwise(**hp_flags)
 
     def get_default_parameters(self):
