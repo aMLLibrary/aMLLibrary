@@ -26,6 +26,18 @@ Example of configuration files can be found under `example_configurations` direc
 See also the [`README.md`](example_configurations/README.md) file there.
 
 
+## Installation
+You can use `git clone` to download the library.
+Since it includes the HyperOpt submodule, you must also add the appropriate flag:
+```shell
+git clone <SSH/HTTPS url of the library> --recurse-submodules
+```
+Or, if you forgot the flag, you can still download the submodules even after cloning:
+```shell
+git submodule update --init --recursive
+```
+
+
 ## Tutorial
 To run your first example job with this library, please issue the following command in your terminal:
 ```shell
