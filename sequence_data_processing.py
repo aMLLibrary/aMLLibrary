@@ -72,7 +72,7 @@ class SequenceDataProcessing:
         The random generator used in the whole application both to generate random numbers and to initialize other random generators
     """
 
-    def __init__(self, input_configuration, debug=False, output="output", j=1, generate_plots=False, self_check=True, details=False):
+    def __init__(self, input_configuration, debug=False, output="output", j=1, generate_plots=False, self_check=True, details=False, keep_temp=False):
         """
         Constructor of the class
 
@@ -102,12 +102,16 @@ class SequenceDataProcessing:
 
         details: bool
             True if the results of the single experiments should be added
+
+        keep_temp: bool
+            True if temporary files should not be deleted at the end of a successful run
         """
         default_rng_seed = 0
         self._done_file_flag = os.path.join(output, 'done')
 
         self._data_preprocessing_list = []
         self.debug = debug
+        self._keep_temp = keep_temp
         self._self_check = self_check
 
         if self.debug:
@@ -365,10 +369,17 @@ class SequenceDataProcessing:
         with open(self._done_file_flag, 'wb') as f:
             pass
 
-        
+        # Delete temporary files if required
+        if not self._keep_temp:
+            run_num = self._campaign_configuration['General']['run_num']
+            for i in range(run_num):
+                folder_name = os.path.join(self._campaign_configuration['General']['output'], 'run_' + str(i))
+                self._logger.debug("Removing temporary folder %s...", folder_name)
+                shutil.rmtree(folder_name)
+                self._logger.debug("Done")
+
         #Close logging
         self._logger.removeHandler(file_handler)
         file_handler.close()
-        
-        
+
         return regressor

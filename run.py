@@ -35,6 +35,7 @@ def main():
     -g, --generate-plots: enables generation of plots of type actual vs. predicted.
     -t, --self-check: enables the test of the generated regressor on the whole input set.
     -l, --details: increase the verbosity of the library. In particular, results in terms of MAPE on different sets are printed for all the built regressors and not only for the best one.
+    -k, --keep-temp: do not remove temporary files after successful execution
     """
     parser = argparse.ArgumentParser(description="Perform exploration of regression techniques")
     parser.add_argument('-c', "--configuration-file", help="configuration file for the infrastructure", required=True)
@@ -44,11 +45,12 @@ def main():
     parser.add_argument('-g', "--generate-plots", help="generate plots", default=False, action="store_true")
     parser.add_argument('-t', "--self-check", help="predict the input data with the generate regressor", default=False, action="store_true")
     parser.add_argument('-l', "--details", help="print results of the single experiments", default=False, action="store_true")
+    parser.add_argument('-k', "--keep-temp", help="do not remove temporary files after successful execution", default=False, action="store_true")
     args = parser.parse_args()
 
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-    sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args.configuration_file, debug=args.debug, output=args.output, j=args.j, generate_plots=args.generate_plots, self_check=args.self_check, details=args.details)
+    sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args.configuration_file, debug=args.debug, output=args.output, j=args.j, generate_plots=args.generate_plots, self_check=args.self_check, details=args.details, keep_temp=args.keep_temp)
     sequence_data_processor.process()
 
 
