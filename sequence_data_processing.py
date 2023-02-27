@@ -72,7 +72,7 @@ class SequenceDataProcessing:
         The random generator used in the whole application both to generate random numbers and to initialize other random generators
     """
 
-    def __init__(self, input_configuration, debug=False, output="output", j=1, generate_plots=False, self_check=True, details=False, keep_temp=False):
+    def __init__(self, input_configuration, debug=False, output="output", j=1, generate_plots=False, details=False, keep_temp=False):
         """
         Constructor of the class
 
@@ -97,9 +97,6 @@ class SequenceDataProcessing:
         generate_plots: bool
             True if plots have to be used
 
-        self_check: bool
-            True if the generated regressor should be tested
-
         details: bool
             True if the results of the single experiments should be added
 
@@ -111,7 +108,6 @@ class SequenceDataProcessing:
         self._data_preprocessing_list = []
         self.debug = debug
         self._keep_temp = keep_temp
-        self._self_check = self_check
 
         if self.debug:
             logging.basicConfig(level=logging.DEBUG)
@@ -354,25 +350,6 @@ class SequenceDataProcessing:
         file_handler = logging.FileHandler(os.path.join(self._campaign_configuration['General']['output'], 'results.txt'), 'a+')
         self._logger.addHandler(file_handler)
         self._logger.info("<--Execution Time : %s", execution_time)
-
-        if self._self_check:
-            self._logger.info("-->Performing self check")
-            check_data_loading = data_preparation.data_loading.DataLoading(self._campaign_configuration)
-            check_data = None
-            check_data = check_data_loading.process(check_data)
-            check_data = check_data.data
-            real_y = check_data[self._campaign_configuration['General']['y']]
-            check_data = check_data.drop(columns=[self._campaign_configuration['General']['y']])
-            for technique in self._campaign_configuration['General']['techniques']:
-                pickle_file_name = os.path.join(self._campaign_configuration['General']['output'], technique + ".pickle")
-                with open(pickle_file_name, "rb") as pickle_file:
-                    regressor = pickle.load(pickle_file)
-
-                predicted_y = regressor.predict(check_data)
-                mape = mean_absolute_percentage_error(real_y, predicted_y)
-                self._logger.info("---MAPE of %s: %s", technique, str(mape))
-
-            self._logger.info("<--Performed self check")
 
         # Create success flag file
         with open(self._done_file_flag, 'wb') as f:
