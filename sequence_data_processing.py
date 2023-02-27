@@ -106,7 +106,6 @@ class SequenceDataProcessing:
         keep_temp: bool
             True if temporary files should not be deleted at the end of a successful run
         """
-        default_rng_seed = 0
         self._done_file_flag = os.path.join(output, 'done')
 
         self._data_preprocessing_list = []
@@ -140,19 +139,18 @@ class SequenceDataProcessing:
                             'generate_plots': generate_plots, 'details': details
                            }
             self._campaign_configuration['General'].update(general_args)
+            self.complete_campaign_configuration()
         else:
             self._logger.error("input_configuration must be a path string to a configuration file or a dictionary")
             sys.exit(1)
-
-        # Initialize random number generator
-        if 'seed' not in self._campaign_configuration['General']:
-            self._campaign_configuration['General']['seed'] = default_rng_seed
-        self.random_generator = random.Random(self._campaign_configuration['General']['seed'])
 
         self._logger.debug("Parameters configuration is:")
         self._logger.debug("-->")
         self._logger.debug(pprint.pformat(self._campaign_configuration, width=1))
         self._logger.debug("<--")
+
+        # Initialize random number generator
+        self.random_generator = random.Random(self._campaign_configuration['General']['seed'])
 
         # Check if output path already exist
         if os.path.exists(output) and os.path.exists(self._done_file_flag):
@@ -287,6 +285,17 @@ class SequenceDataProcessing:
                     self._campaign_configuration[section][item[0]] = ast.literal_eval(item[1])
                 except (ValueError, SyntaxError):
                     self._campaign_configuration[section][item[0]] = item[1]
+
+        self.complete_campaign_configuration()
+
+    def complete_campaign_configuration(self):
+        """
+        Update the campaign configuration with missing features, if any
+        """
+        if 'run_num' not in self._campaign_configuration['General']:
+            self._campaign_configuration['General']['run_num'] = 1
+        if 'seed' not in self._campaign_configuration['General']:
+            self._campaign_configuration['General']['seed'] = 0
 
     def process(self):
         """
