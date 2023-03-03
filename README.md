@@ -4,26 +4,37 @@ Library for the generation of regression models.
 The main script of the library is `run.py`:
 
 ```
-usage: run.py [-h] -c CONFIGURATION_FILE [-d] [-s SEED] [-o OUTPUT] [-j J]
-              [-g] [-t] [-l]
+usage: run.py [-h] -c CONFIGURATION_FILE [-d] [-o OUTPUT] [-j J] [-g] [-l] [-k]
 
 Perform exploration of regression techniques
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -c CONFIGURATION_FILE, --configuration-file CONFIGURATION_FILE
-                        The configuration file for the infrastructure
-  -d, --debug           Enable debug messages
-  -s SEED, --seed SEED  The seed
+                        configuration file for the infrastructure
+  -d, --debug           enable debug messages
   -o OUTPUT, --output OUTPUT
-                        The output where all the models will be stored
-  -j J                  The number of processes to be used
-  -g, --generate-plots  Generate plots
-  -t, --self-check      Predict the input data with the generate regressor
-  -l, --details         Print results of the single experiments
+                        output folder where all the models will be stored
+  -j J                  number of processes to be used
+  -g, --generate-plots  generate plots
+  -l, --details         print results of the single experiments
+  -k, --keep-temp       do not remove temporary files after successful execution
+
 ```
 Example of configuration files can be found under `example_configurations` directory.
 See also the [`README.md`](example_configurations/README.md) file there.
+
+
+## Installation
+You can use `git clone` in the terminal to download the library.
+Since it includes the HyperOpt submodule, you must also add the appropriate flag:
+```shell
+git clone <SSH/HTTPS url of the library> --recurse-submodules
+```
+Or, if you forgot the flag, you can still download the submodules even after cloning by running:
+```shell
+git submodule update --init --recursive
+```
 
 
 ## Tutorial
@@ -39,13 +50,13 @@ Results will be summarized in the `results.txt` file, as well as printed to scre
 
 
 ### Predicting module
-This library also has a predicting module, in which you can use an output regressor in the form of a Pickle file to make predictions about new, previously-unseen data.
+This library also has a predicting module, in which you can use an output model in the form of a Pickle file to make predictions about new, previously-unseen data.
 It is run via the [`predict.py`](predict.py) file.
-First of all, run the library to create a regression model similarly to what was indicated in the first part of the tutorial section:
+First of all, run the library to create a regression model (similarly to the first part of the section):
 ```shell
 python3 run.py -c example_configurations/faas_test.ini -o output_test
 ```
-Then, you can apply the obtained regressor in the form of the `LRRidge.pickle` file by running:
+Then, you can apply the obtained model in the form of the `LRRidge.pickle` file by running:
 ```shell
 python3 predict.py -c example_configurations/faas_predict.ini -r output_test/LRRidge.pickle -o output_test_predict
 ```
@@ -55,13 +66,14 @@ For more information, please refer to the [`predict.py`](predict.py) file itself
 ## Docker image
 This section shows how to create and use the Docker container image for this library.
 It is not strictly needed, but it ensures an environment in which dependencies have the correct version, and in which it is guaranteed that the library works correctly.
-This Docker image can be built from the `Dockerfile` at the root folder of this repository by issuing the command line instruction
+This Docker image can be built from the `Dockerfile` at the root folder of this repository by using:
 ```shell
-sudo docker build -t amllibrary .
+docker build -t amllibrary .
 ```
-To run a container and mount a volume which includes the root folder of this repository, please use
+(You might need to add `sudo` if Docker requires root permissions on your machine.)
+To run a container and mount a volume which includes the root folder of this repository, please use:
 ```shell
-sudo docker run --name aml --rm -v $(pwd):/aMLlibrary -it amllibrary
+docker run --name aml --rm -v $(pwd):/aMLLibrary -it amllibrary
 ```
 which defaults to a `bash` terminal unless a specific command is appended to the line.
 In this terminal, you may run the same commands as in a regular terminal, including the ones from the [Tutorial](#tutorial) section.

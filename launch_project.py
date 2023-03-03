@@ -41,6 +41,7 @@ def main():
     parser.add_argument("-o", "--output", help="root folder for all output folders (default: outputs)", default="outputs")
     parser.add_argument("-d", "--debug", help="enable debug messages", default=False, action="store_true")
     parser.add_argument("-j", help="number of parallel processes to be used", default=1)
+    parser.add_argument('-k', "--keep-temp", help="do not remove temporary files after successful execution", default=False, action="store_true")
     parser.add_argument("-x", "--execute", help="execute the experiments instead of performing a dry run", default=False, action="store_true")
     args = parser.parse_args()
 
@@ -50,6 +51,8 @@ def main():
         extra_options.append('-d')
     if int(args.j) > 1:
         extra_options.extend(('-j', args.j))
+    if args.keep_temp:
+        extra_options.append('-k')
     # Get command-line options for this script
     root_config_rel_fold = args.CONFIG_FOLDER
     config_split = os.path.normpath(root_config_rel_fold).split(os.sep)

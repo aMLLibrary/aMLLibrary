@@ -72,7 +72,7 @@ class SequenceDataProcessing:
         The random generator used in the whole application both to generate random numbers and to initialize other random generators
     """
 
-    def __init__(self, input_configuration, debug=False, output="output", j=1, generate_plots=False, self_check=True, details=False):
+    def __init__(self, input_configuration, debug=False, output="output", j=1, generate_plots=False, details=False, keep_temp=False):
         """
         Constructor of the class
 
@@ -97,18 +97,17 @@ class SequenceDataProcessing:
         generate_plots: bool
             True if plots have to be used
 
-        self_check: bool
-            True if the generated regressor should be tested
-
         details: bool
             True if the results of the single experiments should be added
+
+        keep_temp: bool
+            True if temporary files should not be deleted at the end of a successful run
         """
-        default_rng_seed = 0
         self._done_file_flag = os.path.join(output, 'done')
 
         self._data_preprocessing_list = []
         self.debug = debug
-        self._self_check = self_check
+        self._keep_temp = keep_temp
 
         if self.debug:
             logging.basicConfig(level=logging.DEBUG)
@@ -136,19 +135,18 @@ class SequenceDataProcessing:
                             'generate_plots': generate_plots, 'details': details
                            }
             self._campaign_configuration['General'].update(general_args)
+            self.complete_campaign_configuration()
         else:
             self._logger.error("input_configuration must be a path string to a configuration file or a dictionary")
             sys.exit(1)
-
-        # Initialize random number generator
-        if 'seed' not in self._campaign_configuration['General']:
-            self._campaign_configuration['General']['seed'] = default_rng_seed
-        self.random_generator = random.Random(self._campaign_configuration['General']['seed'])
 
         self._logger.debug("Parameters configuration is:")
         self._logger.debug("-->")
         self._logger.debug(pprint.pformat(self._campaign_configuration, width=1))
         self._logger.debug("<--")
+
+        # Initialize random number generator
+        self.random_generator = random.Random(self._campaign_configuration['General']['seed'])
 
         # Check if output path already exist
         if os.path.exists(output) and os.path.exists(self._done_file_flag):
@@ -196,16 +194,16 @@ class SequenceDataProcessing:
         # Check that if ernest is used, normalization, product, column_selection, and inversion are disabled
         if 'ernest' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['ernest']:
             if 'use_columns' in self._campaign_configuration['DataPreparation'] or "skip_columns" in self._campaign_configuration['DataPreparation']:
-                logging.error("use_columns and skip_columns cannot be used with ernest")
+                self._logger.error("use_columns and skip_columns cannot be used with ernest")
                 sys.exit(1)
             if 'inverse' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['inverse']:
-                logging.error("inverse cannot be used with ernest")
+                self._logger.error("inverse cannot be used with ernest")
                 sys.exit(1)
             if 'product_max_degree' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['product_max_degree']:
-                logging.error("product cannot be used with ernest")
+                self._logger.error("product cannot be used with ernest")
                 sys.exit(1)
             if 'normalization' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['normalization']:
-                logging.error("normalization cannot be used with ernest")
+                self._logger.error("normalization cannot be used with ernest")
                 sys.exit(1)
 
         # Adding read on input to data preprocessing step
@@ -284,6 +282,17 @@ class SequenceDataProcessing:
                 except (ValueError, SyntaxError):
                     self._campaign_configuration[section][item[0]] = item[1]
 
+        self.complete_campaign_configuration()
+
+    def complete_campaign_configuration(self):
+        """
+        Update the campaign configuration with missing features, if any
+        """
+        if 'run_num' not in self._campaign_configuration['General']:
+            self._campaign_configuration['General']['run_num'] = 1
+        if 'seed' not in self._campaign_configuration['General']:
+            self._campaign_configuration['General']['seed'] = 0
+
     def process(self):
         """
         the main code which actually performs the design space exploration of models
@@ -342,33 +351,21 @@ class SequenceDataProcessing:
         self._logger.addHandler(file_handler)
         self._logger.info("<--Execution Time : %s", execution_time)
 
-        if self._self_check:
-            self._logger.info("-->Performing self check")
-            check_data_loading = data_preparation.data_loading.DataLoading(self._campaign_configuration)
-            check_data = None
-            check_data = check_data_loading.process(check_data)
-            check_data = check_data.data
-            real_y = check_data[self._campaign_configuration['General']['y']]
-            check_data = check_data.drop(columns=[self._campaign_configuration['General']['y']])
-            for technique in self._campaign_configuration['General']['techniques']:
-                pickle_file_name = os.path.join(self._campaign_configuration['General']['output'], technique + ".pickle")
-                with open(pickle_file_name, "rb") as pickle_file:
-                    regressor = pickle.load(pickle_file)
-
-                predicted_y = regressor.predict(check_data)
-                mape = mean_absolute_percentage_error(real_y, predicted_y)
-                self._logger.info("---MAPE of %s: %s", technique, str(mape))
-
-            self._logger.info("<--Performed self check")
-
         # Create success flag file
         with open(self._done_file_flag, 'wb') as f:
             pass
 
-        
+        # Delete temporary files if required
+        if not self._keep_temp:
+            run_num = self._campaign_configuration['General']['run_num']
+            for i in range(run_num):
+                folder_name = os.path.join(self._campaign_configuration['General']['output'], 'run_' + str(i))
+                self._logger.debug("Removing temporary folder %s...", folder_name)
+                shutil.rmtree(folder_name)
+                self._logger.debug("Done")
+
         #Close logging
         self._logger.removeHandler(file_handler)
         file_handler.close()
-        
-        
+
         return regressor

@@ -17,6 +17,7 @@ limitations under the License.
 
 import numpy as np
 import pandas as pd
+import warnings
 from sklearn.base import BaseEstimator
 from scipy import linalg, stats
 
@@ -113,7 +114,7 @@ class Stepwise(BaseEstimator):
                 possible_additions = X.loc[:, not_in_use]
                 rho = possible_additions.join(residuals).corr()
                 # Find optimal feature
-                most_correlated = rho.iloc[-1, :-1].abs().idxmax(axis="columns")
+                most_correlated = rho.iloc[-1, :-1].abs().idxmax()
                 current_columns = self.k_feature_names_ + [most_correlated]
                 current_data = X.loc[:, current_columns]
                 # Perform regression and hypothesis test
@@ -124,7 +125,7 @@ class Stepwise(BaseEstimator):
                     z_new = np.abs(b_new[-1] / (b_int_new[-1, 1] - b_new[-1]))
                     if z_new > 1:  # which means you accept to add the feature
                         added = True
-                except:  # in case of ill-conditioned matrices or other numerical issues
+                except Exception as e:  # in case of ill-conditioned matrices or other numerical issues
                     added = False
                 if added:
                     b = b_new

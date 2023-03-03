@@ -50,12 +50,13 @@ class Technique(Enum):
     SVR = 5
     NNLS = 6
     STEPWISE = 7
+    DUMMY = 8
 
 
 enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST: 'XGBoost',
                                Technique.DT: 'DecisionTree', Technique.RF: 'RandomForest',
                                Technique.SVR: 'SVR', Technique.NNLS: 'NNLS',
-                               Technique.STEPWISE: 'Stepwise'}
+                               Technique.STEPWISE: 'Stepwise', Technique.DUMMY: 'Dummy'}
 
 
 def mean_absolute_percentage_error(y_true, y_pred):

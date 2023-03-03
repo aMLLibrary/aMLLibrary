@@ -30,6 +30,7 @@ import data_preparation.random_splitting
 import data_preparation.xgboost_feature_selection
 
 import model_building.decision_tree_experiment_configuration as dt
+import model_building.dummy_experiment_configuration as du
 import model_building.experiment_configuration as ec
 import model_building.lr_ridge_experiment_configuration as lr
 import model_building.nnls_experiment_configuration as nnls
@@ -264,7 +265,7 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
             sys.exit(-1)
 
         first_key = ec.enum_to_configuration_label[self._technique]
-        hyperparams = self._campaign_configuration[first_key]
+        hyperparams = self._campaign_configuration.get(first_key, dict())
         self._logger.debug("Hyperparams are %s", pprint.pformat(hyperparams, width=1))
         hyperparams_names = []
         hyperparams_values = []
@@ -294,6 +295,9 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
             elif self._technique == ec.Technique.DT:
                 point = dt.DecisionTreeExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
                                                                regression_inputs, prefix)
+            elif self._technique == ec.Technique.DUMMY:
+                point = du.DummyExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
+                                                        regression_inputs, prefix)
             elif self._technique == ec.Technique.RF:
                 point = rf.RandomForestExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
                                                                regression_inputs, prefix)
