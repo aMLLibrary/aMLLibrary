@@ -89,7 +89,7 @@ In this terminal, you may run the same commands as in a regular terminal, includ
 
 **Note:** when using web services, remind to make the internal address and port visible from outside the container, by running:
 ```
-docker run --name aml --rm -v $(pwd):/aMLLibrary -it -p 8888:8888 amllibrary --bind 0.0.0.0
+docker run --name aml --rm -v $(pwd):/aMLLibrary -it -p 8888:8888 amllibrary
 ```
 
 
