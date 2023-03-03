@@ -12,6 +12,9 @@ FROM python:3.8
 ENV MY_DIR=/aMLLibrary
 WORKDIR ${MY_DIR}
 COPY requirements.txt .
+RUN python -m pip install --upgrade pip
 RUN python -m pip install -r requirements.txt
 COPY . .
-CMD bash
+
+EXPOSE 8888
+ENTRYPOINT ["python3", "webService.py"]
