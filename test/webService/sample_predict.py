@@ -1,0 +1,19 @@
+import requests
+
+
+def main():
+    sample_data = {
+      "regressor": "OUTPUT/faas_test/best.pickle",
+      "config_file": "example_configurations/faas_predict.ini",
+      "output": "OUTPUT/faas_predict_2"
+    }
+
+    port = 8888
+    url = f"http://0.0.0.0:{port}/amllibrary/predict"
+    sample_result = requests.post(url = url, json = sample_data)
+    print(sample_result)
+    print(sample_result.json())
+
+
+if __name__ == "__main__":
+    main()
