@@ -17,4 +17,5 @@ RUN python -m pip install -r requirements.txt
 COPY . .
 
 EXPOSE 8888
-ENTRYPOINT ["python3", "webService.py"]
+
+CMD bash
