@@ -32,10 +32,6 @@ app = Flask(__name__)
 train_path = "/amllibrary/train"
 predict_path = "/amllibrary/predict"
 
-# path of current script
-current_script = os.path.abspath(os.path.dirname(__file__))
-basedir = "/".join(current_script.split("/")[:-2])
-
 # exit codes
 NOT_FOUND = 404
 POST_SUCCESS = 201
