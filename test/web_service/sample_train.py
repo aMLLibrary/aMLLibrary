@@ -4,7 +4,7 @@ import requests
 def main():
     sample_data = {
       "configuration_file": "example_configurations/faas_test.ini",
-      "output": "OUTPUT/faas_test_2"
+      "output": "outputs/faas_test_2"
     }
 
     port = 8888
