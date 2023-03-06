@@ -66,10 +66,10 @@ For more information, please refer to the [`predict.py`](predict.py) file itself
 ### Web Services
 The training and predicting modules mentioned above can be exposed as web services using a REST API implemented through Flask. To start the services, run:
 ```
-python3 webService.py
+python3 web_service.py
 ```
 The train and predict modules will be accessible at `http://0.0.0.0:8888/amllibrary/train` and `http://0.0.0.0:8888/amllibrary/predict`, respectively. 
-A `POST` request can be issued by passing the required data. Corresponding samples are provided in [test/webService](test/webService).
+A `POST` request can be issued by passing the required data. Corresponding samples are provided in [test/web_service](test/web_service).
 **Note:** The configuration/regressor/data files used by the modules should already be available to the train/predict services. Only the paths are sent as input to the requests.
 
 
