@@ -70,6 +70,7 @@ python3 webService.py
 ```
 The train and predict modules will be accessible at `http://0.0.0.0:8888/amllibrary/train` and `http://0.0.0.0:8888/amllibrary/predict`, respectively. 
 A `POST` request can be issued by passing the required data. Corresponding samples are provided in [test/webService](test/webService).
+**Note:** The configuration/regressor/data files used by the modules should already be available to the train/predict services. Only the paths are sent as input to the requests.
 
 
 ## Docker image
