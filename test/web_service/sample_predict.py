@@ -3,9 +3,9 @@ import requests
 
 def main():
     sample_data = {
-      "regressor": "OUTPUT/faas_test/best.pickle",
+      "regressor": "outputs/faas_test/best.pickle",
       "config_file": "example_configurations/faas_predict.ini",
-      "output": "OUTPUT/faas_predict_2"
+      "output": "outputs/faas_predict_2"
     }
 
     port = 8888
