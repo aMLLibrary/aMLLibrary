@@ -53,6 +53,11 @@ error_msg = {
 @app.route(train_path, methods=["POST"])
 def train():
     """
+    Starts training service
+
+    Returns
+    -------
+    Message and key denoting the training outcome (success or failure)
     """
     # get all data
     data = request.get_json()
@@ -101,6 +106,13 @@ def train():
 @app.route(predict_path, methods=["POST"])
 def predict():
     """
+    Starts predict service
+
+    Returns
+    -------
+    Message and key denoting the predict outcome (success or failure)
+    The message contains the list of predicted values if the prediction is 
+    done on a dataframe instead of a file
     """
     # get all data
     data = request.get_json()
