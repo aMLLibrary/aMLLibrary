@@ -43,7 +43,8 @@ error_msg = {
     414: "ERROR: missing mandatory input `configuration_file`",
     424: "ERROR: missing mandatory input `regressor`",
     434: "ERROR: either `config_file` or `df` must be provided",
-    444: "ERROR: both `config_file` and `df` provided --> ambiguous call"
+    444: "ERROR: both `config_file` and `df` provided --> ambiguous call",
+    454: "ERROR: aMLLibrary called `sys.exit`"
 }
 
 # set basic logging level
@@ -83,23 +84,28 @@ def train():
         if debug:
             logging.getLogger().setLevel(logging.DEBUG)
 
-        # train
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""
-        processor = sequence_data_processing.SequenceDataProcessing(
-            configuration_file, 
-            debug=debug, 
-            output=output, 
-            j=j, 
-            generate_plots=generate_plots, 
-            details=details, 
-            keep_temp=keep_temp
-          )
-        processor.process()
+        try:
+            # train
+            os.environ["CUDA_VISIBLE_DEVICES"] = ""
+            processor = sequence_data_processing.SequenceDataProcessing(
+                configuration_file, 
+                debug=debug, 
+                output=output, 
+                j=j, 
+                generate_plots=generate_plots, 
+                details=details, 
+                keep_temp=keep_temp
+            )
+            processor.process()
 
-        # define output        
-        output = ("DONE", POST_SUCCESS)
+            # define output
+            output = ("DONE", POST_SUCCESS)
+        
+        # define appropriate key error if the training module fails
+        except SystemExit:
+            KEY_ERROR = 50
     
-    # if any mandatory field was missing, return original data and error code
+    # if any key error is defined, return original data and error code
     if KEY_ERROR > 0:
         output = (error_msg[NOT_FOUND + KEY_ERROR], NOT_FOUND + KEY_ERROR)
            
@@ -145,32 +151,37 @@ def predict():
         if debug:
             logging.getLogger().setLevel(logging.DEBUG)
         
-        # initialize predictor
-        predictor_obj = Predictor(
-            regressor_file=regressor_file, 
-            output_folder=output_folder, 
-            debug=debug
-          )
+        try:
+            # initialize predictor
+            predictor_obj = Predictor(
+                regressor_file=regressor_file, 
+                output_folder=output_folder, 
+                debug=debug
+            )
 
-        # if configuration file is provided, perform prediction from file
-        if "config_file" in data.keys():
-            predictor_obj.predict(
-                config_file=config_file, 
-                mape_to_file=mape_to_file
-              )
-            result = "DONE"
-        else:
-              # otherwise, perform prediction from dataframe
-              yy = predictor_obj.predict_from_df(
-                  xx=pd.DataFrame(df),
-                  regressor_file=regressor_file
-              )
-              result = str(yy)
+            # if configuration file is provided, perform prediction from file
+            if "config_file" in data.keys():
+                predictor_obj.predict(
+                    config_file=config_file, 
+                    mape_to_file=mape_to_file
+                )
+                result = "DONE"
+            else:
+                # otherwise, perform prediction from dataframe
+                yy = predictor_obj.predict_from_df(
+                    xx=pd.DataFrame(df),
+                    regressor_file=regressor_file
+                )
+                result = str(yy)
+            
+            # define output        
+            output = (result, POST_SUCCESS)
         
-        # define output        
-        output = (result, POST_SUCCESS)
+        # define appropriate key error if the training module fails
+        except SystemExit:
+            KEY_ERROR = 50
     
-    # if any mandatory field was missing, return original data and error code
+    # if any key error is defined, return original data and error code
     if KEY_ERROR > 0:
         output = (error_msg[NOT_FOUND + KEY_ERROR], NOT_FOUND + KEY_ERROR)
            
