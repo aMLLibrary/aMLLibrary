@@ -63,6 +63,16 @@ python3 predict.py -c example_configurations/faas_predict.ini -r output_test/LRR
 For more information, please refer to the [`predict.py`](predict.py) file itself and to the [README.md](example_configurations/README.md#prediction-files) for configuration files.
 
 
+### Web Services
+The training and predicting modules mentioned above can be exposed as web services using a REST API implemented through Flask. To start the services, run:
+```
+python3 web_service.py
+```
+The train and predict modules will be accessible at `http://0.0.0.0:8888/amllibrary/train` and `http://0.0.0.0:8888/amllibrary/predict`, respectively. 
+A `POST` request can be issued by passing the required data. Corresponding samples are provided in [test/web_service](test/web_service).
+**Note:** The configuration/regressor/data files used by the modules should already be available to the train/predict services. Only the paths are sent as input to the requests.
+
+
 ## Docker image
 This section shows how to create and use the Docker container image for this library.
 It is not strictly needed, but it ensures an environment in which dependencies have the correct version, and in which it is guaranteed that the library works correctly.
@@ -77,6 +87,11 @@ docker run --name aml --rm -v $(pwd):/aMLLibrary -it amllibrary
 ```
 which defaults to a `bash` terminal unless a specific command is appended to the line.
 In this terminal, you may run the same commands as in a regular terminal, including the ones from the [Tutorial](#tutorial) section.
+
+**Note:** when using web services, remind to make the internal address and port visible from outside the container, by running:
+```
+docker run --name aml --rm -v $(pwd):/aMLLibrary -it -p 8888:8888 amllibrary
+```
 
 
 ## Hyperopt
