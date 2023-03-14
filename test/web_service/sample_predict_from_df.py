@@ -3,7 +3,7 @@ import requests
 
 def main():
     sample_data = {
-      "regressor": "outputs/faas_test/best.pickle",
+      "regressor": "outputs/faas_test_ws/best.pickle",
       "df": {
         "Lambda": [
           0.222486056568079,
