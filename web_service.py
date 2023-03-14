@@ -17,6 +17,7 @@ limitations under the License.
 from flask import Flask, request, jsonify
 from waitress import serve
 import pandas as pd
+import logging
 import os
 
 from model_building.predictor import Predictor
@@ -45,6 +46,8 @@ error_msg = {
     444: "ERROR: both `config_file` and `df` provided --> ambiguous call"
 }
 
+# set basic logging level
+logging.basicConfig(level=logging.INFO)
 
 
 # ----------------------------------------------------------------------------
@@ -75,6 +78,10 @@ def train():
         generate_plots = data.get("generate_plots", False)
         details = data.get("details", False)
         keep_temp = data.get("keep_temp", False)
+
+        # set logging level for debugging (if required)
+        if debug:
+            logging.getLogger().setLevel(logging.DEBUG)
 
         # train
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -133,6 +140,10 @@ def predict():
         debug = data.get("debug", False)
         mape_to_file = data.get("mape_to_file", False)
         df = data.get("df", None)
+
+        # set logging level for debugging (if required)
+        if debug:
+            logging.getLogger().setLevel(logging.DEBUG)
         
         # initialize predictor
         predictor_obj = Predictor(
@@ -171,5 +182,5 @@ def predict():
 # start
 # ----------------------------------------------------------------------------
 if __name__ == "__main__":
-  # app.run(debug=True, host="0.0.0.0", port=8888)
-  serve(app, host="0.0.0.0", port=8888)
+    # app.run(debug=True, host="0.0.0.0", port=8888)
+    serve(app, host="0.0.0.0", port=8888)
