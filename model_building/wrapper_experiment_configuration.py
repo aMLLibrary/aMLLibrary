@@ -699,7 +699,7 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
             # Compute validation metric for step 3
             best_subset_X_train = X_train[best_features]
             _, score = subsets_evaluator(best_subset_model, best_subset_X_train,
-                                         y_train, trained=True)
+                                         y_train, trained=False)
             subsets_best_metrics.append(score)
         # end of dim loop
         # STEP 3: SELECT OVERALL BEST CANDIDATE AMONG ONES WITH DIFFERENT DIMS
