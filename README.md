@@ -16,7 +16,6 @@ options:
   -o OUTPUT, --output OUTPUT
                         output folder where all the models will be stored
   -j J                  number of processes to be used
-  -g, --generate-plots  generate plots
   -l, --details         print results of the single experiments
   -k, --keep-temp       do not remove temporary files after successful execution
 
