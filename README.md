@@ -98,6 +98,26 @@ This library is integrated with the Hyperopt package for hyperparameter tuning v
 For more information, please refer to the [`README.md`](example_configurations/README.md#hyperopt) for configuration files.
 
 
+## Citation
+If you want to use this library for your own work, please cite the following paper:
+
+Guindani, Lattuada, Ardagna. *AMLLibrary: An AutoML Approach for Performance Prediction*. 37th International Conference on Modelling and Simulation (ECMS) (pp. 241-247). ECMS, 2023. ISBN: 978-3-937436-80-7
+
+```
+@inproceedings{guindani2023amllibrary,
+  title={{AMLLibrary: An AutoML Approach for Performance Prediction}},
+  author={Guindani, Bruno and Lattuada, Marco and Ardagna, Danilo},
+  booktitle={37th International Conference on Modelling and Simulation (ECMS)},
+  volume={37},
+  issue={1},
+  year={2023},
+  pages={241--247},
+  isbn={978-3-937436-80-7},
+  publisher={ECMS}
+}
+```
+
+
 ## Acknowledgments
 This library is currently maintained by the LIGATE project, which was partially funded by the European Commission under the Horizon 2020 Grant Agreement number 956137, as part of the European High-Performance Computing (EuroHPC) Joint Undertaking program.
 
