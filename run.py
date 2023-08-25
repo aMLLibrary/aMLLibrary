@@ -32,7 +32,6 @@ def main():
     -d, --debug: enables the debug printing.
     -o, --output: specifies the output directory where logs and results will be put. If the directory already exists, the script fails. This behaviour has been designed to avoid unintentinal overwriting.
     -j: specifies the maximum number of processes which can be used.
-    -g, --generate-plots: enables generation of plots of type actual vs. predicted.
     -l, --details: increase the verbosity of the library. In particular, results in terms of MAPE on different sets are printed for all the built regressors and not only for the best one.
     -k, --keep-temp: do not remove temporary files after successful execution
     """
@@ -41,14 +40,13 @@ def main():
     parser.add_argument('-d', "--debug", help="enable debug messages", default=False, action="store_true")
     parser.add_argument('-o', "--output", help="output folder where all the models will be stored", default="output")
     parser.add_argument('-j', help="number of processes to be used", default=1)
-    parser.add_argument('-g', "--generate-plots", help="generate plots", default=False, action="store_true")
     parser.add_argument('-l', "--details", help="print results of the single experiments", default=False, action="store_true")
     parser.add_argument('-k', "--keep-temp", help="do not remove temporary files after successful execution", default=False, action="store_true")
     args = parser.parse_args()
 
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-    sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args.configuration_file, debug=args.debug, output=args.output, j=args.j, generate_plots=args.generate_plots, details=args.details, keep_temp=args.keep_temp)
+    sequence_data_processor = sequence_data_processing.SequenceDataProcessing(args.configuration_file, debug=args.debug, output=args.output, j=args.j, details=args.details, keep_temp=args.keep_temp)
     sequence_data_processor.process()
 
 

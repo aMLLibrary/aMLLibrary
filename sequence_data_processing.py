@@ -72,7 +72,7 @@ class SequenceDataProcessing:
         The random generator used in the whole application both to generate random numbers and to initialize other random generators
     """
 
-    def __init__(self, input_configuration, debug=False, output="output", j=1, generate_plots=False, details=False, keep_temp=False):
+    def __init__(self, input_configuration, debug=False, output="output", j=1, details=False, keep_temp=False):
         """
         Constructor of the class
 
@@ -93,9 +93,6 @@ class SequenceDataProcessing:
 
         j: integer
             The number of processes to be used in the grid search
-
-        generate_plots: bool
-            True if plots have to be used
 
         details: bool
             True if the results of the single experiments should be added
@@ -123,17 +120,14 @@ class SequenceDataProcessing:
                 self._logger.error("%s does not exist", input_configuration)
                 sys.exit(-1)
             general_args = {'configuration_file': input_configuration, 'output': output,
-                            'j': str(j), 'debug': str(debug),
-                            'generate_plots': str(generate_plots), 'details': str(details)
+                            'j': str(j), 'debug': str(debug), 'details': str(details)
                            }
             self.load_campaign_configuration(input_configuration, general_args)
         elif isinstance(input_configuration, dict):
             # Read configuration from the argument dict
             self.input_configuration_file = None
             self._campaign_configuration = input_configuration
-            general_args = {'output': output, 'j': j, 'debug': debug,
-                            'generate_plots': generate_plots, 'details': details
-                           }
+            general_args = {'output': output, 'j': j, 'debug': debug, 'details': details}
             self._campaign_configuration['General'].update(general_args)
             self.complete_campaign_configuration()
         else:

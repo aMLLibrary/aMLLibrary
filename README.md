@@ -16,7 +16,6 @@ options:
   -o OUTPUT, --output OUTPUT
                         output folder where all the models will be stored
   -j J                  number of processes to be used
-  -g, --generate-plots  generate plots
   -l, --details         print results of the single experiments
   -k, --keep-temp       do not remove temporary files after successful execution
 
@@ -97,6 +96,26 @@ docker run --name aml --rm -v $(pwd):/aMLLibrary -it -p 8888:8888 amllibrary
 ## Hyperopt
 This library is integrated with the Hyperopt package for hyperparameter tuning via Bayesian Optimization.
 For more information, please refer to the [`README.md`](example_configurations/README.md#hyperopt) for configuration files.
+
+
+## Citation
+If you want to use this library for your own work, please cite the following paper:
+
+Guindani, Lattuada, Ardagna. *AMLLibrary: An AutoML Approach for Performance Prediction*. 37th International Conference on Modelling and Simulation (ECMS) (pp. 241-247). ECMS, 2023. ISBN: 978-3-937436-80-7
+
+```
+@inproceedings{guindani2023amllibrary,
+  title={{AMLLibrary: An AutoML Approach for Performance Prediction}},
+  author={Guindani, Bruno and Lattuada, Marco and Ardagna, Danilo},
+  booktitle={37th International Conference on Modelling and Simulation (ECMS)},
+  volume={37},
+  issue={1},
+  year={2023},
+  pages={241--247},
+  isbn={978-3-937436-80-7},
+  publisher={ECMS}
+}
+```
 
 
 ## Acknowledgments

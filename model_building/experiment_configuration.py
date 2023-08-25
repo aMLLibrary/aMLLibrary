@@ -25,14 +25,9 @@ from enum import Enum
 import warnings
 
 import numpy as np
-import matplotlib
 from sklearn.metrics import mean_squared_error, r2_score
 
 import regressor
-
-matplotlib.use('Agg')
-# pylint: disable=wrong-import-position
-import matplotlib.pyplot as plt  # noqa: E402
 
 # pylint: disable=wrong-import-position
 import custom_logger  # noqa: E402
@@ -133,9 +128,6 @@ class ExperimentConfiguration(abc.ABC):
 
     evaluate()
         Compute the MAPE on the different input dataset
-
-    generate_plots()
-        Generate plots about real vs. predicted
 
     _compute_signature()
         Compute the string identifier of this experiment
@@ -340,67 +332,6 @@ class ExperimentConfiguration(abc.ABC):
             self.r2s[set_name] = r2_score(real_y, predicted_y)
             self._logger.debug("R^2  is %f", self.r2s[set_name])
             self._logger.debug("<--")
-
-        self._stop_file_logger()
-
-    def generate_plots(self):
-        """
-        Generate the plots in the experiment output directory which compare predicted values vs. real ones
-        """
-        self._start_file_logger()
-        if self._campaign_configuration['General']['validation'] in {"Extrapolation", "HoldOut"}:
-            training_rows = self._regression_inputs.inputs_split["training"]
-            predicted_training_y = self.compute_estimations(training_rows)
-            real_training_y = self._regression_inputs.data.loc[training_rows, self._regression_inputs.y_column].values.astype(np.float64)
-            if self._regression_inputs.y_column in self._regression_inputs.scalers:
-                y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
-                predicted_training_y = y_scaler.inverse_transform(predicted_training_y)
-                real_training_y = y_scaler.inverse_transform(real_training_y)
-            plt.scatter(real_training_y, predicted_training_y, linestyle='None', s=10, marker="*", linewidth=0.5, label="Training", c="green")
-        validation_rows = self._regression_inputs.inputs_split["validation"]
-        predicted_validation_y = self.compute_estimations(validation_rows)
-        real_validation_y = self._regression_inputs.data.loc[validation_rows, self._regression_inputs.y_column].values.astype(np.float64)
-        if self._regression_inputs.y_column in self._regression_inputs.scalers:
-            y_scaler = self._regression_inputs.scalers[self._regression_inputs.y_column]
-            predicted_validation_y = y_scaler.inverse_transform(predicted_validation_y)
-            real_validation_y = y_scaler.inverse_transform(real_validation_y)
-        plt.scatter(real_validation_y, predicted_validation_y, linestyle='None', s=10, marker="+", linewidth=0.5, label="Validation", c="blue")
-        xlim = plt.xlim()
-        ylim = plt.ylim()
-        plt.plot(plt.xlim(), plt.ylim(), "r--", linewidth=0.5)
-        plt.xlim(xlim)
-        plt.ylim(ylim)
-        plt.xlabel("Real execution times [s]")
-        plt.ylabel("Predicted execution times [s]")
-        plt.legend()
-        plt.savefig(os.path.join(self._experiment_directory, "real_vs_predicted.pdf"))
-        plt.savefig(os.path.join(self._experiment_directory, "real_vs_predicted.png"))
-        if self._campaign_configuration['General']['validation'] == "Extrapolation" and len(self._campaign_configuration['General']['extrapolation_columns']) == 1:
-            plt.figure()
-            extrapolation_column = next(iter(self._campaign_configuration['General']['extrapolation_columns']))
-            normalization = 'normalization' in self._campaign_configuration['DataPreparation'] and self._campaign_configuration['DataPreparation']['normalization']
-            column_label = "original_" + extrapolation_column if normalization else extrapolation_column
-
-            x_training_values = self._regression_inputs.data.loc[self._regression_inputs.inputs_split["training"], column_label]
-            x_validation_values = self._regression_inputs.data.loc[self._regression_inputs.inputs_split["validation"], column_label]
-
-            training_error = np.multiply(np.divide(real_training_y - predicted_training_y, real_training_y), 100)
-            validation_error = np.multiply(np.divide(real_validation_y - predicted_validation_y, real_validation_y), 100)
-            mape = np.mean(np.abs(validation_error))
-
-            plt.scatter(x_training_values, training_error, linestyle='None', s=10, marker="*", linewidth=0.5, label="Training", c="green")
-            plt.scatter(x_validation_values, validation_error, linestyle='None', s=10, marker="+", linewidth=0.5, label="Validation", c="blue")
-            xlim = plt.xlim()
-            ylim = plt.ylim()
-            plt.plot(xlim, [0, 0], "r--", linewidth=0.5)
-            plt.xlim(xlim)
-            plt.ylim(ylim)
-            plt.xlabel(extrapolation_column)
-            plt.ylabel("Error [%]")
-            plt.legend()
-            plt.title("Extrapolation on " + extrapolation_column + " - MAPE " + "{0:.2f}".format(mape) + "%")
-            plt.savefig(os.path.join(self._experiment_directory, "error_vs_extrapolation.pdf"))
-            plt.savefig(os.path.join(self._experiment_directory, "error_vs_extrapolation.png"))
 
         self._stop_file_logger()
 

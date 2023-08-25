@@ -35,12 +35,6 @@ def evaluate_wrapper(experiment_configuration):
     return experiment_configuration
 
 
-def plot_wrapper(experiment_configuration):
-    if experiment_configuration.trained:
-        experiment_configuration.generate_plots()
-    return experiment_configuration
-
-
 def recursivedict():
     return collections.defaultdict(recursivedict)
 
@@ -106,15 +100,11 @@ class Results:
                 if not exp_conf.trained:
                     continue
                 exp_conf.evaluate()
-                if bool(self._campaign_configuration['General']['generate_plots']):
-                    exp_conf.generate_plots()
             self._logger.info("<--")
         else:
             self._logger.info("-->Evaluate experiments (in parallel)")
             with multiprocessing.Pool(processes_number) as pool:
                 self._exp_confs = list(tqdm.tqdm(pool.imap(evaluate_wrapper, self._exp_confs), total=len(self._exp_confs)))
-                if bool(self._campaign_configuration['General']['generate_plots']):
-                    self._exp_confs = list(tqdm.tqdm(pool.imap(plot_wrapper, self._exp_confs), total=len(self._exp_confs)))
                 self._logger.info("<--")
 
         self.raw_results = {}

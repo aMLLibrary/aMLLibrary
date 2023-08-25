@@ -76,7 +76,6 @@ def train():
         debug = data.get("debug", False)
         output = data.get("output", "output")
         j = data.get("j", 1)
-        generate_plots = data.get("generate_plots", False)
         details = data.get("details", False)
         keep_temp = data.get("keep_temp", False)
 
@@ -92,7 +91,6 @@ def train():
                 debug=debug, 
                 output=output, 
                 j=j, 
-                generate_plots=generate_plots, 
                 details=details, 
                 keep_temp=keep_temp
             )
