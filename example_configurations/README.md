@@ -71,7 +71,8 @@ This section is mandatory, and should only be used if one wants to perform some 
 | Option | Type | Description | Notes |
 | ------ | ---- | ----------- | ----- |
 | `method`  | string | feature selection method | can be `SFS` or `XGBoost` |
-| `max_features` | integer | maximum number of features to be selected | |
+| `max_features` | integer | maximum number of features to be selected | used with `SFS` |
+| `min_features` | integer | minimum number of features to keep | used with `SFS`. Optional (default 1) |
 | `folds` | integer | number of Cross-Validation folds to be used | used with `SFS` |
 | `XGBoost_tolerance` | float in (0, 1) | maximum cumulative feature weight to be kept | used with `XGBoost` |
 
