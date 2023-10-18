@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import configparser as cp
 import logging
 import os
 import pickle
@@ -26,8 +25,6 @@ import sequence_data_processing
 import data_preparation.data_loading
 import data_preparation.onehot_encoding
 from model_building.experiment_configuration import mean_absolute_percentage_error
-import model_building.model_building
-import regressor
 
 
 class Predictor(sequence_data_processing.SequenceDataProcessing):

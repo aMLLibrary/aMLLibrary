@@ -26,12 +26,11 @@ import pandas as pd
 import sklearn
 from sklearn.metrics import r2_score, make_scorer
 
-from hyperopt_aml.hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+from hyperopt_aml.hyperopt import fmin, tpe, hp, STATUS_OK
 from hyperopt_aml.hyperopt.pyll import scope
 
 import os
 import sys
-import pickle
 import copy
 
 import model_building.experiment_configuration as ec
@@ -278,7 +277,6 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
             The values predicted by the associated regressor
         """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
-        features = self.get_x_columns()
         
         filtered_xdata = xdata
         ret = self.get_regressor().predict(filtered_xdata)

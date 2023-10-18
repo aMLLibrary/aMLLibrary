@@ -125,7 +125,7 @@ class Stepwise(BaseEstimator):
                     z_new = np.abs(b_new[-1] / (b_int_new[-1, 1] - b_new[-1]))
                     if z_new > 1:  # which means you accept to add the feature
                         added = True
-                except Exception as e:  # in case of ill-conditioned matrices or other numerical issues
+                except:  # in case of ill-conditioned matrices or other numerical issues
                     added = False
                 if added:
                     b = b_new

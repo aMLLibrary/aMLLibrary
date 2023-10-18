@@ -18,9 +18,7 @@ limitations under the License.
 """
 import copy
 import operator
-import os
 import warnings
-
 import xgboost as xgb
 
 import model_building.experiment_configuration as ec

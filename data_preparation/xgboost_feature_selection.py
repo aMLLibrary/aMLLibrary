@@ -72,10 +72,7 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
         inputs: RegressionInputs
             The data to be analyzed
         """
-
-        max_features = self._campaign_configuration['FeatureSelection']['max_features']
-
-        # setting parameters for XGboost design space explooration
+        # setting parameters for XGboost design space exploration
         xgboost_parameters = copy.deepcopy(self._campaign_configuration)
 
         xgboost_parameters['General']['techniques'] = ['XGBoost']
