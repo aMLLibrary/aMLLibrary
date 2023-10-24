@@ -96,6 +96,8 @@ class XGBoostFeatureSelection(data_preparation.data_preparation.DataPreparation)
             xgboost_parameters['XGBoost']['n_estimators'] = [50]
             xgboost_parameters['XGBoost']['learning_rate'] = [0.01, 0.1]
             xgboost_parameters['XGBoost']['max_depth'] = [3]
+            xgboost_parameters['XGBoost']['lambda'] = [1]
+            xgboost_parameters['XGBoost']['alpha'] = [0]
 
         best_conf = model_building_var.process(xgboost_parameters, inputs, int(self._campaign_configuration['General']['j']))
 
