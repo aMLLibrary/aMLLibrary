@@ -1,6 +1,6 @@
 """
-Copyright 2019 Marco Lattuada
-Copyright 2021 Bruno Guindani
+Copyright 2024 Andrea Di Carlo
+Copyright 2024 Bruno Guindani
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,65 +16,10 @@ limitations under the License.
 """
 import numpy as np
 import sklearn.linear_model as lr
-import torch
-import torch.nn as nn
 import pandas as pd
-
 
 import model_building.experiment_configuration as ec
 
-
-class NeuralNetwork(nn.Module):
-
-    def __init__(self, input_size, n_features, dropout_list):
-        super(NeuralNetwork, self).__init__()
-
-        n_features =list(n_features)
-        # Last layer with 1 neuron
-        n_features.append(1)
-
-        layers = []
-        # First layer with number of neurons based on input size
-        layers.append(nn.Linear(input_size, n_features[0]))
-
-        for i in range(len(n_features) - 1):
-            layers.append(nn.Linear(n_features[i], n_features[i+1]))
-            if i < len(n_features) - 2:
-                # Activate Function
-                layers.append(nn.ReLU())
-                # Dropout
-                layers.append(nn.Dropout(dropout_list))
-        self.layers = nn.Sequential(*layers)
-
-    def forward(self, x):
-        x = self.layers(x)
-        return x
-    
-    def predict(self, input_data):
-        """
-        Parameters
-        ----------
-        input_dataframe : pandas.DataFrame
-            The DataFrame containing the input data for which we want to make predictions.
-
-        Returns
-        -------
-        predictions : torch.Tensor
-            Tensor containing the predictions.
-        """
-        x_array = input_data.values.astype(np.float64) if isinstance(input_data, pd.DataFrame) else input_data
-        x_tensor = torch.tensor(x_array, dtype=torch.float32)
-
-        self.eval()
-
-        with torch.no_grad():
-            predictions = self(x_tensor).squeeze()
-
-        return predictions.detach().numpy()
-    
-
-    
-    
 
 class NeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
     """
@@ -144,29 +89,10 @@ class NeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
 
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
 
-        x_array = xdata.values.astype(np.float32) if isinstance(xdata, pd.DataFrame) else xdata
-        x_train_tensor = torch.tensor(x_array, dtype=torch.float32)
+        xdata = xdata.astype(float)
+        ydata = ydata.astype(float)
 
-        y_array = ydata.values.astype(np.float32) if isinstance(ydata, pd.Series) else ydata
-        y_train_tensor = torch.tensor(y_array, dtype=torch.float32)
-
-
-        loss_fn = nn.MSELoss()
-        optimizer = torch.optim.Adam(self._regressor.parameters(), lr=0.01)
-        epochs = 100
-        # Train the neural network
-        for epoch in range(epochs):
-            # Forward pass: compute predicted y by passing x to the model
-            y_pred = self._regressor.forward(x_train_tensor)
-            self._logger.debug(f"y_pred shape: {y_pred.shape}")
-
-            # Compute loss
-            loss = loss_fn(y_pred, y_train_tensor)
-
-            # Zero gradients, backward pass, and optimize
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+        self._regressor.fit(xdata, ydata, verbose=0, batch_size=10, epochs=5)
 
         self._logger.debug("Model built")
 
@@ -185,38 +111,47 @@ class NeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
         -------
             The values predicted by the associated regressor
         """
+        xdata, _ = self._regression_inputs.get_xy_data(rows)
+        xdata = xdata.astype(float)
+        predictions = self._regressor.predict(xdata, verbose=0)
+        return predictions
 
-        with torch.no_grad():
-            xdata, _ = self._regression_inputs.get_xy_data(rows)
-
-            x_array = xdata.values.astype(np.float64) if isinstance(xdata, pd.DataFrame) else xdata
-            x_train_tensor = torch.tensor(x_array, dtype=torch.float32)
-
-            predictions = self._regressor(x_train_tensor)
-
-        return predictions.detach().numpy()
-     
-    
     def print_model(self):
         """
         Print the representation of the generated model
         """
-        ret_string = "Neural Network model:\n" + str(self._regressor)
+        summary_list = []
+        self._regressor.summary(print_fn=lambda x: summary_list.append(x))
+        ret_string = '\n'.join(summary_list)
         return ret_string
 
     def initialize_regressor(self):
         """
         Initialize the regressor object for the experiments
         """
-        if not getattr(self, '_hyperparameters', None):
-            self._regressor = NeuralNetwork()
-        else:
-            xdata, _ = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
-            input_size = xdata.shape[1] 
+        import keras
 
-            self._regressor = NeuralNetwork(input_size,
-                n_features = self._hyperparameters['n_features'],
-                dropout_list = self._hyperparameters['dropout_list'])            
+        xdata, _ = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
+        input_shape = (xdata.shape[1],)
+        layers_sizes = self._hyperparameters['n_features']
+        dropout_list = self._hyperparameters['dropout_list']
+
+        # First layer with number of neurons based on input size
+        layers = []
+        layers.append(keras.layers.Input(shape=input_shape))
+        # Intermediate layers
+        for i in range(len(layers_sizes)):
+            layers.append(keras.layers.Dense(layers_sizes[i], activation='relu'))
+            layers.append(keras.layers.Dropout(dropout_list[i]))
+        # Output layer
+        layers.append(keras.layers.Dense(1))
+
+        # Initialize and compile model
+        self._regressor = keras.Sequential(layers)
+        self._regressor.compile(loss='mse',
+                                optimizer=keras.optimizers.Adam(learning_rate=1e-3),
+                                metrics=[keras.metrics.RootMeanSquaredError()]
+        )
 
     def get_default_parameters(self):
         """
