@@ -26,24 +26,24 @@ import model_building.experiment_configuration as ec
 
 class NeuralNetwork(nn.Module):
 
-    def __init__(self, input_size, layer_sizes, dropout_prob):
+    def __init__(self, input_size, n_features, dropout_list):
         super(NeuralNetwork, self).__init__()
 
-        layer_sizes =list(layer_sizes)
+        n_features =list(n_features)
         # Last layer with 1 neuron
-        layer_sizes.append(1)
+        n_features.append(1)
 
         layers = []
         # First layer with number of neurons based on input size
-        layers.append(nn.Linear(input_size, layer_sizes[0]))
+        layers.append(nn.Linear(input_size, n_features[0]))
 
-        for i in range(len(layer_sizes) - 1):
-            layers.append(nn.Linear(layer_sizes[i], layer_sizes[i+1]))
-            if i < len(layer_sizes) - 2:
+        for i in range(len(n_features) - 1):
+            layers.append(nn.Linear(n_features[i], n_features[i+1]))
+            if i < len(n_features) - 2:
                 # Activate Function
                 layers.append(nn.ReLU())
                 # Dropout
-                layers.append(nn.Dropout(dropout_prob))
+                layers.append(nn.Dropout(dropout_list))
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -76,7 +76,7 @@ class NeuralNetwork(nn.Module):
     
     
 
-class NewNeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
+class NeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
     """
     Class representing a single experiment configuration for linear regression
 
@@ -113,7 +113,7 @@ class NewNeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
         """
         assert prefix
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
-        self.technique = ec.Technique.NEWNEURAL
+        self.technique = ec.Technique.NEURAL_NETWORK
 
     def _compute_signature(self, prefix):
         """
@@ -130,8 +130,8 @@ class NewNeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
         """
         assert isinstance(prefix, list)
         signature = prefix.copy()
-        signature.append("layer_sizes" + str(self._hyperparameters['layer_sizes']))
-        signature.append("dropout_prob" + str(self._hyperparameters['dropout_prob']))
+        signature.append("n_features" + str(self._hyperparameters['n_features']))
+        signature.append("dropout_list" + str(self._hyperparameters['dropout_list']))
         return signature
     
 
@@ -215,11 +215,11 @@ class NewNeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
             input_size = xdata.shape[1] 
 
             self._regressor = NeuralNetwork(input_size,
-                layer_sizes = self._hyperparameters['layer_sizes'],
-                dropout_prob = self._hyperparameters['dropout_prob'])            
+                n_features = self._hyperparameters['n_features'],
+                dropout_list = self._hyperparameters['dropout_list'])            
 
     def get_default_parameters(self):
         """
         Get a dictionary with all technique parameters with default values
         """
-        return {'layer_sizes': [64, 32], 'dropout_prob': 0.5}
+        return {'n_features': [64, 32], 'dropout_list': 0.5}
