@@ -14,8 +14,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
 import numpy as np
-import sklearn.linear_model as lr
+import os
 import pandas as pd
 
 import model_building.experiment_configuration as ec
@@ -59,6 +60,8 @@ class NeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
         assert prefix
         super().__init__(campaign_configuration, hyperparameters, regression_inputs, prefix)
         self.technique = ec.Technique.NEURAL_NETWORK
+        # Get Keras backend or resort to default value
+        self.backend = campaign_configuration['General'].get('keras_backend', 'tensorflow')
 
     def _compute_signature(self, prefix):
         """
@@ -75,8 +78,18 @@ class NeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
         """
         assert isinstance(prefix, list)
         signature = prefix.copy()
-        signature.append("n_features" + str(self._hyperparameters['n_features']))
-        signature.append("dropout_list" + str(self._hyperparameters['dropout_list']))
+        signature.append("n_features" + ''.join([str(_) for _ in self._hyperparameters['n_features']]))
+        if isinstance(self._hyperparameters['dropouts'], list):
+            dropouts_sig = ''.join([str(_) for _ in self._hyperparameters['dropouts']])
+        else:
+            dropouts_sig = str(self._hyperparameters['dropouts'])
+        signature.append("dropouts" + dropouts_sig)
+        signature.append("activation" + self._hyperparameters['activation'])
+        signature.append("optimizer" + self._hyperparameters['optimizer'])
+        signature.append("loss" + self._hyperparameters['loss'])
+        signature.append("batch_size" + str(self._hyperparameters['batch_size']))
+        signature.append("epochs" + str(self._hyperparameters['epochs']))
+
         return signature
     
 
@@ -92,7 +105,8 @@ class NeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
         xdata = xdata.astype(float)
         ydata = ydata.astype(float)
 
-        self._regressor.fit(xdata, ydata, verbose=0, batch_size=10, epochs=5)
+        self._regressor.fit(xdata, ydata, verbose=0, batch_size=self._hyperparameters['batch_size'],
+                                                     epochs=self._hyperparameters['epochs'])
 
         self._logger.debug("Model built")
 
@@ -129,27 +143,36 @@ class NeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
         """
         Initialize the regressor object for the experiments
         """
+        os.environ['KERAS_BACKEND'] = self.backend
+        # Disable logging (Keras uses the TensorFlow library even with different backends)
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+        logging.getLogger('tensorflow').setLevel(logging.ERROR)
+
         import keras
 
         xdata, _ = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         input_shape = (xdata.shape[1],)
         layers_sizes = self._hyperparameters['n_features']
-        dropout_list = self._hyperparameters['dropout_list']
+        dropout_ini = self._hyperparameters['dropouts']
+        if isinstance(dropout_ini, list):
+            dropouts = dropout_ini
+        else:
+            dropouts = len(layers_sizes) * [dropout_ini]
 
         # First layer with number of neurons based on input size
         layers = []
         layers.append(keras.layers.Input(shape=input_shape))
         # Intermediate layers
         for i in range(len(layers_sizes)):
-            layers.append(keras.layers.Dense(layers_sizes[i], activation='relu'))
-            layers.append(keras.layers.Dropout(dropout_list[i]))
+            layers.append(keras.layers.Dense(layers_sizes[i], activation=self._hyperparameters['activation']))
+            layers.append(keras.layers.Dropout(dropouts[i]))
         # Output layer
         layers.append(keras.layers.Dense(1))
 
         # Initialize and compile model
         self._regressor = keras.Sequential(layers)
-        self._regressor.compile(loss='mse',
-                                optimizer=keras.optimizers.Adam(learning_rate=1e-3),
+        self._regressor.compile(loss=self._hyperparameters['loss'],
+                                optimizer=self._hyperparameters['optimizer'],
                                 metrics=[keras.metrics.RootMeanSquaredError()]
         )
 
@@ -157,4 +180,5 @@ class NeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
         """
         Get a dictionary with all technique parameters with default values
         """
-        return {'n_features': [64, 32], 'dropout_list': 0.5}
+        return {'n_features': [20, 10], 'dropouts': [0.2, 0.2], 'activation': 'relu',
+                'optimizer': 'adam', 'loss': 'mse', 'batch_size': 10, 'epochs': 5}
