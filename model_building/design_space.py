@@ -39,6 +39,7 @@ import model_building.stepwise_experiment_configuration as sw
 import model_building.svr_experiment_configuration as svr
 import model_building.xgboost_experiment_configuration as xgb
 import model_building.wrapper_experiment_configuration as wec
+import model_building.new_neural_network_experiment_configuration as nnn
 
 
 class ExpConfsGenerator(abc.ABC):
@@ -310,6 +311,9 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
             elif self._technique == ec.Technique.STEPWISE:
                 point = sw.StepwiseExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
                                                            regression_inputs, prefix)
+            elif self._technique == ec.Technique.NEWNEURAL:
+                point = nnn.NewNeuralNetworkExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
+                                                                    regression_inputs, prefix)
             else:
                 self._logger.error("Not supported regression technique")
                 sys.exit(-1)
