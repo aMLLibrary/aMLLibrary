@@ -35,6 +35,26 @@ Or, if you forgot the flag, you can still download the submodules even after clo
 git submodule update --init --recursive
 ```
 
+Using a Python virtual environment is recommended, for instance:
+```shell
+virtualenv .amlenv --python=python3.9
+```
+
+You can install the needed dependencies with:
+```shell
+pip install -r requirements.txt
+```
+
+This library also integrates neural networks via the Keras API.
+If you plan to use them, you must install one of the available backends, either manually via `pip` or by adding them to the `requirements.txt` beforehand.
+The following backends were tested:
+```
+tensorflow==2.16.1
+torch==2.3.1
+jax==0.4.29
+```
+Note that the latter also requires `jaxlib` to be installed.
+
 
 ## Tutorial
 To run your first example job with this library, please issue the following command in your terminal:
