@@ -9,6 +9,8 @@ output*
 outputs/
 
 # Folders to ignore
+.amlenv
+.mypy_cache
 log/
 etc/
 local/
@@ -18,8 +20,7 @@ tmp/
 
 # Miscellaneous
 *swp
-/.idea/
-.mypy_cache/
+/.idea
 *.pdf
 *.png
 *.sublime-*

@@ -21,7 +21,7 @@ For usage examples of the listed options, please check the configuration files i
 | Option | Type | Description | Notes |
 | ------ | ---- | ----------- | ----- |
 | `run_num`  | integer | number of runs for the given experiment campaign | |
-| `techniques` | list of strings | list of regression techniques to be used | currently supported: `DecisionTree`, `LRRidge`, `NNLS`, `RandomForest`, `Stepwise`, `SVR`, `XGBoost` |
+| `techniques` | list of strings | list of regression techniques to be used | currently supported: `DecisionTree`, `LRRidge`, `NeuralNetwork`, `NNLS`, `RandomForest`, `Stepwise`, `SVR`, `XGBoost` |
 | `y` | string | name of the column which will be the regression target | |
 | `hyperparameter_tuning` | string | hyperparameter tuning method to be used | default: grid search, set to `Hyperopt` to use Bayesian Optimization instead (see [below](#hyperopt)) |
 | `hyperopt_max_evals` | integer | maximum iterations for Bayesian Optimization | used with `Hyperopt` |

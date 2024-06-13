@@ -33,6 +33,7 @@ import model_building.decision_tree_experiment_configuration as dt
 import model_building.dummy_experiment_configuration as du
 import model_building.experiment_configuration as ec
 import model_building.lr_ridge_experiment_configuration as lr
+import model_building.neural_network_experiment_configuration as nene
 import model_building.nnls_experiment_configuration as nnls
 import model_building.random_forest_experiment_configuration as rf
 import model_building.stepwise_experiment_configuration as sw
@@ -310,6 +311,9 @@ class TechniqueExpConfsGenerator(ExpConfsGenerator):
             elif self._technique == ec.Technique.STEPWISE:
                 point = sw.StepwiseExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
                                                            regression_inputs, prefix)
+            elif self._technique == ec.Technique.NEURAL_NETWORK:
+                point = nene.NeuralNetworkExperimentConfiguration(self._campaign_configuration, hyperparams_point_values,
+                                                                  regression_inputs, prefix)
             else:
                 self._logger.error("Not supported regression technique")
                 sys.exit(-1)
