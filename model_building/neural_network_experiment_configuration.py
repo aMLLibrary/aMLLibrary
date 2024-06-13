@@ -86,6 +86,7 @@ class NeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
         signature.append("dropouts" + dropouts_sig)
         signature.append("activation" + self._hyperparameters['activation'])
         signature.append("optimizer" + self._hyperparameters['optimizer'])
+        signature.append("learning_rate" + str(self._hyperparameters['learning_rate']))
         signature.append("loss" + self._hyperparameters['loss'])
         signature.append("batch_size" + str(self._hyperparameters['batch_size']))
         signature.append("epochs" + str(self._hyperparameters['epochs']))
@@ -175,10 +176,11 @@ class NeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
                                 optimizer=self._hyperparameters['optimizer'],
                                 metrics=[keras.metrics.RootMeanSquaredError()]
         )
+        self._regressor.optimizer.learning_rate.assign(self._hyperparameters['learning_rate'])
 
     def get_default_parameters(self):
         """
         Get a dictionary with all technique parameters with default values
         """
-        return {'n_features': [20, 10], 'dropouts': [0.2, 0.2], 'activation': 'relu',
-                'optimizer': 'adam', 'loss': 'mse', 'batch_size': 10, 'epochs': 5}
+        return {'n_features': [20, 10], 'dropouts': [0.2, 0.2], 'activation': 'relu', 'optimizer': 'adam',
+                'learning_rate': 0.001, 'loss': 'mse', 'batch_size': 10, 'epochs': 5}
