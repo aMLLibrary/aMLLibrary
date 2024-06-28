@@ -62,6 +62,7 @@ class NeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
         self.technique = ec.Technique.NEURAL_NETWORK
         # Get Keras backend or resort to default value
         self.backend = campaign_configuration['General'].get('keras_backend', 'tensorflow')
+        self.use_cpu = campaign_configuration['General'].get('keras_use_cpu', False)
 
     def _compute_signature(self, prefix):
         """
@@ -145,6 +146,8 @@ class NeuralNetworkExperimentConfiguration(ec.ExperimentConfiguration):
         Initialize the regressor object for the experiments
         """
         os.environ['KERAS_BACKEND'] = self.backend
+        if self.use_cpu:
+            os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
         # Disable logging (Keras uses the TensorFlow library even with different backends)
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
         logging.getLogger('tensorflow').setLevel(logging.ERROR)
