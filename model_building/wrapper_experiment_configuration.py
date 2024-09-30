@@ -26,12 +26,11 @@ import pandas as pd
 import sklearn
 from sklearn.metrics import r2_score, make_scorer
 
-from hyperopt_aml.hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+from hyperopt_aml.hyperopt import fmin, tpe, hp, STATUS_OK
 from hyperopt_aml.hyperopt.pyll import scope
 
 import os
 import sys
-import pickle
 import copy
 
 import model_building.experiment_configuration as ec
@@ -244,7 +243,8 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
             self._wrapped_experiment_configuration._train()
             return
         verbose = 2 if self._campaign_configuration['General']['debug'] else 0
-        self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self.get_regressor(), k_features=(1, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(ec.mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
+        min_features = self._campaign_configuration['FeatureSelection'].get('min_features', 1)
+        self._sfs = mlxtend.feature_selection.SequentialFeatureSelector(estimator=self.get_regressor(), k_features=(min_features, self._campaign_configuration['FeatureSelection']['max_features']), verbose=verbose, scoring=sklearn.metrics.make_scorer(ec.mean_absolute_percentage_error, greater_is_better=False), cv=self._campaign_configuration['FeatureSelection']['folds'])
         xdata, ydata = self._regression_inputs.get_xy_data(self._regression_inputs.inputs_split["training"])
         # set the maximum number of required features to the minimum between itself and the number of existing features
         if self._campaign_configuration['FeatureSelection']['max_features'] > xdata.shape[1]:
@@ -278,7 +278,6 @@ class SFSExperimentConfiguration(WrapperExperimentConfiguration):
             The values predicted by the associated regressor
         """
         xdata, ydata = self._regression_inputs.get_xy_data(rows)
-        features = self.get_x_columns()
         
         filtered_xdata = xdata
         ret = self.get_regressor().predict(filtered_xdata)
@@ -669,8 +668,9 @@ class HyperoptSFSExperimentConfiguration(HyperoptExperimentConfiguration):
         _, score_dummy = subsets_evaluator(model_dummy, X_train[[]], y_train, trained=True)
         subsets_best_metrics.append(score_dummy)
         # STEP 2: EVALUATE ALL CANDIDATES OF ALL DIMENSIONS
+        min_dim = self._campaign_configuration['FeatureSelection'].get('min_features', 1)
         max_dim = self._campaign_configuration['FeatureSelection']['max_features']
-        for dim in range(1, max_dim+1):
+        for dim in range(min_dim, max_dim+1):
             # Containers for candidate metrics and models for this dim
             candidate_metrics = []
             candidate_models = []

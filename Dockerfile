@@ -8,7 +8,7 @@
 ## Remove root permissions from "outputs" folder (if Docker was run by root):
 #  chmod -R a+rw outputs
 
-FROM python:3.8
+FROM python:3.9
 ENV MY_DIR=/aMLLibrary
 WORKDIR ${MY_DIR}
 COPY requirements.txt .

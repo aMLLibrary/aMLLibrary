@@ -63,8 +63,6 @@ def main():
         print("Performing dry run... (add -x option to actually run the experiments)")
 
     # Initialize output directory
-    script_fold = os.path.dirname(os.path.abspath(__file__))
-    root_output_abs_fold = os.path.join(script_fold, root_output_rel_fold)
     cmd_mkdir_1 = ' '.join(('mkdir', '-pv', root_output_rel_fold))
     use_command(cmd_mkdir_1, dry_run)
 

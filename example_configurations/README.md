@@ -21,7 +21,7 @@ For usage examples of the listed options, please check the configuration files i
 | Option | Type | Description | Notes |
 | ------ | ---- | ----------- | ----- |
 | `run_num`  | integer | number of runs for the given experiment campaign | |
-| `techniques` | list of strings | list of regression techniques to be used | currently supported: `DecisionTree`, `LRRidge`, `NNLS`, `RandomForest`, `Stepwise`, `SVR`, `XGBoost` |
+| `techniques` | list of strings | list of regression techniques to be used | currently supported: `DecisionTree`, `LRRidge`, `NeuralNetwork`, `NNLS`, `RandomForest`, `Stepwise`, `SVR`, `XGBoost` |
 | `y` | string | name of the column which will be the regression target | |
 | `hyperparameter_tuning` | string | hyperparameter tuning method to be used | default: grid search, set to `Hyperopt` to use Bayesian Optimization instead (see [below](#hyperopt)) |
 | `hyperopt_max_evals` | integer | maximum iterations for Bayesian Optimization | used with `Hyperopt` |
@@ -71,7 +71,8 @@ This section is mandatory, and should only be used if one wants to perform some 
 | Option | Type | Description | Notes |
 | ------ | ---- | ----------- | ----- |
 | `method`  | string | feature selection method | can be `SFS` or `XGBoost` |
-| `max_features` | integer | maximum number of features to be selected | |
+| `max_features` | integer | maximum number of features to be selected | used with `SFS` |
+| `min_features` | integer | minimum number of features to keep | used with `SFS`. Optional (default 1) |
 | `folds` | integer | number of Cross-Validation folds to be used | used with `SFS` |
 | `XGBoost_tolerance` | float in (0, 1) | maximum cumulative feature weight to be kept | used with `XGBoost` |
 
