@@ -183,7 +183,7 @@ class Regressor:
 
         if y_column in self._scalers:
             y_scaler = self._scalers[y_column]
-            y = y_scaler.inverse_transform(y)
+            y = y_scaler.inverse_transform(y.reshape(-1,1))
 
         return y
 

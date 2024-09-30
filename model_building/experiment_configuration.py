@@ -58,6 +58,8 @@ enum_to_configuration_label = {Technique.LR_RIDGE: 'LRRidge', Technique.XGBOOST:
 
 def mean_absolute_percentage_error(y_true, y_pred):
     epsilon = np.finfo(np.float64).eps
+    if len(y_true.shape) == 1:
+        y_true = y_true.values.reshape(y_true.shape[0],1)
     mape = np.abs(y_pred - y_true) / np.maximum(np.abs(y_true), epsilon)
     return np.average(mape, axis=0)
 

@@ -84,6 +84,7 @@ class RegressionInputs:
 
     def __copy__(self):
         new_copy = RegressionInputs(self.data.copy(), self.inputs_split.copy(), self.x_columns.copy(), self.y_column)
+        new_copy.scalers = self.scalers.copy()
         new_copy.scaled_columns = self.scaled_columns.copy()
         return new_copy
 
