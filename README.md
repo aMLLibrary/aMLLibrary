@@ -139,6 +139,6 @@ Guindani, Lattuada, Ardagna. *AMLLibrary: An AutoML Approach for Performance Pre
 
 
 ## Acknowledgments
-This library is currently maintained by the LIGATE project, which was partially funded by the European Commission under the Horizon 2020 Grant Agreement number 956137, as part of the European High-Performance Computing (EuroHPC) Joint Undertaking program.
+This library has been maintained by the LIGATE project, which was partially funded by the European Commission under the Horizon 2020 Grant Agreement number 956137, as part of the European High-Performance Computing (EuroHPC) Joint Undertaking program.
 
 It was previously maintained by the ATMOSPHERE project, which was also funded by the European Union under the Horizon 2020 Cooperation Programme, with Grant Agreement number 777154.
