@@ -25,3 +25,4 @@ tmp/
 *.png
 *.sublime-*
 *.zip
+.DS_Store
